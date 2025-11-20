@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Media Batch Processor | Relation-AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .upload-zone {
+            border: 3px dashed #3498db;
+            border-radius: 15px;
+            padding: 60px 40px;
+            text-align: center;
+            margin: 30px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-zone:hover {
+            border-color: #2980b9;
+            background: #e3f2fd;
+        }
+
+        .upload-zone.dragover {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #3498db;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #2980b9;
+        }
+
+        .file-list {
+            margin: 20px 30px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border-left: 4px solid #3498db;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-icon {
+            font-size: 1.5em;
+        }
+
+        .file-size {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .settings {
+            background: #f8f9fa;
+            padding: 30px;
+            margin: 20px 30px;
+            border-radius: 15px;
+        }
+
+        .settings-section {
+            margin-bottom: 25px;
+        }
+
+        .settings-section h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .size-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 15px;
+        }
+
+        .format-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .format-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .format-option input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .process-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto;
+            transition: transform 0.2s ease;
+        }
+
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+        }
+
+        .process-btn:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            margin: 20px 30px;
+            padding: 25px;
+            background: #e8f5e8;
+            border-radius: 15px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .result-files {
+            margin-top: 15px;
+        }
+
+        .result-file {
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #27ae60;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Media Batch Processor</h1>
+            <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
+        </div>
+
+        <div class="upload-zone" id="dropZone">
+            <div class="upload-icon">📁</div>
+            <h3>Перетащите файлы сюда</h3>
+            <p>или</p>
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                Выбрать файлы
+            </button>
+            <input type="file" id="fileInput" class="file-input" multiple accept="image/*,.mp3,.mp4,.mov,.avi">
+        </div>
+
+        <div class="file-list" id="fileList"></div>
+
+        <div class="settings">
+            <div class="settings-section">
+                <h3>📷 Настройки изображений</h3>
+                <input type="text" class="size-input" id="imageSizes" 
+                       value="1200x630, 800x600, 400x400" 
+                       placeholder="Введите размеры через запятую (например: 800x600, 400x400)">
+                
+                <div class="format-options">
+                    <label class="format-option">
+                        <input type="checkbox" id="formatJPG" checked> JPG
+                    </label>
+                    <label class="format-option">
+                        <input type="checkbox" id="formatPNG"> PNG
+                    </label>
+                    <label class="format-option">
+                        <input type="checkbox" id="formatWEBP"> WebP
+                    </label>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3>🎵 Настройки аудио</h3>
+                <select class="size-input" id="audioBitrate">
+                    <option value="128">128 kbps (стандарт)</option>
+                    <option value="192" selected>192 kbps (качественно)</option>
+                    <option value="256">256 kbps (премиум)</option>
+                    <option value="320">320 kbps (максимальное)</option>
+                </select>
+            </div>
+
+            <div class="settings-section">
+                <h3>🎬 Настройки видео</h3>
+                <select class="size-input" id="videoResolution">
+                    <option value="640x360">640x360 (360p)</option>
+                    <option value="1280x720" selected>1280x720 (720p HD)</option>
+                    <option value="1920x1080">1920x1080 (1080p Full HD)</option>
+                    <option value="3840x2160">3840x2160 (4K Ultra HD)</option>
+                </select>
+                
+                <select class="size-input" id="videoQuality" style="margin-top: 10px;">
+                    <option value="low">Низкое (максимальное сжатие)</option>
+                    <option value="medium" selected>Стандартное</option>
+                    <option value="high">Высокое (оригинальное качество)</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="process-btn" onclick="startProcessing()">
+            🚀 Начать обработку
+        </button>
+
+        <div class="progress-bar hidden" id="progressBar">
+            <div class="progress" id="progress"></div>
+        </div>
+
+        <div class="result hidden" id="result">
+            <h3>✅ Обработка завершена!</h3>
+            <div class="result-files" id="resultFiles"></div>
+        </div>
+    </div>
+
+    <script>
+        let uploadedFiles = [];
+
+        // Инициализация
+        document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        setupDragAndDrop();
+
+        function handleFileSelect(event) {
+            uploadedFiles = Array.from(event.target.files);
+            updateFileList();
+        }
+
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('dropZone');
+            
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.classList.remove('dragover');
+                uploadedFiles = Array.from(e.dataTransfer.files);
+                updateFileList();
+            });
+        }
+
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+            
+            if (uploadedFiles.length === 0) {
+                fileList.innerHTML = '';
+                return;
+            }
+
+            fileList.innerHTML = '<h3>📄 Загруженные файлы:</h3>';
+            
+            uploadedFiles.forEach((file, index) => {
+                const fileType = getFileType(file.name);
+                const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                
+                fileList.innerHTML += `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <span class="file-icon">${getFileIcon(fileType)}</span>
+                            <div>
+                                <strong>${file.name}</strong>
+                                <div class="file-size">${fileSize} MB • ${fileType}</div>
+                            </div>
+                        </div>
+                        <button onclick="removeFile(${index})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">×</button>
+                    </div>
+                `;
+            });
+        }
+
+        function getFileType(filename) {
+            if (filename.match(/\.(jpg|jpeg|png|gif|webp)$/i)) return 'Изображение';
+            if (filename.match(/\.(mp3|wav|flac|aac)$/i)) return 'Аудио';
+            if (filename.match(/\.(mp4|mov|avi|mkv|webm)$/i)) return 'Видео';
+            return 'Файл';
+        }
+
+        function getFileIcon(fileType) {
+            const icons = {
+                'Изображение': '🖼️',
+                'Аудио': '🎵',
+                'Видеo': '🎬',
+                'Файл': '📄'
+            };
+            return icons[fileType] || '📄';
+        }
+
+        function removeFile(index) {
+            uploadedFiles.splice(index, 1);
+            updateFileList();
+        }
+
+        async function startProcessing() {
+            if (uploadedFiles.length === 0) {
+                alert('Пожалуйста, сначала загрузите файлы!');
+                return;
+            }
+
+            // Показываем прогресс-бар
+            const progressBar = document.getElementById('progressBar');
+            const progress = document.getElementById('progress');
+            const result = document.getElementById('result');
+            const resultFiles = document.getElementById('resultFiles');
+            
+            progressBar.classList.remove('hidden');
+            result.classList.add('hidden');
+
+            // Симуляция обработки
+            const totalSteps = uploadedFiles.length * 3; // Примерное количество шагов
+            let currentStep = 0;
+
+            resultFiles.innerHTML = '';
+            
+            for (let i = 0; i < uploadedFiles.length; i++) {
+                const file = uploadedFiles[i];
+                const fileType = getFileType(file.name);
+                
+                // Обновляем прогресс
+                currentStep++;
+                progress.style.width = `${(currentStep / totalSteps) * 100}%`;
+                
+                // Обрабатываем файл в зависимости от типа
+                const processedFiles = await processFile(file, fileType);
+                
+                // Добавляем результаты
+                processedFiles.forEach(processedFile => {
+                    resultFiles.innerHTML += `
+                        <div class="result-file">
+                            ✅ ${processedFile}
+                        </div>
+                    `;
+                });
+
+                // Небольшая задержка для реалистичности
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Завершаем прогресс
+            progress.style.width = '100%';
+            
+            // Показываем результат
+            setTimeout(() => {
+                result.classList.remove('hidden');
+                progressBar.classList.add('hidden');
+            }, 500);
+        }
+
+        async function processFile(file, fileType) {
+            const baseName = file.name.replace(/\.[^/.]+$/, ""); // Убираем расширение
+            const processedFiles = [];
+
+            if (fileType === 'Изображение') {
+                const sizes = document.getElementById('imageSizes').value.split(',').map(s => s.trim());
+                const formats = [];
+                
+                if (document.getElementById('formatJPG').checked) formats.push('jpg');
+                if (document.getElementById('formatPNG').checked) formats.push('png');
+                if (document.getElementById('formatWEBP').checked) formats.push('webp');
+
+                for (const size of sizes) {
+                    for (const format of formats) {
+                        processedFiles.push(`${baseName}_${size}.${format}`);
+                    }
+                }
+            }
+            else if (fileType === 'Аудио') {
+                const bitrate = document.getElementById('audioBitrate').value;
+                processedFiles.push(`${baseName}_${bitrate}kbps.mp3`);
+            }
+            else if (fileType === 'Видеo') {
+                const resolution = document.getElementById('videoResolution').value;
+                const quality = document.getElementById('videoQuality').value;
+                processedFiles.push(`${baseName}_${resolution}_${quality}.mp4`);
+            }
+
+            return processedFiles;
+        }
+    </script>
+</body>
+</html>
