@@ -94,7 +94,7 @@
 
         .file-list {
             margin: 20px 30px;
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
         }
 
@@ -133,25 +133,17 @@
         }
 
         .rename-input {
-            padding: 6px 10px;
-            border: 1px solid #bdc3c7;
-            border-radius: 5px;
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
             font-size: 0.9em;
-            width: 150px;
+            width: 200px;
+            transition: border-color 0.3s ease;
         }
 
-        .rename-btn {
-            background: #f39c12;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8em;
-        }
-
-        .rename-btn:hover {
-            background: #e67e22;
+        .rename-input:focus {
+            border-color: #3498db;
+            outline: none;
         }
 
         .settings {
@@ -184,15 +176,15 @@
 
         .naming-section {
             background: white;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
             border: 2px solid #e3f2fd;
-            margin-top: 15px;
+            margin: 20px 0;
         }
 
         .naming-input {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 2px solid #bdc3c7;
             border-radius: 8px;
             font-size: 1em;
@@ -474,26 +466,24 @@
         <div class="file-list" id="fileList"></div>
 
         <div class="settings">
+            <div class="naming-section">
+                <h3>🏷️ Переименование файлов</h3>
+                <p style="color: #666; margin-bottom: 10px;">Введите новое имя для каждого файла в списке выше</p>
+                <div class="naming-example">
+                    Пример имен после обработки: <strong>logo_1200x600.png</strong>, <strong>banner_200x150.jpg</strong>
+                </div>
+            </div>
+
             <div class="settings-section">
                 <h3>📷 Настройки изображений</h3>
                 <input type="text" class="size-input" id="imageSizes" 
-                       value="200x200, 400x400, 800x800" 
-                       placeholder="Введите размеры через запятую (например: 200x200, 400x400)">
+                       value="1200x600, 200x150, 400x400, 800x800" 
+                       placeholder="Введите размеры через запятую">
                 
                 <div class="preset-buttons">
-                    <button class="preset-btn" onclick="loadPreset('logos')">Логотипы</button>
+                    <button class="preset-btn" onclick="loadPreset('standard')">Стандартные</button>
                     <button class="preset-btn" onclick="loadPreset('social')">Соцсети</button>
                     <button class="preset-btn" onclick="loadPreset('mobile')">Мобильные</button>
-                    <button class="preset-btn" onclick="loadPreset('print')">Печать</button>
-                </div>
-
-                <div class="naming-section">
-                    <h4>🏷️ Шаблон именования файлов:</h4>
-                    <input type="text" class="naming-input" id="fileNameTemplate" 
-                           value="logo" placeholder="Введите базовое имя (например: logo)">
-                    <div class="naming-example" id="namingExample">
-                        Пример: logo_200x200.png, logo_400x400.png, logo2_200x200.png
-                    </div>
                 </div>
 
                 <h4 style="margin: 20px 0 10px 0;">🎨 Фон подложки:</h4>
@@ -505,10 +495,6 @@
                     <div class="background-option" onclick="selectBackground('white')">
                         <div class="background-preview" style="background: white; border: 2px solid #ddd;"></div>
                         <span>Белый</span>
-                    </div>
-                    <div class="background-option" onclick="selectBackground('black')">
-                        <div class="background-preview" style="background: black;"></div>
-                        <span>Черный</span>
                     </div>
                     <div class="background-option" onclick="selectBackground('gray')">
                         <div class="background-preview" style="background: #f0f0f0;"></div>
@@ -522,9 +508,6 @@
                     </label>
                     <label class="format-option">
                         <input type="checkbox" id="formatJPG"> JPG
-                    </label>
-                    <label class="format-option">
-                        <input type="checkbox" id="formatWEBP"> WebP
                     </label>
                 </div>
             </div>
@@ -557,9 +540,6 @@
                     </div>
                     <div class="resolution-option" onclick="selectResolution('1280x720')">
                         <span>1280×720px (HD)</span>
-                    </div>
-                    <div class="resolution-option" onclick="selectResolution('1920x1080')">
-                        <span>1920×1080px (Full HD)</span>
                     </div>
                 </div>
 
@@ -611,14 +591,16 @@
 
         // Инициализация
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
-        document.getElementById('fileNameTemplate').addEventListener('input', updateNamingExample);
         setupDragAndDrop();
         updateStats();
-        updateNamingExample();
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
             uploadedFiles = Array.from(event.target.files);
+            // Устанавливаем исходные имена файлов как кастомные имена
+            uploadedFiles.forEach((file, index) => {
+                file.customName = file.name.replace(/\.[^/.]+$/, "");
+            });
             updateFileList();
             updateStats();
         }
@@ -639,6 +621,10 @@
                 e.preventDefault();
                 dropZone.classList.remove('dragover');
                 uploadedFiles = Array.from(e.dataTransfer.files);
+                // Устанавливаем исходные имена файлов как кастомные имена
+                uploadedFiles.forEach((file, index) => {
+                    file.customName = file.name.replace(/\.[^/.]+$/, "");
+                });
                 updateFileList();
                 updateStats();
             });
@@ -652,28 +638,29 @@
                 return;
             }
 
-            fileList.innerHTML = '<h3>📄 Загруженные файлы:</h3>';
+            fileList.innerHTML = '<h3>📄 Загруженные файлы (введите новые имена):</h3>';
             
             uploadedFiles.forEach((file, index) => {
                 const fileType = getFileType(file.name);
                 const fileSize = (file.size / 1024 / 1024).toFixed(2);
-                const customName = file.customName || file.name.replace(/\.[^/.]+$/, "");
                 
                 fileList.innerHTML += `
                     <div class="file-item">
                         <div class="file-info">
                             <span class="file-icon">${getFileIcon(fileType)}</span>
                             <div>
-                                <strong>${file.name}</strong>
+                                <div><strong>${file.name}</strong></div>
                                 <div class="file-size">${fileSize} MB • ${fileType}</div>
+                                <div style="color: #27ae60; font-size: 0.8em; margin-top: 2px;">
+                                    ➡️ Новое имя: <strong>${file.customName}</strong>.*
+                                </div>
                             </div>
                         </div>
                         <div class="file-rename">
-                            <input type="text" class="rename-input" value="${customName}" 
-                                   placeholder="Новое имя" onchange="updateFileName(${index}, this.value)">
-                            <button class="rename-btn" onclick="applyAutoNaming(${index})">Auto</button>
+                            <input type="text" class="rename-input" value="${file.customName}" 
+                                   placeholder="Введите новое имя" oninput="updateFileName(${index}, this.value)">
                         </div>
-                        <button onclick="removeFile(${index})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">×</button>
+                        <button onclick="removeFile(${index})" style="background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">×</button>
                     </div>
                 `;
             });
@@ -682,30 +669,13 @@
         function updateFileName(index, newName) {
             if (uploadedFiles[index]) {
                 uploadedFiles[index].customName = newName;
-            }
-        }
-
-        function applyAutoNaming(index) {
-            const baseName = document.getElementById('fileNameTemplate').value;
-            const fileNumber = index + 1;
-            const autoName = fileNumber > 1 ? `${baseName}${fileNumber}` : baseName;
-            
-            if (uploadedFiles[index]) {
-                uploadedFiles[index].customName = autoName;
                 updateFileList();
             }
-        }
-
-        function updateNamingExample() {
-            const baseName = document.getElementById('fileNameTemplate').value || 'logo';
-            const example = document.getElementById('namingExample');
-            example.innerHTML = `Пример: ${baseName}_200x200.png, ${baseName}_400x400.png, ${baseName}2_200x200.png`;
         }
 
         function getBackgroundColor() {
             switch(selectedBackground) {
                 case 'white': return 'white';
-                case 'black': return 'black';
                 case 'gray': return '#f0f0f0';
                 case 'transparent': 
                 default: return 'transparent';
@@ -773,7 +743,6 @@
                     
                     if (document.getElementById('formatPNG').checked) formats.push('png');
                     if (document.getElementById('formatJPG').checked) formats.push('jpg');
-                    if (document.getElementById('formatWEBP').checked) formats.push('webp');
                     
                     total += sizes.length * formats.length;
                 } 
@@ -817,10 +786,9 @@
         // Функции пресетов
         function loadPreset(presetName) {
             const presets = {
-                'logos': '200x200, 400x400, 800x800',
+                'standard': '1200x600, 200x150, 400x400',
                 'social': '1200x630, 1080x1080, 1080x1920',
-                'mobile': '400x400, 300x300, 200x200',
-                'print': '2480x3508, 1748x2480, 1240x1748'
+                'mobile': '400x400, 300x300, 200x200'
             };
             
             if (presets[presetName]) {
@@ -871,7 +839,7 @@
                     processedFiles++;
                     progress.style.width = `${(processedFiles / totalFiles) * 100}%`;
                     
-                    const processedFilesList = await processFile(file, fileType, i);
+                    const processedFilesList = await processFile(file, fileType);
                     
                     processedFilesList.forEach(processedFile => {
                         resultFiles.innerHTML += `
@@ -909,9 +877,8 @@
         }
 
         // Функция обработки файла
-        async function processFile(file, fileType, index) {
-            const baseName = file.customName || document.getElementById('fileNameTemplate').value || file.name.replace(/\.[^/.]+$/, "");
-            const finalBaseName = index > 0 ? `${baseName}${index + 1}` : baseName;
+        async function processFile(file, fileType) {
+            const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
             const processedFiles = [];
 
             if (fileType === 'Изображение') {
@@ -920,7 +887,6 @@
                 
                 if (document.getElementById('formatPNG').checked) formats.push('png');
                 if (document.getElementById('formatJPG').checked) formats.push('jpg');
-                if (document.getElementById('formatWEBP').checked) formats.push('webp');
 
                 for (const size of sizes) {
                     const [width, height] = size.split('x').map(Number);
@@ -928,13 +894,13 @@
                     for (const format of formats) {
                         try {
                             const processedBlob = await resizeImageOnCanvas(file, width, height, format);
-                            const fileName = `${finalBaseName}_${size}.${format}`;
+                            const fileName = `${baseName}_${size}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
                             processedFiles.push(fileName);
                         } catch (error) {
                             console.error(`Ошибка обработки:`, error);
-                            processedFiles.push(`${finalBaseName}_${size}.${format} (ошибка)`);
+                            processedFiles.push(`${baseName}_${size}.${format} (ошибка)`);
                         }
                     }
                 }
@@ -943,18 +909,18 @@
                 const bitrate = document.getElementById('audioBitrate').value;
                 
                 if (document.getElementById('audioMP3').checked) {
-                    const fileName = `${finalBaseName}_${bitrate}kbps.mp3`;
+                    const fileName = `${baseName}.mp3`;
                     saveProcessedFile(file, fileName);
                     processedFiles.push(fileName);
                 }
                 if (document.getElementById('audioOGG').checked) {
-                    const fileName = `${finalBaseName}_${bitrate}kbps.ogg`;
+                    const fileName = `${baseName}.ogg`;
                     saveProcessedFile(file, fileName);
                     processedFiles.push(fileName);
                 }
             }
             else if (fileType === 'Видео') {
-                const fileName = `${finalBaseName}_${selectedVideoResolution}.${selectedVideoFormat}`;
+                const fileName = `${baseName}.${selectedVideoFormat}`;
                 saveProcessedFile(file, fileName);
                 processedFiles.push(fileName);
             }
@@ -1060,7 +1026,6 @@
         document.getElementById('imageSizes').addEventListener('input', updateStats);
         document.getElementById('formatPNG').addEventListener('change', updateStats);
         document.getElementById('formatJPG').addEventListener('change', updateStats);
-        document.getElementById('formatWEBP').addEventListener('change', updateStats);
         document.getElementById('audioMP3').addEventListener('change', updateStats);
         document.getElementById('audioOGG').addEventListener('change', updateStats);
     </script>
