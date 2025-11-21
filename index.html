@@ -113,6 +113,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            flex: 1;
         }
 
         .file-icon {
@@ -122,6 +123,35 @@
         .file-size {
             color: #7f8c8d;
             font-size: 0.9em;
+        }
+
+        .file-rename {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: 15px;
+        }
+
+        .rename-input {
+            padding: 6px 10px;
+            border: 1px solid #bdc3c7;
+            border-radius: 5px;
+            font-size: 0.9em;
+            width: 150px;
+        }
+
+        .rename-btn {
+            background: #f39c12;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+
+        .rename-btn:hover {
+            background: #e67e22;
         }
 
         .settings {
@@ -150,6 +180,29 @@
             border-radius: 8px;
             font-size: 1em;
             margin-bottom: 15px;
+        }
+
+        .naming-section {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #e3f2fd;
+            margin-top: 15px;
+        }
+
+        .naming-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .naming-example {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            margin-top: 5px;
         }
 
         .background-options {
@@ -372,33 +425,6 @@
             font-size: 0.9em;
         }
 
-        .preview-container {
-            display: flex;
-            gap: 20px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
-
-        .preview-item {
-            text-align: center;
-        }
-
-        .preview-image {
-            width: 100px;
-            height: 100px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            object-fit: contain;
-            background: white;
-            padding: 5px;
-        }
-
-        .preview-label {
-            font-size: 0.8em;
-            color: #666;
-            margin-top: 5px;
-        }
-
         .resolution-options {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -461,6 +487,15 @@
                     <button class="preset-btn" onclick="loadPreset('print')">Печать</button>
                 </div>
 
+                <div class="naming-section">
+                    <h4>🏷️ Шаблон именования файлов:</h4>
+                    <input type="text" class="naming-input" id="fileNameTemplate" 
+                           value="logo" placeholder="Введите базовое имя (например: logo)">
+                    <div class="naming-example" id="namingExample">
+                        Пример: logo_200x200.png, logo_400x400.png, logo2_200x200.png
+                    </div>
+                </div>
+
                 <h4 style="margin: 20px 0 10px 0;">🎨 Фон подложки:</h4>
                 <div class="background-options">
                     <div class="background-option selected" onclick="selectBackground('transparent')">
@@ -491,10 +526,6 @@
                     <label class="format-option">
                         <input type="checkbox" id="formatWEBP"> WebP
                     </label>
-                </div>
-
-                <div class="preview-container" id="previewContainer">
-                    <!-- Превью будет генерироваться здесь -->
                 </div>
             </div>
 
@@ -580,15 +611,16 @@
 
         // Инициализация
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        document.getElementById('fileNameTemplate').addEventListener('input', updateNamingExample);
         setupDragAndDrop();
         updateStats();
+        updateNamingExample();
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
             uploadedFiles = Array.from(event.target.files);
             updateFileList();
             updateStats();
-            generatePreviews();
         }
 
         function setupDragAndDrop() {
@@ -609,7 +641,6 @@
                 uploadedFiles = Array.from(e.dataTransfer.files);
                 updateFileList();
                 updateStats();
-                generatePreviews();
             });
         }
 
@@ -626,6 +657,7 @@
             uploadedFiles.forEach((file, index) => {
                 const fileType = getFileType(file.name);
                 const fileSize = (file.size / 1024 / 1024).toFixed(2);
+                const customName = file.customName || file.name.replace(/\.[^/.]+$/, "");
                 
                 fileList.innerHTML += `
                     <div class="file-item">
@@ -636,72 +668,38 @@
                                 <div class="file-size">${fileSize} MB • ${fileType}</div>
                             </div>
                         </div>
+                        <div class="file-rename">
+                            <input type="text" class="rename-input" value="${customName}" 
+                                   placeholder="Новое имя" onchange="updateFileName(${index}, this.value)">
+                            <button class="rename-btn" onclick="applyAutoNaming(${index})">Auto</button>
+                        </div>
                         <button onclick="removeFile(${index})" style="background: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;">×</button>
                     </div>
                 `;
             });
         }
 
-        function generatePreviews() {
-            const previewContainer = document.getElementById('previewContainer');
-            const sizes = document.getElementById('imageSizes').value.split(',').map(s => s.trim());
-            
-            previewContainer.innerHTML = '<h4 style="width: 100%; margin-bottom: 10px;">👁️ Предпросмотр размеров:</h4>';
-            
-            sizes.forEach(size => {
-                previewContainer.innerHTML += `
-                    <div class="preview-item">
-                        <div class="preview-image" style="background: ${getBackgroundColor()};" id="preview-${size}">
-                            <span style="color: #999; font-size: 0.7em;">${size}</span>
-                        </div>
-                        <div class="preview-label">${size}</div>
-                    </div>
-                `;
-            });
-
-            // Если есть изображения, показываем их в превью
-            if (uploadedFiles.length > 0) {
-                const firstImage = uploadedFiles[0];
-                if (getFileType(firstImage.name) === 'Изображение') {
-                    displayImageInPreviews(firstImage, sizes);
-                }
+        function updateFileName(index, newName) {
+            if (uploadedFiles[index]) {
+                uploadedFiles[index].customName = newName;
             }
         }
 
-        function displayImageInPreviews(imageFile, sizes) {
-            const img = new Image();
-            img.onload = function() {
-                sizes.forEach(size => {
-                    const [width, height] = size.split('x').map(Number);
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    // Заполняем фон
-                    ctx.fillStyle = getBackgroundColor();
-                    ctx.fillRect(0, 0, width, height);
-                    
-                    // Рассчитываем размеры для вписывания с сохранением пропорций
-                    const scale = Math.min(width / img.width, height / img.height) * 0.8;
-                    const newWidth = img.width * scale;
-                    const newHeight = img.height * scale;
-                    const x = (width - newWidth) / 2;
-                    const y = (height - newHeight) / 2;
-                    
-                    // Рисуем изображение
-                    ctx.drawImage(img, x, y, newWidth, newHeight);
-                    
-                    // Обновляем превью
-                    const previewElement = document.getElementById(`preview-${size}`);
-                    if (previewElement) {
-                        previewElement.innerHTML = '';
-                        previewElement.appendChild(canvas);
-                    }
-                });
-            };
-            img.src = URL.createObjectURL(imageFile);
+        function applyAutoNaming(index) {
+            const baseName = document.getElementById('fileNameTemplate').value;
+            const fileNumber = index + 1;
+            const autoName = fileNumber > 1 ? `${baseName}${fileNumber}` : baseName;
+            
+            if (uploadedFiles[index]) {
+                uploadedFiles[index].customName = autoName;
+                updateFileList();
+            }
+        }
+
+        function updateNamingExample() {
+            const baseName = document.getElementById('fileNameTemplate').value || 'logo';
+            const example = document.getElementById('namingExample');
+            example.innerHTML = `Пример: ${baseName}_200x200.png, ${baseName}_400x400.png, ${baseName}2_200x200.png`;
         }
 
         function getBackgroundColor() {
@@ -722,9 +720,6 @@
                 opt.classList.remove('selected');
             });
             event.currentTarget.classList.add('selected');
-            
-            // Обновляем превью
-            generatePreviews();
         }
 
         function selectResolution(resolution) {
@@ -789,7 +784,7 @@
                     total += formats.length;
                 }
                 else if (fileType === 'Видео') {
-                    total += 1; // Один файл на видео (выбранный формат)
+                    total += 1;
                 }
             });
             
@@ -817,7 +812,6 @@
             uploadedFiles.splice(index, 1);
             updateFileList();
             updateStats();
-            generatePreviews();
         }
 
         // Функции пресетов
@@ -832,7 +826,6 @@
             if (presets[presetName]) {
                 document.getElementById('imageSizes').value = presets[presetName];
                 updateStats();
-                generatePreviews();
             }
         }
 
@@ -878,7 +871,7 @@
                     processedFiles++;
                     progress.style.width = `${(processedFiles / totalFiles) * 100}%`;
                     
-                    const processedFilesList = await processFile(file, fileType);
+                    const processedFilesList = await processFile(file, fileType, i);
                     
                     processedFilesList.forEach(processedFile => {
                         resultFiles.innerHTML += `
@@ -916,8 +909,9 @@
         }
 
         // Функция обработки файла
-        async function processFile(file, fileType) {
-            const baseName = file.name.replace(/\.[^/.]+$/, "");
+        async function processFile(file, fileType, index) {
+            const baseName = file.customName || document.getElementById('fileNameTemplate').value || file.name.replace(/\.[^/.]+$/, "");
+            const finalBaseName = index > 0 ? `${baseName}${index + 1}` : baseName;
             const processedFiles = [];
 
             if (fileType === 'Изображение') {
@@ -934,13 +928,13 @@
                     for (const format of formats) {
                         try {
                             const processedBlob = await resizeImageOnCanvas(file, width, height, format);
-                            const fileName = `${baseName}_${size}.${format}`;
+                            const fileName = `${finalBaseName}_${size}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
                             processedFiles.push(fileName);
                         } catch (error) {
                             console.error(`Ошибка обработки:`, error);
-                            processedFiles.push(`${baseName}_${size}.${format} (ошибка)`);
+                            processedFiles.push(`${finalBaseName}_${size}.${format} (ошибка)`);
                         }
                     }
                 }
@@ -948,20 +942,19 @@
             else if (fileType === 'Аудио') {
                 const bitrate = document.getElementById('audioBitrate').value;
                 
-                // Обрабатываем выбранные форматы аудио
                 if (document.getElementById('audioMP3').checked) {
-                    const fileName = `${baseName}_${bitrate}kbps.mp3`;
+                    const fileName = `${finalBaseName}_${bitrate}kbps.mp3`;
                     saveProcessedFile(file, fileName);
                     processedFiles.push(fileName);
                 }
                 if (document.getElementById('audioOGG').checked) {
-                    const fileName = `${baseName}_${bitrate}kbps.ogg`;
+                    const fileName = `${finalBaseName}_${bitrate}kbps.ogg`;
                     saveProcessedFile(file, fileName);
                     processedFiles.push(fileName);
                 }
             }
             else if (fileType === 'Видео') {
-                const fileName = `${baseName}_${selectedVideoResolution}.${selectedVideoFormat}`;
+                const fileName = `${finalBaseName}_${selectedVideoResolution}.${selectedVideoFormat}`;
                 saveProcessedFile(file, fileName);
                 processedFiles.push(fileName);
             }
@@ -1064,10 +1057,7 @@
         }
 
         // Обновляем при изменении настроек
-        document.getElementById('imageSizes').addEventListener('input', function() {
-            updateStats();
-            generatePreviews();
-        });
+        document.getElementById('imageSizes').addEventListener('input', updateStats);
         document.getElementById('formatPNG').addEventListener('change', updateStats);
         document.getElementById('formatJPG').addEventListener('change', updateStats);
         document.getElementById('formatWEBP').addEventListener('change', updateStats);
