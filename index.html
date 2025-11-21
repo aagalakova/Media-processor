@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Media Batch Processor | Relation-AI</title>
-    <!-- Библиотеки для работы с изображениями и ZIP -->
-    <script src="https://cdn.jsdelivr.net/npm/compressorjs@1.1.1/dist/compressor.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         * {
@@ -154,10 +152,46 @@
             margin-bottom: 15px;
         }
 
+        .background-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .background-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .background-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .background-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+
+        .background-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+        }
+
         .format-options {
             display: flex;
             gap: 20px;
             flex-wrap: wrap;
+            margin-top: 15px;
         }
 
         .format-option {
@@ -169,6 +203,34 @@
         .format-option input[type="checkbox"] {
             width: 18px;
             height: 18px;
+        }
+
+        .video-format-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .video-format-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .video-format-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .video-format-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
         }
 
         .preset-buttons {
@@ -309,6 +371,61 @@
             color: #7f8c8d;
             font-size: 0.9em;
         }
+
+        .preview-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .preview-item {
+            text-align: center;
+        }
+
+        .preview-image {
+            width: 100px;
+            height: 100px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            object-fit: contain;
+            background: white;
+            padding: 5px;
+        }
+
+        .preview-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .resolution-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .resolution-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .resolution-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+
+        .resolution-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
     </style>
 </head>
 <body>
@@ -325,7 +442,7 @@
             <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
                 Выбрать файлы
             </button>
-            <input type="file" id="fileInput" class="file-input" multiple accept="image/*,.mp3,.mp4,.mov,.avi">
+            <input type="file" id="fileInput" class="file-input" multiple accept="image/*,.mp3,.mp4,.mov,.avi,.ogg,.wav,.flac,.aac,.mkv,.webm">
         </div>
 
         <div class="file-list" id="fileList"></div>
@@ -334,32 +451,64 @@
             <div class="settings-section">
                 <h3>📷 Настройки изображений</h3>
                 <input type="text" class="size-input" id="imageSizes" 
-                       value="1200x630, 800x600, 400x400" 
-                       placeholder="Введите размеры через запятую (например: 800x600, 400x400)">
+                       value="200x200, 400x400, 800x800" 
+                       placeholder="Введите размеры через запятую (например: 200x200, 400x400)">
                 
                 <div class="preset-buttons">
+                    <button class="preset-btn" onclick="loadPreset('logos')">Логотипы</button>
                     <button class="preset-btn" onclick="loadPreset('social')">Соцсети</button>
-                    <button class="preset-btn" onclick="loadPreset('presentation')">Презентация</button>
-                    <button class="preset-btn" onclick="loadPreset('ads')">Реклама</button>
                     <button class="preset-btn" onclick="loadPreset('mobile')">Мобильные</button>
+                    <button class="preset-btn" onclick="loadPreset('print')">Печать</button>
+                </div>
+
+                <h4 style="margin: 20px 0 10px 0;">🎨 Фон подложки:</h4>
+                <div class="background-options">
+                    <div class="background-option selected" onclick="selectBackground('transparent')">
+                        <div class="background-preview" style="background: conic-gradient(#eee 25%, white 0 50%, #eee 0 75%, white 0);"></div>
+                        <span>Прозрачный</span>
+                    </div>
+                    <div class="background-option" onclick="selectBackground('white')">
+                        <div class="background-preview" style="background: white; border: 2px solid #ddd;"></div>
+                        <span>Белый</span>
+                    </div>
+                    <div class="background-option" onclick="selectBackground('black')">
+                        <div class="background-preview" style="background: black;"></div>
+                        <span>Черный</span>
+                    </div>
+                    <div class="background-option" onclick="selectBackground('gray')">
+                        <div class="background-preview" style="background: #f0f0f0;"></div>
+                        <span>Серый</span>
+                    </div>
                 </div>
                 
                 <div class="format-options">
                     <label class="format-option">
-                        <input type="checkbox" id="formatJPG" checked> JPG
+                        <input type="checkbox" id="formatPNG" checked> PNG
                     </label>
                     <label class="format-option">
-                        <input type="checkbox" id="formatPNG"> PNG
+                        <input type="checkbox" id="formatJPG"> JPG
                     </label>
                     <label class="format-option">
                         <input type="checkbox" id="formatWEBP"> WebP
                     </label>
                 </div>
+
+                <div class="preview-container" id="previewContainer">
+                    <!-- Превью будет генерироваться здесь -->
+                </div>
             </div>
 
             <div class="settings-section">
                 <h3>🎵 Настройки аудио</h3>
-                <select class="size-input" id="audioBitrate">
+                <div class="format-options">
+                    <label class="format-option">
+                        <input type="checkbox" id="audioMP3" checked> MP3
+                    </label>
+                    <label class="format-option">
+                        <input type="checkbox" id="audioOGG"> OGG
+                    </label>
+                </div>
+                <select class="size-input" id="audioBitrate" style="margin-top: 10px;">
                     <option value="128">128 kbps (стандарт)</option>
                     <option value="192" selected>192 kbps (качественно)</option>
                     <option value="256">256 kbps (премиум)</option>
@@ -369,18 +518,29 @@
 
             <div class="settings-section">
                 <h3>🎬 Настройки видео</h3>
-                <select class="size-input" id="videoResolution">
-                    <option value="640x360">640x360 (360p)</option>
-                    <option value="1280x720" selected>1280x720 (720p HD)</option>
-                    <option value="1920x1080">1920x1080 (1080p Full HD)</option>
-                    <option value="3840x2160">3840x2160 (4K Ultra HD)</option>
-                </select>
                 
-                <select class="size-input" id="videoQuality" style="margin-top: 10px;">
-                    <option value="low">Низкое (максимальное сжатие)</option>
-                    <option value="medium" selected>Стандартное</option>
-                    <option value="high">Высокое (оригинальное качество)</option>
-                </select>
+                <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
+                <div class="resolution-options">
+                    <div class="resolution-option selected" onclick="selectResolution('640x360')">
+                        <span>640×360px</span>
+                    </div>
+                    <div class="resolution-option" onclick="selectResolution('1280x720')">
+                        <span>1280×720px (HD)</span>
+                    </div>
+                    <div class="resolution-option" onclick="selectResolution('1920x1080')">
+                        <span>1920×1080px (Full HD)</span>
+                    </div>
+                </div>
+
+                <h4 style="margin: 15px 0 5px 0;">📹 Формат видео:</h4>
+                <div class="video-format-options">
+                    <div class="video-format-option selected" onclick="selectVideoFormat('mp4')">
+                        <span>MP4 (*.mp4)</span>
+                    </div>
+                    <div class="video-format-option" onclick="selectVideoFormat('ogg')">
+                        <span>OGG (*.ogg)</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -414,6 +574,9 @@
         let uploadedFiles = [];
         let processedFilesStorage = [];
         let isProcessing = false;
+        let selectedBackground = 'transparent';
+        let selectedVideoResolution = '640x360';
+        let selectedVideoFormat = 'mp4';
 
         // Инициализация
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
@@ -425,6 +588,7 @@
             uploadedFiles = Array.from(event.target.files);
             updateFileList();
             updateStats();
+            generatePreviews();
         }
 
         function setupDragAndDrop() {
@@ -445,6 +609,7 @@
                 uploadedFiles = Array.from(e.dataTransfer.files);
                 updateFileList();
                 updateStats();
+                generatePreviews();
             });
         }
 
@@ -477,6 +642,111 @@
             });
         }
 
+        function generatePreviews() {
+            const previewContainer = document.getElementById('previewContainer');
+            const sizes = document.getElementById('imageSizes').value.split(',').map(s => s.trim());
+            
+            previewContainer.innerHTML = '<h4 style="width: 100%; margin-bottom: 10px;">👁️ Предпросмотр размеров:</h4>';
+            
+            sizes.forEach(size => {
+                previewContainer.innerHTML += `
+                    <div class="preview-item">
+                        <div class="preview-image" style="background: ${getBackgroundColor()};" id="preview-${size}">
+                            <span style="color: #999; font-size: 0.7em;">${size}</span>
+                        </div>
+                        <div class="preview-label">${size}</div>
+                    </div>
+                `;
+            });
+
+            // Если есть изображения, показываем их в превью
+            if (uploadedFiles.length > 0) {
+                const firstImage = uploadedFiles[0];
+                if (getFileType(firstImage.name) === 'Изображение') {
+                    displayImageInPreviews(firstImage, sizes);
+                }
+            }
+        }
+
+        function displayImageInPreviews(imageFile, sizes) {
+            const img = new Image();
+            img.onload = function() {
+                sizes.forEach(size => {
+                    const [width, height] = size.split('x').map(Number);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Заполняем фон
+                    ctx.fillStyle = getBackgroundColor();
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    // Рассчитываем размеры для вписывания с сохранением пропорций
+                    const scale = Math.min(width / img.width, height / img.height) * 0.8;
+                    const newWidth = img.width * scale;
+                    const newHeight = img.height * scale;
+                    const x = (width - newWidth) / 2;
+                    const y = (height - newHeight) / 2;
+                    
+                    // Рисуем изображение
+                    ctx.drawImage(img, x, y, newWidth, newHeight);
+                    
+                    // Обновляем превью
+                    const previewElement = document.getElementById(`preview-${size}`);
+                    if (previewElement) {
+                        previewElement.innerHTML = '';
+                        previewElement.appendChild(canvas);
+                    }
+                });
+            };
+            img.src = URL.createObjectURL(imageFile);
+        }
+
+        function getBackgroundColor() {
+            switch(selectedBackground) {
+                case 'white': return 'white';
+                case 'black': return 'black';
+                case 'gray': return '#f0f0f0';
+                case 'transparent': 
+                default: return 'transparent';
+            }
+        }
+
+        function selectBackground(type) {
+            selectedBackground = type;
+            
+            // Обновляем визуальный выбор
+            document.querySelectorAll('.background-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Обновляем превью
+            generatePreviews();
+        }
+
+        function selectResolution(resolution) {
+            selectedVideoResolution = resolution;
+            
+            // Обновляем визуальный выбор
+            document.querySelectorAll('.resolution-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        function selectVideoFormat(format) {
+            selectedVideoFormat = format;
+            
+            // Обновляем визуальный выбор
+            document.querySelectorAll('.video-format-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
         function updateStats() {
             const statsInfo = document.getElementById('statsInfo');
             if (uploadedFiles.length === 0) {
@@ -506,13 +776,20 @@
                     const sizes = document.getElementById('imageSizes').value.split(',').map(s => s.trim());
                     const formats = [];
                     
-                    if (document.getElementById('formatJPG').checked) formats.push('jpg');
                     if (document.getElementById('formatPNG').checked) formats.push('png');
+                    if (document.getElementById('formatJPG').checked) formats.push('jpg');
                     if (document.getElementById('formatWEBP').checked) formats.push('webp');
                     
                     total += sizes.length * formats.length;
-                } else {
-                    total += 1; // По одному файлу для аудио и видео
+                } 
+                else if (fileType === 'Аудио') {
+                    const formats = [];
+                    if (document.getElementById('audioMP3').checked) formats.push('mp3');
+                    if (document.getElementById('audioOGG').checked) formats.push('ogg');
+                    total += formats.length;
+                }
+                else if (fileType === 'Видео') {
+                    total += 1; // Один файл на видео (выбранный формат)
                 }
             });
             
@@ -522,7 +799,7 @@
         function getFileType(filename) {
             if (filename.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)) return 'Изображение';
             if (filename.match(/\.(mp3|wav|flac|aac|ogg)$/i)) return 'Аудио';
-            if (filename.match(/\.(mp4|mov|avi|mkv|webm)$/i)) return 'Видео';
+            if (filename.match(/\.(mp4|mov|avi|mkv|webm|ogg)$/i)) return 'Видео';
             return 'Файл';
         }
 
@@ -540,20 +817,22 @@
             uploadedFiles.splice(index, 1);
             updateFileList();
             updateStats();
+            generatePreviews();
         }
 
         // Функции пресетов
         function loadPreset(presetName) {
             const presets = {
-                'social': '1200x630, 1080x1080, 1080x1920, 600x600',
-                'presentation': '1920x1080, 1280x720, 800x600',
-                'ads': '300x250, 728x90, 160x600, 1200x627',
-                'mobile': '400x400, 300x300, 200x200, 100x100'
+                'logos': '200x200, 400x400, 800x800',
+                'social': '1200x630, 1080x1080, 1080x1920',
+                'mobile': '400x400, 300x300, 200x200',
+                'print': '2480x3508, 1748x2480, 1240x1748'
             };
             
             if (presets[presetName]) {
                 document.getElementById('imageSizes').value = presets[presetName];
                 updateStats();
+                generatePreviews();
             }
         }
 
@@ -586,7 +865,6 @@
             result.classList.add('hidden');
             downloadSection.classList.add('hidden');
 
-            // Симуляция обработки
             const totalFiles = uploadedFiles.length;
             let processedFiles = 0;
 
@@ -597,14 +875,11 @@
                     const file = uploadedFiles[i];
                     const fileType = getFileType(file.name);
                     
-                    // Обновляем прогресс
                     processedFiles++;
                     progress.style.width = `${(processedFiles / totalFiles) * 100}%`;
                     
-                    // Обрабатываем файл в зависимости от типа
                     const processedFilesList = await processFile(file, fileType);
                     
-                    // Добавляем результаты в интерфейс
                     processedFilesList.forEach(processedFile => {
                         resultFiles.innerHTML += `
                             <div class="result-file">
@@ -616,14 +891,11 @@
                         `;
                     });
 
-                    // Небольшая задержка для реалистичности
                     await new Promise(resolve => setTimeout(resolve, 300));
                 }
 
-                // Завершаем прогресс
                 progress.style.width = '100%';
                 
-                // Показываем результат
                 setTimeout(() => {
                     result.classList.remove('hidden');
                     downloadSection.classList.remove('hidden');
@@ -652,41 +924,44 @@
                 const sizes = document.getElementById('imageSizes').value.split(',').map(s => s.trim());
                 const formats = [];
                 
-                if (document.getElementById('formatJPG').checked) formats.push('jpg');
                 if (document.getElementById('formatPNG').checked) formats.push('png');
+                if (document.getElementById('formatJPG').checked) formats.push('jpg');
                 if (document.getElementById('formatWEBP').checked) formats.push('webp');
 
-                // Обрабатываем каждый размер и формат
                 for (const size of sizes) {
                     const [width, height] = size.split('x').map(Number);
                     
                     for (const format of formats) {
                         try {
-                            const processedBlob = await resizeImage(file, width, height, format);
+                            const processedBlob = await resizeImageOnCanvas(file, width, height, format);
                             const fileName = `${baseName}_${size}.${format}`;
                             
-                            // Сохраняем файл для скачивания
                             saveProcessedFile(processedBlob, fileName);
                             processedFiles.push(fileName);
                         } catch (error) {
-                            console.error(`Ошибка обработки ${fileName}:`, error);
-                            processedFiles.push(`${fileName} (ошибка)`);
+                            console.error(`Ошибка обработки:`, error);
+                            processedFiles.push(`${baseName}_${size}.${format} (ошибка)`);
                         }
                     }
                 }
             }
             else if (fileType === 'Аудио') {
                 const bitrate = document.getElementById('audioBitrate').value;
-                const fileName = `${baseName}_${bitrate}kbps.mp3`;
-                // Для аудио просто сохраняем оригинал (в реальной версии здесь была бы конвертация)
-                saveProcessedFile(file, fileName);
-                processedFiles.push(fileName);
+                
+                // Обрабатываем выбранные форматы аудио
+                if (document.getElementById('audioMP3').checked) {
+                    const fileName = `${baseName}_${bitrate}kbps.mp3`;
+                    saveProcessedFile(file, fileName);
+                    processedFiles.push(fileName);
+                }
+                if (document.getElementById('audioOGG').checked) {
+                    const fileName = `${baseName}_${bitrate}kbps.ogg`;
+                    saveProcessedFile(file, fileName);
+                    processedFiles.push(fileName);
+                }
             }
             else if (fileType === 'Видео') {
-                const resolution = document.getElementById('videoResolution').value;
-                const quality = document.getElementById('videoQuality').value;
-                const fileName = `${baseName}_${resolution}_${quality}.mp4`;
-                // Для видео просто сохраняем оригинал
+                const fileName = `${baseName}_${selectedVideoResolution}.${selectedVideoFormat}`;
                 saveProcessedFile(file, fileName);
                 processedFiles.push(fileName);
             }
@@ -694,8 +969,8 @@
             return processedFiles;
         }
 
-        // Функция для реального изменения размера изображения
-        async function resizeImage(file, width, height, format) {
+        // Функция для размещения изображения на подложке с сохранением пропорций
+        async function resizeImageOnCanvas(file, width, height, format) {
             return new Promise((resolve, reject) => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -705,8 +980,19 @@
                 
                 const img = new Image();
                 img.onload = function() {
-                    // Рисуем изображение на canvas с новыми размерами
-                    ctx.drawImage(img, 0, 0, width, height);
+                    // Заполняем фон
+                    ctx.fillStyle = getBackgroundColor();
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    // Рассчитываем размеры для вписывания с сохранением пропорций
+                    const scale = Math.min(width / img.width, height / img.height) * 0.8;
+                    const newWidth = img.width * scale;
+                    const newHeight = img.height * scale;
+                    const x = (width - newWidth) / 2;
+                    const y = (height - newHeight) / 2;
+                    
+                    // Рисуем изображение по центру
+                    ctx.drawImage(img, x, y, newWidth, newHeight);
                     
                     // Конвертируем в нужный формат
                     canvas.toBlob((blob) => {
@@ -715,7 +1001,7 @@
                         } else {
                             reject(new Error('Не удалось обработать изображение'));
                         }
-                    }, `image/${format === 'jpg' ? 'jpeg' : format}`, 0.85);
+                    }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
                 };
                 
                 img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
@@ -751,27 +1037,22 @@
             }
 
             try {
-                // Создаем ZIP-архив
                 const zip = new JSZip();
                 
-                // Добавляем каждый файл в ZIP
                 processedFilesStorage.forEach(file => {
                     zip.file(file.name, file.blob);
                 });
                 
-                // Генерируем ZIP
                 const zipBlob = await zip.generateAsync({
                     type: 'blob',
                     compression: 'DEFLATE',
                     compressionOptions: { level: 6 }
                 });
                 
-                // Создаем ссылку для скачивания
                 const downloadLink = document.createElement('a');
                 downloadLink.href = URL.createObjectURL(zipBlob);
                 downloadLink.download = `processed_media_${new Date().getTime()}.zip`;
                 
-                // Автоматически кликаем по ссылке
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
                 document.body.removeChild(downloadLink);
@@ -782,11 +1063,16 @@
             }
         }
 
-        // Обновляем статистику при изменении настроек
-        document.getElementById('imageSizes').addEventListener('input', updateStats);
-        document.getElementById('formatJPG').addEventListener('change', updateStats);
+        // Обновляем при изменении настроек
+        document.getElementById('imageSizes').addEventListener('input', function() {
+            updateStats();
+            generatePreviews();
+        });
         document.getElementById('formatPNG').addEventListener('change', updateStats);
+        document.getElementById('formatJPG').addEventListener('change', updateStats);
         document.getElementById('formatWEBP').addEventListener('change', updateStats);
+        document.getElementById('audioMP3').addEventListener('change', updateStats);
+        document.getElementById('audioOGG').addEventListener('change', updateStats);
     </script>
 </body>
 </html>
