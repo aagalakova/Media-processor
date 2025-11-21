@@ -461,7 +461,7 @@
                 <h3>🏷️ Переименование файлов</h3>
                 <p style="color: #666; margin-bottom: 10px;">Введите новое имя для каждого файла в списке выше</p>
                 <div class="naming-example">
-                    Пример имен после обработки: <strong>logo_1200x600.png</strong>, <strong>banner_200x150.jpg</strong>
+                    Пример имен после обработки: <strong>logo.png</strong>, <strong>banner.jpg</strong>, <strong>image2.png</strong>
                 </div>
             </div>
 
@@ -846,7 +846,7 @@
                     processedFiles++;
                     progress.style.width = `${(processedFiles / totalFiles) * 100}%`;
                     
-                    const processedFilesList = await processFile(file, fileType);
+                    const processedFilesList = await processFile(file, fileType, i);
                     
                     processedFilesList.forEach(processedFile => {
                         resultFiles.innerHTML += `
@@ -884,7 +884,7 @@
         }
 
         // Функция обработки файла
-        async function processFile(file, fileType) {
+        async function processFile(file, fileType, index) {
             const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
             const processedFiles = [];
 
@@ -901,13 +901,14 @@
                     for (const format of formats) {
                         try {
                             const processedBlob = await resizeImageOnCanvas(file, width, height, format);
-                            const fileName = `${baseName}_${size}.${format}`;
+                            // Убираем размер из имени файла
+                            const fileName = `${baseName}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
                             processedFiles.push(fileName);
                         } catch (error) {
                             console.error(`Ошибка обработки:`, error);
-                            processedFiles.push(`${baseName}_${size}.${format} (ошибка)`);
+                            processedFiles.push(`${baseName}.${format} (ошибка)`);
                         }
                     }
                 }
