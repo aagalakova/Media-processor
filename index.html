@@ -182,15 +182,6 @@
             margin: 20px 0;
         }
 
-        .naming-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            font-size: 1em;
-            margin-bottom: 10px;
-        }
-
         .naming-example {
             color: #7f8c8d;
             font-size: 0.9em;
@@ -575,7 +566,7 @@
                 💾 Скачать все файлы (ZIP)
             </button>
             <p style="text-align: center; margin-top: 10px; color: #666;">
-                Будет скачан ZIP-архив со всеми обработанными файлами
+                Будет скачан ZIP-архив со всеми обработанных файлов
             </p>
         </div>
     </div>
@@ -596,10 +587,17 @@
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
-            uploadedFiles = Array.from(event.target.files);
-            // Устанавливаем исходные имена файлов как кастомные имена
+            const newFiles = Array.from(event.target.files);
+            // Сохраняем текущие кастомные имена
+            const currentCustomNames = {};
             uploadedFiles.forEach((file, index) => {
-                file.customName = file.name.replace(/\.[^/.]+$/, "");
+                currentCustomNames[file.name] = file.customName;
+            });
+            
+            uploadedFiles = newFiles;
+            // Восстанавливаем кастомные имена или устанавливаем исходные
+            uploadedFiles.forEach((file, index) => {
+                file.customName = currentCustomNames[file.name] || file.name.replace(/\.[^/.]+$/, "");
             });
             updateFileList();
             updateStats();
@@ -620,10 +618,17 @@
             dropZone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 dropZone.classList.remove('dragover');
-                uploadedFiles = Array.from(e.dataTransfer.files);
-                // Устанавливаем исходные имена файлов как кастомные имена
+                const newFiles = Array.from(e.dataTransfer.files);
+                // Сохраняем текущие кастомные имена
+                const currentCustomNames = {};
                 uploadedFiles.forEach((file, index) => {
-                    file.customName = file.name.replace(/\.[^/.]+$/, "");
+                    currentCustomNames[file.name] = file.customName;
+                });
+                
+                uploadedFiles = newFiles;
+                // Восстанавливаем кастомные имена или устанавливаем исходные
+                uploadedFiles.forEach((file, index) => {
+                    file.customName = currentCustomNames[file.name] || file.name.replace(/\.[^/.]+$/, "");
                 });
                 updateFileList();
                 updateStats();
@@ -658,7 +663,9 @@
                         </div>
                         <div class="file-rename">
                             <input type="text" class="rename-input" value="${file.customName}" 
-                                   placeholder="Введите новое имя" oninput="updateFileName(${index}, this.value)">
+                                   placeholder="Введите новое имя" 
+                                   oninput="updateFileName(${index}, this.value)"
+                                   onblur="updateFileName(${index}, this.value)">
                         </div>
                         <button onclick="removeFile(${index})" style="background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer;">×</button>
                     </div>
@@ -667,9 +674,9 @@
         }
 
         function updateFileName(index, newName) {
-            if (uploadedFiles[index]) {
-                uploadedFiles[index].customName = newName;
-                updateFileList();
+            if (uploadedFiles[index] && newName.trim() !== '') {
+                uploadedFiles[index].customName = newName.trim();
+                // Не вызываем updateFileList() здесь, чтобы не сбрасывать фокус
             }
         }
 
