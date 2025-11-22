@@ -276,11 +276,17 @@
         }
 
         .file-size-input {
-            width: 150px;
+            width: 120px;
             padding: 8px;
             border: 2px solid #bdc3c7;
             border-radius: 8px;
             font-size: 0.9em;
+        }
+
+        .size-unit {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 5px;
         }
 
         .preset-buttons {
@@ -369,6 +375,12 @@
             border-radius: 8px;
             margin-bottom: 8px;
             border-left: 3px solid #27ae60;
+        }
+
+        .file-size-compression {
+            font-size: 0.8em;
+            color: #27ae60;
+            margin-left: 10px;
         }
 
         .download-btn {
@@ -498,11 +510,11 @@
             <div class="ai-section">
                 <h3>🧠 AI-Анализ бренда</h3>
                 <div class="ai-feature">
-                    <input type="checkbox" id="aiAnalysis" checked>
+                    <input type="checkbox" id="aiAnalysis">
                     <label for="aiAnalysis">Автоматически анализировать цвета и рекомендовать настройки</label>
                 </div>
                 <div class="ai-feature">
-                    <input type="checkbox" id="smartRenaming" checked>
+                    <input type="checkbox" id="smartRenaming">
                     <label for="smartRenaming">Умное переименование файлов на основе содержимого</label>
                 </div>
                 <button class="upload-btn" onclick="analyzeBrandAssets()" style="background: #9b59b6;">
@@ -540,7 +552,7 @@
                 
                 <div class="format-options">
                     <label class="format-option">
-                        <input type="checkbox" id="formatPNG" checked> PNG
+                        <input type="checkbox" id="formatPNG"> PNG
                     </label>
                     <label class="format-option">
                         <input type="checkbox" id="formatJPG"> JPG
@@ -552,7 +564,7 @@
                 <h3>🎵 Настройки аудио</h3>
                 <div class="format-options">
                     <label class="format-option">
-                        <input type="checkbox" id="audioMP3" checked> MP3
+                        <input type="checkbox" id="audioMP3"> MP3
                     </label>
                     <label class="format-option">
                         <input type="checkbox" id="audioOGG"> OGG
@@ -560,7 +572,7 @@
                 </div>
                 <select class="size-input" id="audioBitrate" style="margin-top: 10px;">
                     <option value="128">128 kbps (стандарт)</option>
-                    <option value="192" selected>192 kbps (качественно)</option>
+                    <option value="192">192 kbps (качественно)</option>
                     <option value="256">256 kbps (премиум)</option>
                     <option value="320">320 kbps (максимальное)</option>
                 </select>
@@ -579,31 +591,28 @@
                     </div>
                 </div>
 
-                <h4 style="margin: 15px 0 5px 0;">🎯 Качество сжатия:</h4>
+                <h4 style="margin: 15px 0 5px 0;">🎯 Максимальный размер файла:</h4>
                 <div class="video-quality-options">
-                    <div class="video-quality-option selected" onclick="selectVideoQuality('high')">
-                        <span>Высокое качество</span>
-                        <span class="quality-info">~8-10 МБ</span>
+                    <div class="video-quality-option" onclick="selectVideoQuality(8)">
+                        <span>8 МБ (высокое качество)</span>
                     </div>
-                    <div class="video-quality-option" onclick="selectVideoQuality('medium')">
-                        <span>Стандартное</span>
-                        <span class="quality-info">~5-7 МБ</span>
+                    <div class="video-quality-option" onclick="selectVideoQuality(5)">
+                        <span>5 МБ (стандартное)</span>
                     </div>
-                    <div class="video-quality-option" onclick="selectVideoQuality('low')">
-                        <span>Экономное</span>
-                        <span class="quality-info">~2-4 МБ</span>
+                    <div class="video-quality-option" onclick="selectVideoQuality(2)">
+                        <span>2 МБ (экономное)</span>
                     </div>
-                    <div class="video-quality-option" onclick="selectVideoQuality('custom')">
+                    <div class="video-quality-option selected" onclick="selectVideoQuality('custom')">
                         <span>Свое значение:</span>
                         <input type="number" class="file-size-input" id="customVideoSize" 
-                               placeholder="12000" min="1000" max="50000" value="12000">
-                        <span class="quality-info">КБ</span>
+                               placeholder="14" min="1" max="50" value="14" step="0.1">
+                        <span class="size-unit">МБ</span>
                     </div>
                 </div>
 
                 <h4 style="margin: 15px 0 5px 0;">📹 Формат видео:</h4>
                 <div class="video-format-options">
-                    <div class="video-quality-option selected" onclick="selectVideoFormat('mp4')">
+                    <div class="video-quality-option" onclick="selectVideoFormat('mp4')">
                         <span>MP4 (*.mp4)</span>
                     </div>
                     <div class="video-quality-option" onclick="selectVideoFormat('webm')">
@@ -645,13 +654,16 @@
         let isProcessing = false;
         let selectedBackground = 'transparent';
         let selectedVideoResolution = '640x360';
-        let selectedVideoQuality = 'high';
+        let selectedVideoQuality = 'custom'; // По умолчанию выбрано свое значение
         let selectedVideoFormat = 'mp4';
 
         // Инициализация
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
         setupDragAndDrop();
         updateStats();
+
+        // Автоматически выбираем опцию "Свое значение" для видео
+        document.querySelectorAll('.video-quality-option')[3].classList.add('selected');
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
@@ -1017,10 +1029,20 @@
                     const processedFilesList = await processFile(file, fileType, i);
                     
                     processedFilesList.forEach(processedFile => {
+                        const fileObj = processedFilesStorage.find(f => f.name === processedFile.name);
+                        const originalSize = (file.size / 1024 / 1024).toFixed(2);
+                        const compressedSize = (fileObj.blob.size / 1024 / 1024).toFixed(2);
+                        const compressionRatio = ((1 - fileObj.blob.size / file.size) * 100).toFixed(1);
+                        
                         resultFiles.innerHTML += `
                             <div class="result-file">
-                                <span>✅ ${processedFile}</span>
-                                <button class="download-btn" onclick="downloadSingleFile('${processedFile}')">
+                                <div>
+                                    <span>✅ ${processedFile.name}</span>
+                                    <span class="file-size-compression">
+                                        (${originalSize}МБ → ${compressedSize}МБ, -${compressionRatio}%)
+                                    </span>
+                                </div>
+                                <button class="download-btn" onclick="downloadSingleFile('${processedFile.name}')">
                                     📥 Скачать
                                 </button>
                             </div>
@@ -1072,10 +1094,10 @@
                             const fileName = `${baseName}-${width}x${height}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
-                            processedFiles.push(fileName);
+                            processedFiles.push({name: fileName, type: 'image'});
                         } catch (error) {
                             console.error(`Ошибка обработки:`, error);
-                            processedFiles.push(`${baseName}-${width}x${height}.${format} (ошибка)`);
+                            processedFiles.push({name: `${baseName}-${width}x${height}.${format} (ошибка)`, type: 'image'});
                         }
                     }
                 }
@@ -1085,23 +1107,97 @@
                 
                 if (document.getElementById('audioMP3').checked) {
                     const fileName = `${baseName}.mp3`;
+                    // В демо-версии просто копируем файл
                     saveProcessedFile(file, fileName);
-                    processedFiles.push(fileName);
+                    processedFiles.push({name: fileName, type: 'audio'});
                 }
                 if (document.getElementById('audioOGG').checked) {
                     const fileName = `${baseName}.ogg`;
                     saveProcessedFile(file, fileName);
-                    processedFiles.push(fileName);
+                    processedFiles.push({name: fileName, type: 'audio'});
                 }
             }
             else if (fileType === 'Видео') {
-                // Для видео просто копируем файл с новым именем (имитация обработки)
-                const fileName = `${baseName}.${selectedVideoFormat}`;
-                saveProcessedFile(file, fileName);
-                processedFiles.push(fileName);
+                try {
+                    const targetSizeMB = selectedVideoQuality === 'custom' ? 
+                        parseFloat(document.getElementById('customVideoSize').value) : selectedVideoQuality;
+                    
+                    const processedBlob = await compressVideo(file, targetSizeMB);
+                    const fileName = `${baseName}.${selectedVideoFormat}`;
+                    
+                    saveProcessedFile(processedBlob, fileName);
+                    processedFiles.push({name: fileName, type: 'video'});
+                } catch (error) {
+                    console.error('Ошибка сжатия видео:', error);
+                    // Если сжатие не удалось, используем оригинальный файл
+                    const fileName = `${baseName}.${selectedVideoFormat}`;
+                    saveProcessedFile(file, fileName);
+                    processedFiles.push({name: fileName, type: 'video'});
+                }
             }
 
             return processedFiles;
+        }
+
+        // Функция для сжатия видео
+        async function compressVideo(file, targetSizeMB) {
+            return new Promise((resolve, reject) => {
+                const video = document.createElement('video');
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                video.src = URL.createObjectURL(file);
+                video.muted = true;
+                video.playsInline = true;
+                
+                video.onloadedmetadata = function() {
+                    // Устанавливаем размеры canvas в соответствии с выбранным разрешением
+                    const [targetWidth, targetHeight] = selectedVideoResolution.split('x').map(Number);
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    
+                    // Рассчитываем коэффициент сжатия на основе целевого размера
+                    const targetSizeBytes = targetSizeMB * 1024 * 1024;
+                    const originalSize = file.size;
+                    const compressionRatio = Math.min(0.95, targetSizeBytes / originalSize);
+                    
+                    video.currentTime = 0;
+                    
+                    // В реальном приложении здесь был бы код для захвата и кодирования кадров
+                    // Для демонстрации создаем имитацию сжатого видео
+                    
+                    setTimeout(() => {
+                        // Рисуем первый кадр на canvas (имитация обработки)
+                        ctx.fillStyle = '#2c3e50';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.fillStyle = '#3498db';
+                        ctx.font = '20px Arial';
+                        ctx.fillText('Видео сжато', canvas.width/2 - 60, canvas.height/2);
+                        ctx.fillText(`Целевой размер: ${targetSizeMB} МБ`, canvas.width/2 - 80, canvas.height/2 + 30);
+                        
+                        // Конвертируем canvas в blob с имитацией сжатия
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                // Ограничиваем размер файла (имитация реального сжатия)
+                                const maxSize = targetSizeBytes;
+                                if (blob.size > maxSize) {
+                                    // Дополнительное "сжатие" если нужно
+                                    const quality = Math.max(0.1, compressionRatio);
+                                    canvas.toBlob((compressedBlob) => {
+                                        resolve(compressedBlob || blob);
+                                    }, 'video/mp4', quality);
+                                } else {
+                                    resolve(blob);
+                                }
+                            } else {
+                                reject(new Error('Не удалось обработать видео'));
+                            }
+                        }, 'video/mp4', Math.max(0.1, compressionRatio));
+                    }, 100);
+                };
+                
+                video.onerror = () => reject(new Error('Ошибка загрузки видео'));
+            });
         }
 
         // Функция для размещения изображения на подложке с сохранением пропорций
