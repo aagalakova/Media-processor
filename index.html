@@ -6,6 +6,7 @@
     <title>Media Batch Processor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
+        /* Стили остаются такими же как в предыдущей версии */
         * {
             margin: 0;
             padding: 0;
@@ -476,6 +477,16 @@
             border-color: #27ae60;
             background: #d4edda;
         }
+
+        .warning-message {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #856404;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -581,6 +592,11 @@
             <div class="settings-section">
                 <h3>🎬 Настройки видео</h3>
                 
+                <div class="warning-message">
+                    ⚠️ <strong>Внимание:</strong> В демо-версии видео не перекодируются, а только переименовываются. 
+                    В реальной системе здесь будет использоваться FFmpeg или аналогичная библиотека для сжатия.
+                </div>
+                
                 <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
                 <div class="resolution-options">
                     <div class="resolution-option selected" onclick="selectResolution('640x360')">
@@ -598,9 +614,6 @@
                     </div>
                     <div class="video-quality-option" onclick="selectVideoQuality(5)">
                         <span>5 МБ (стандартное)</span>
-                    </div>
-                    <div class="video-quality-option" onclick="selectVideoQuality(2)">
-                        <span>2 МБ (экономное)</span>
                     </div>
                     <div class="video-quality-option selected" onclick="selectVideoQuality('custom')">
                         <span>Свое значение:</span>
@@ -654,7 +667,7 @@
         let isProcessing = false;
         let selectedBackground = 'transparent';
         let selectedVideoResolution = '640x360';
-        let selectedVideoQuality = 'custom'; // По умолчанию выбрано свое значение
+        let selectedVideoQuality = 'custom';
         let selectedVideoFormat = 'mp4';
 
         // Инициализация
@@ -663,26 +676,23 @@
         updateStats();
 
         // Автоматически выбираем опцию "Свое значение" для видео
-        document.querySelectorAll('.video-quality-option')[3].classList.add('selected');
+        document.querySelectorAll('.video-quality-option')[2].classList.add('selected');
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
             const newFiles = Array.from(event.target.files);
-            // Сохраняем текущие кастомные имена
             const currentCustomNames = {};
             uploadedFiles.forEach((file, index) => {
                 currentCustomNames[file.name] = file.customName;
             });
             
             uploadedFiles = newFiles;
-            // Восстанавливаем кастомные имена или устанавливаем исходные
             uploadedFiles.forEach((file, index) => {
                 file.customName = currentCustomNames[file.name] || file.name.replace(/\.[^/.]+$/, "");
             });
             updateFileList();
             updateStats();
             
-            // Автоматический AI-анализ если включен
             if (document.getElementById('aiAnalysis').checked) {
                 setTimeout(analyzeBrandAssets, 500);
             }
@@ -704,21 +714,18 @@
                 e.preventDefault();
                 dropZone.classList.remove('dragover');
                 const newFiles = Array.from(e.dataTransfer.files);
-                // Сохраняем текущие кастомные имена
                 const currentCustomNames = {};
                 uploadedFiles.forEach((file, index) => {
                     currentCustomNames[file.name] = file.customName;
                 });
                 
                 uploadedFiles = newFiles;
-                // Восстанавливаем кастомные имена или устанавливаем исходные
                 uploadedFiles.forEach((file, index) => {
                     file.customName = currentCustomNames[file.name] || file.name.replace(/\.[^/.]+$/, "");
                 });
                 updateFileList();
                 updateStats();
                 
-                // Автоматический AI-анализ если включен
                 if (document.getElementById('aiAnalysis').checked) {
                     setTimeout(analyzeBrandAssets, 500);
                 }
@@ -766,7 +773,6 @@
         function updateFileName(index, newName) {
             if (uploadedFiles[index] && newName.trim() !== '') {
                 uploadedFiles[index].customName = newName.trim();
-                // Не вызываем updateFileList() здесь, чтобы не сбрасывать фокус
             }
         }
 
@@ -779,7 +785,6 @@
                 return;
             }
 
-            // Имитация AI-анализа
             const analysis = {
                 dominantColors: ['#2c3e50', '#3498db', '#e74c3c'],
                 suggestedSizes: ['1200x630', '1080x1080', '800x400'],
@@ -788,10 +793,8 @@
                 estimatedTimeSave: '85%'
             };
             
-            // Применяем рекомендации
             document.getElementById('imageSizes').value = analysis.suggestedSizes.join(', ');
             
-            // Умное переименование если включено
             if (document.getElementById('smartRenaming').checked) {
                 uploadedFiles.forEach((file, index) => {
                     file.customName = generateSmartFilename(file.name, getFileType(file.name));
@@ -801,7 +804,6 @@
             
             updateStats();
             
-            // Показываем результаты анализа
             alert(`🎯 AI-анализ завершен!\n\nОсновные цвета: ${analysis.dominantColors.join(', ')}\nРекомендованные размеры: ${analysis.suggestedSizes.join(', ')}\nСтиль: ${analysis.brandStyle}\nЭкономия времени: ${analysis.estimatedTimeSave}`);
             
             return analysis;
@@ -810,7 +812,6 @@
         function generateSmartFilename(originalName, fileType) {
             const base = originalName.replace(/\.[^/.]+$/, "").toLowerCase();
             
-            // AI-логика для определения типа контента по имени файла
             if (base.includes('logo') || base.includes('logotype')) {
                 return 'brand-logo';
             } else if (base.includes('banner') || base.includes('header')) {
@@ -827,7 +828,6 @@
                 return 'brand-audio';
             }
             
-            // Генерация умного имени на основе типа файла
             const prefixes = {
                 'Изображение': 'image',
                 'Аудио': 'audio',
@@ -848,8 +848,6 @@
 
         function selectBackground(type) {
             selectedBackground = type;
-            
-            // Обновляем визуальный выбор
             document.querySelectorAll('.background-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
@@ -858,8 +856,6 @@
 
         function selectResolution(resolution) {
             selectedVideoResolution = resolution;
-            
-            // Обновляем визуальный выбор
             document.querySelectorAll('.resolution-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
@@ -868,8 +864,6 @@
 
         function selectVideoQuality(quality) {
             selectedVideoQuality = quality;
-            
-            // Обновляем визуальный выбор
             document.querySelectorAll('.video-quality-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
@@ -878,8 +872,6 @@
 
         function selectVideoFormat(format) {
             selectedVideoFormat = format;
-            
-            // Обновляем визуальный выбор
             document.querySelectorAll('.video-quality-option').forEach(opt => {
                 opt.classList.remove('selected');
             });
@@ -929,7 +921,7 @@
                     total += formats.length;
                 }
                 else if (fileType === 'Видео') {
-                    total += 1; // Одно видео на выходе
+                    total += 1;
                 }
             });
             
@@ -941,7 +933,7 @@
             const videoCount = uploadedFiles.filter(f => getFileType(f.name) === 'Видео').length;
             
             return {
-                timeSaved: Math.round((imageCount * 2 + videoCount * 10) * 0.85), // 85% экономии
+                timeSaved: Math.round((imageCount * 2 + videoCount * 10) * 0.85),
                 originalSize: uploadedFiles.reduce((sum, file) => sum + file.size, 0),
                 automationLevel: '85%'
             };
@@ -970,7 +962,6 @@
             updateStats();
         }
 
-        // Функции пресетов
         function loadPreset(presetName) {
             const presets = {
                 'standard': '1200x600, 200x150, 400x400',
@@ -1001,7 +992,6 @@
             processBtn.disabled = true;
             processBtn.innerHTML = '⏳ Обработка...';
 
-            // Очищаем предыдущие результаты
             processedFilesStorage = [];
             const progressBar = document.getElementById('progressBar');
             const progress = document.getElementById('progress');
@@ -1031,16 +1021,21 @@
                     processedFilesList.forEach(processedFile => {
                         const fileObj = processedFilesStorage.find(f => f.name === processedFile.name);
                         const originalSize = (file.size / 1024 / 1024).toFixed(2);
-                        const compressedSize = (fileObj.blob.size / 1024 / 1024).toFixed(2);
-                        const compressionRatio = ((1 - fileObj.blob.size / file.size) * 100).toFixed(1);
+                        const compressedSize = fileObj ? (fileObj.blob.size / 1024 / 1024).toFixed(2) : originalSize;
+                        const compressionRatio = fileObj ? ((1 - fileObj.blob.size / file.size) * 100).toFixed(1) : 0;
+                        
+                        let sizeInfo = '';
+                        if (fileType === 'Видео') {
+                            sizeInfo = `<span class="file-size-compression">(демо-версия: ${originalSize}МБ)</span>`;
+                        } else if (fileObj && fileObj.blob.size !== file.size) {
+                            sizeInfo = `<span class="file-size-compression">(${originalSize}МБ → ${compressedSize}МБ, -${compressionRatio}%)</span>`;
+                        }
                         
                         resultFiles.innerHTML += `
                             <div class="result-file">
                                 <div>
                                     <span>✅ ${processedFile.name}</span>
-                                    <span class="file-size-compression">
-                                        (${originalSize}МБ → ${compressedSize}МБ, -${compressionRatio}%)
-                                    </span>
+                                    ${sizeInfo}
                                 </div>
                                 <button class="download-btn" onclick="downloadSingleFile('${processedFile.name}')">
                                     📥 Скачать
@@ -1073,7 +1068,7 @@
             }
         }
 
-        // Функция обработки файла
+        // Функция обработки файла - ИСПРАВЛЕНА ГЕНЕРАЦИЯ ИМЕН
         async function processFile(file, fileType, index) {
             const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
             const processedFiles = [];
@@ -1091,23 +1086,21 @@
                     for (const format of formats) {
                         try {
                             const processedBlob = await resizeImageOnCanvas(file, width, height, format);
-                            const fileName = `${baseName}-${width}x${height}.${format}`;
+                            // УБРАЛ РАЗМЕРЫ ИЗ ИМЕНИ ФАЙЛА - теперь только базовое имя и формат
+                            const fileName = `${baseName}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
                             processedFiles.push({name: fileName, type: 'image'});
                         } catch (error) {
                             console.error(`Ошибка обработки:`, error);
-                            processedFiles.push({name: `${baseName}-${width}x${height}.${format} (ошибка)`, type: 'image'});
+                            processedFiles.push({name: `${baseName}.${format} (ошибка)`, type: 'image'});
                         }
                     }
                 }
             }
             else if (fileType === 'Аудио') {
-                const bitrate = document.getElementById('audioBitrate').value;
-                
                 if (document.getElementById('audioMP3').checked) {
                     const fileName = `${baseName}.mp3`;
-                    // В демо-версии просто копируем файл
                     saveProcessedFile(file, fileName);
                     processedFiles.push({name: fileName, type: 'audio'});
                 }
@@ -1118,86 +1111,13 @@
                 }
             }
             else if (fileType === 'Видео') {
-                try {
-                    const targetSizeMB = selectedVideoQuality === 'custom' ? 
-                        parseFloat(document.getElementById('customVideoSize').value) : selectedVideoQuality;
-                    
-                    const processedBlob = await compressVideo(file, targetSizeMB);
-                    const fileName = `${baseName}.${selectedVideoFormat}`;
-                    
-                    saveProcessedFile(processedBlob, fileName);
-                    processedFiles.push({name: fileName, type: 'video'});
-                } catch (error) {
-                    console.error('Ошибка сжатия видео:', error);
-                    // Если сжатие не удалось, используем оригинальный файл
-                    const fileName = `${baseName}.${selectedVideoFormat}`;
-                    saveProcessedFile(file, fileName);
-                    processedFiles.push({name: fileName, type: 'video'});
-                }
+                // В демо-версии просто переименовываем видео файл
+                const fileName = `${baseName}.${selectedVideoFormat}`;
+                saveProcessedFile(file, fileName);
+                processedFiles.push({name: fileName, type: 'video'});
             }
 
             return processedFiles;
-        }
-
-        // Функция для сжатия видео
-        async function compressVideo(file, targetSizeMB) {
-            return new Promise((resolve, reject) => {
-                const video = document.createElement('video');
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                
-                video.src = URL.createObjectURL(file);
-                video.muted = true;
-                video.playsInline = true;
-                
-                video.onloadedmetadata = function() {
-                    // Устанавливаем размеры canvas в соответствии с выбранным разрешением
-                    const [targetWidth, targetHeight] = selectedVideoResolution.split('x').map(Number);
-                    canvas.width = targetWidth;
-                    canvas.height = targetHeight;
-                    
-                    // Рассчитываем коэффициент сжатия на основе целевого размера
-                    const targetSizeBytes = targetSizeMB * 1024 * 1024;
-                    const originalSize = file.size;
-                    const compressionRatio = Math.min(0.95, targetSizeBytes / originalSize);
-                    
-                    video.currentTime = 0;
-                    
-                    // В реальном приложении здесь был бы код для захвата и кодирования кадров
-                    // Для демонстрации создаем имитацию сжатого видео
-                    
-                    setTimeout(() => {
-                        // Рисуем первый кадр на canvas (имитация обработки)
-                        ctx.fillStyle = '#2c3e50';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = '#3498db';
-                        ctx.font = '20px Arial';
-                        ctx.fillText('Видео сжато', canvas.width/2 - 60, canvas.height/2);
-                        ctx.fillText(`Целевой размер: ${targetSizeMB} МБ`, canvas.width/2 - 80, canvas.height/2 + 30);
-                        
-                        // Конвертируем canvas в blob с имитацией сжатия
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                // Ограничиваем размер файла (имитация реального сжатия)
-                                const maxSize = targetSizeBytes;
-                                if (blob.size > maxSize) {
-                                    // Дополнительное "сжатие" если нужно
-                                    const quality = Math.max(0.1, compressionRatio);
-                                    canvas.toBlob((compressedBlob) => {
-                                        resolve(compressedBlob || blob);
-                                    }, 'video/mp4', quality);
-                                } else {
-                                    resolve(blob);
-                                }
-                            } else {
-                                reject(new Error('Не удалось обработать видео'));
-                            }
-                        }, 'video/mp4', Math.max(0.1, compressionRatio));
-                    }, 100);
-                };
-                
-                video.onerror = () => reject(new Error('Ошибка загрузки видео'));
-            });
         }
 
         // Функция для размещения изображения на подложке с сохранением пропорций
@@ -1211,21 +1131,17 @@
                 
                 const img = new Image();
                 img.onload = function() {
-                    // Заполняем фон
                     ctx.fillStyle = getBackgroundColor();
                     ctx.fillRect(0, 0, width, height);
                     
-                    // Рассчитываем размеры для вписывания с сохранением пропорций
                     const scale = Math.min(width / img.width, height / img.height) * 0.8;
                     const newWidth = img.width * scale;
                     const newHeight = img.height * scale;
                     const x = (width - newWidth) / 2;
                     const y = (height - newHeight) / 2;
                     
-                    // Рисуем изображение по центру (без растягивания!)
                     ctx.drawImage(img, x, y, newWidth, newHeight);
                     
-                    // Конвертируем в нужный формат
                     canvas.toBlob((blob) => {
                         if (blob) {
                             resolve(blob);
