@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Batch Processor | Relation-AI</title>
+    <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         /* Стили остаются такими же как в предыдущей версии */
@@ -492,7 +492,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Media Batch Processor</h1>
+            <h1>🚀 MediaProcessor</h1>
             <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
         </div>
 
@@ -1068,7 +1068,7 @@
             }
         }
 
-        // Функция обработки файла - ИСПРАВЛЕНА ГЕНЕРАЦИЯ ИМЕН
+        // Функция обработки файла
         async function processFile(file, fileType, index) {
             const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
             const processedFiles = [];
@@ -1086,7 +1086,7 @@
                     for (const format of formats) {
                         try {
                             const processedBlob = await resizeImageOnCanvas(file, width, height, format);
-                            // УБРАЛ РАЗМЕРЫ ИЗ ИМЕНИ ФАЙЛА - теперь только базовое имя и формат
+                            // Простое имя файла без размеров
                             const fileName = `${baseName}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
