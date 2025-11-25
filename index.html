@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Media Processor | Relation-AI</title>
+    <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        /* Стили остаются такими же как в предыдущей версии */
+        /* Стили остаются такими же */
         * {
             margin: 0;
             padding: 0;
@@ -492,7 +492,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🚀 Media Processor</h1>
+            <h1>🚀 MediaProcessor</h1>
             <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
         </div>
 
@@ -536,13 +536,14 @@
             <div class="settings-section">
                 <h3>📷 Настройки изображений</h3>
                 <input type="text" class="size-input" id="imageSizes" 
-                       value="1200x600, 200x150, 400x400, 800x800" 
+                       value="1200x600, 800x400, 400x200" 
                        placeholder="Введите размеры через запятую">
                 
                 <div class="preset-buttons">
-                    <button class="preset-btn" onclick="loadPreset('standard')">Стандартные</button>
-                    <button class="preset-btn" onclick="loadPreset('social')">Соцсети</button>
-                    <button class="preset-btn" onclick="loadPreset('mobile')">Мобильные</button>
+                    <button class="preset-btn" onclick="loadPreset('creatives')">Креативы</button>
+                    <button class="preset-btn" onclick="loadPreset('vertical')">Вертикальные</button>
+                    <button class="preset-btn" onclick="loadPreset('logos')">Логотипы</button>
+                    <button class="preset-btn" onclick="loadPreset('icons')">Иконки</button>
                 </div>
 
                 <h4 style="margin: 20px 0 10px 0;">🎨 Фон подложки:</h4>
@@ -962,11 +963,13 @@
             updateStats();
         }
 
+        // Функции пресетов - ОБНОВЛЕНЫ
         function loadPreset(presetName) {
             const presets = {
-                'standard': '1200x600, 200x150, 400x400',
-                'social': '1200x630, 1080x1080, 1080x1920',
-                'mobile': '400x400, 300x300, 200x200'
+                'creatives': '1200x600, 800x400, 400x200',
+                'vertical': '1080x1920, 1080x1350, 800x1200',
+                'logos': '800x800, 400x400, 200x200',
+                'icons': '512x512, 256x256, 128x128, 64x64, 32x32'
             };
             
             if (presets[presetName]) {
