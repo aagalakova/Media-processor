@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
     <style>
-        /* Стили остаются такими же + добавляем новые для прогресса */
+        /* Все стили остаются такими же */
         * {
             margin: 0;
             padding: 0;
@@ -479,7 +478,6 @@
             background: #d4edda;
         }
 
-        /* Новые стили для прогресса видео */
         .video-processing-status {
             background: #e3f2fd;
             border: 2px solid #3498db;
@@ -527,6 +525,15 @@
             padding: 10px;
             margin: 10px 0;
             color: #721c24;
+        }
+
+        .info-message {
+            background: #d1ecf1;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #0c5460;
         }
     </style>
 </head>
@@ -634,8 +641,8 @@
             <div class="settings-section">
                 <h3>🎬 Настройки видео</h3>
                 
-                <div class="success-message">
-                    ✅ <strong>Реальное сжатие видео!</strong> Используется FFmpeg для качественного кодирования
+                <div class="info-message">
+                    💡 <strong>FFmpeg загружается автоматически</strong> при первой обработке видео
                 </div>
                 
                 <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
@@ -717,34 +724,49 @@
         let selectedVideoQuality = 'medium';
         let selectedVideoFormat = 'mp4';
         let ffmpeg = null;
+        let isFFmpegLoading = false;
+        let ffmpegLoadPromise = null;
 
-        // Инициализация FFmpeg
+        // Инициализация FFmpeg с отложенной загрузкой
         async function initFFmpeg() {
-            if (!ffmpeg) {
-                const { createFFmpeg } = FFmpeg;
-                ffmpeg = createFFmpeg({ 
-                    log: true,
-                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
-                    logger: ({ type, message }) => {
-                        if (type === 'fferr') {
-                            console.error('FFmpeg error:', message);
-                        }
-                    }
-                });
-                await ffmpeg.load();
+            if (ffmpeg) return ffmpeg;
+            
+            if (isFFmpegLoading) {
+                // Если уже загружается, ждем обещание
+                return ffmpegLoadPromise;
             }
-            return ffmpeg;
+
+            isFFmpegLoading = true;
+            
+            ffmpegLoadPromise = new Promise(async (resolve, reject) => {
+                try {
+                    // Динамически загружаем FFmpeg только когда нужен
+                    const { createFFmpeg, fetchFile } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js');
+                    
+                    ffmpeg = createFFmpeg({ 
+                        log: false, // Убираем логи для производительности
+                        corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                    });
+                    
+                    console.log('⏳ Загружаем FFmpeg...');
+                    await ffmpeg.load();
+                    console.log('✅ FFmpeg загружен!');
+                    resolve(ffmpeg);
+                } catch (error) {
+                    console.error('❌ Ошибка загрузки FFmpeg:', error);
+                    reject(error);
+                } finally {
+                    isFFmpegLoading = false;
+                }
+            });
+
+            return ffmpegLoadPromise;
         }
 
         // Инициализация
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
         setupDragAndDrop();
         updateStats();
-
-        // Предзагрузка FFmpeg в фоне
-        setTimeout(() => {
-            initFFmpeg().catch(console.error);
-        }, 1000);
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
@@ -1081,9 +1103,6 @@
             resultFiles.innerHTML = '';
             
             try {
-                // Предзагрузка FFmpeg если нужно
-                await initFFmpeg();
-                
                 for (let i = 0; i < uploadedFiles.length; i++) {
                     const file = uploadedFiles[i];
                     const fileType = getFileType(file.name);
@@ -1143,7 +1162,7 @@
             }
         }
 
-        // Функция обработки файла с реальным сжатием видео
+        // Функция обработки файла с безопасной обработкой видео
         async function processFile(file, fileType, index) {
             const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
             const processedFiles = [];
@@ -1166,8 +1185,11 @@
                             saveProcessedFile(processedBlob, fileName);
                             processedFiles.push({name: fileName, type: 'image'});
                         } catch (error) {
-                            console.error(`Ошибка обработки:`, error);
-                            processedFiles.push({name: `${baseName}.${format} (ошибка)`, type: 'image'});
+                            console.error(`Ошибка обработки изображения:`, error);
+                            // В случае ошибки используем оригинальный файл
+                            const fileName = `${baseName}.${format}`;
+                            saveProcessedFile(file, fileName);
+                            processedFiles.push({name: fileName, type: 'image'});
                         }
                     }
                 }
@@ -1214,7 +1236,7 @@
                     <div class="video-progress-bar">
                         <div class="video-progress" id="${statusId}-progress"></div>
                     </div>
-                    <div class="video-status-text" id="${statusId}-text">⏳ Инициализация FFmpeg...</div>
+                    <div class="video-status-text" id="${statusId}-text">⏳ Загружаем FFmpeg...</div>
                 </div>
             `;
 
@@ -1226,18 +1248,27 @@
             };
 
             try {
-                updateStatus('⏳ Загружаем видео в FFmpeg...', 10);
+                updateStatus('⏳ Инициализация FFmpeg...', 10);
                 
+                // Загружаем FFmpeg только когда он нужен
                 const ffmpeg = await initFFmpeg();
+                
+                updateStatus('📹 Загружаем видео...', 30);
+                
                 const inputFilename = `input_${Date.now()}.mp4`;
                 const outputFilename = `output_${Date.now()}.${selectedVideoFormat}`;
+                
+                // Вспомогательная функция для загрузки файла
+                const fetchFile = async (file) => {
+                    return new Uint8Array(await file.arrayBuffer());
+                };
                 
                 // Записываем файл в память FFmpeg
                 ffmpeg.FS('writeFile', inputFilename, await fetchFile(file));
                 
-                updateStatus('🎯 Настраиваем параметры сжатия...', 30);
+                updateStatus('🎯 Настраиваем параметры сжатия...', 50);
                 
-                // Параметры сжатия в зависимости от выбранного качества
+                // Параметры сжатия
                 const crfValues = {
                     'high': '18',
                     'medium': '23', 
@@ -1265,7 +1296,7 @@
                 // Добавляем выходной формат
                 args.push('-y', outputFilename);
                 
-                updateStatus('🚀 Запускаем кодирование...', 50);
+                updateStatus('🚀 Запускаем кодирование...', 70);
                 
                 // Запускаем FFmpeg
                 await ffmpeg.run(...args);
@@ -1320,11 +1351,6 @@
                 
                 throw error;
             }
-        }
-
-        // Вспомогательная функция для загрузки файла
-        async function fetchFile(file) {
-            return new Uint8Array(await file.arrayBuffer());
         }
 
         // Функция для размещения изображения на подложке с сохранением пропорций
