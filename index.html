@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
     <style>
-        /* Стили остаются такими же */
+        /* Стили остаются такими же + добавляем новые для прогресса */
         * {
             margin: 0;
             padding: 0;
@@ -478,14 +479,54 @@
             background: #d4edda;
         }
 
-        .warning-message {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
+        /* Новые стили для прогресса видео */
+        .video-processing-status {
+            background: #e3f2fd;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            text-align: center;
+        }
+
+        .video-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #ecf0f1;
+            border-radius: 4px;
+            margin: 10px 0;
+            overflow: hidden;
+        }
+
+        .video-progress {
+            height: 100%;
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .video-status-text {
+            font-size: 0.9em;
+            color: #2c3e50;
+            margin: 5px 0;
+        }
+
+        .success-message {
+            background: #d4edda;
+            border: 2px solid #27ae60;
             border-radius: 8px;
             padding: 10px;
             margin: 10px 0;
-            color: #856404;
-            font-size: 0.9em;
+            color: #155724;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #e74c3c;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            color: #721c24;
         }
     </style>
 </head>
@@ -593,9 +634,8 @@
             <div class="settings-section">
                 <h3>🎬 Настройки видео</h3>
                 
-                <div class="warning-message">
-                    ⚠️ <strong>Внимание:</strong> В демо-версии видео не перекодируются, а только переименовываются. 
-                    В реальной системе здесь будет использоваться FFmpeg или аналогичная библиотека для сжатия.
+                <div class="success-message">
+                    ✅ <strong>Реальное сжатие видео!</strong> Используется FFmpeg для качественного кодирования
                 </div>
                 
                 <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
@@ -606,27 +646,30 @@
                     <div class="resolution-option" onclick="selectResolution('854x480')">
                         <span>854×480px</span>
                     </div>
+                    <div class="resolution-option" onclick="selectResolution('1280x720')">
+                        <span>1280×720px (HD)</span>
+                    </div>
                 </div>
 
-                <h4 style="margin: 15px 0 5px 0;">🎯 Максимальный размер файла:</h4>
+                <h4 style="margin: 15px 0 5px 0;">🎯 Качество сжатия:</h4>
                 <div class="video-quality-options">
-                    <div class="video-quality-option" onclick="selectVideoQuality(8)">
-                        <span>8 МБ (высокое качество)</span>
+                    <div class="video-quality-option" onclick="selectVideoQuality('high')">
+                        <span>Высокое (CRF 18)</span>
+                        <span class="quality-info">~60% от оригинала</span>
                     </div>
-                    <div class="video-quality-option" onclick="selectVideoQuality(5)">
-                        <span>5 МБ (стандартное)</span>
+                    <div class="video-quality-option selected" onclick="selectVideoQuality('medium')">
+                        <span>Стандартное (CRF 23)</span>
+                        <span class="quality-info">~40% от оригинала</span>
                     </div>
-                    <div class="video-quality-option selected" onclick="selectVideoQuality('custom')">
-                        <span>Свое значение:</span>
-                        <input type="number" class="file-size-input" id="customVideoSize" 
-                               placeholder="14" min="1" max="50" value="14" step="0.1">
-                        <span class="size-unit">МБ</span>
+                    <div class="video-quality-option" onclick="selectVideoQuality('low')">
+                        <span>Экономное (CRF 28)</span>
+                        <span class="quality-info">~25% от оригинала</span>
                     </div>
                 </div>
 
                 <h4 style="margin: 15px 0 5px 0;">📹 Формат видео:</h4>
                 <div class="video-format-options">
-                    <div class="video-quality-option" onclick="selectVideoFormat('mp4')">
+                    <div class="video-quality-option selected" onclick="selectVideoFormat('mp4')">
                         <span>MP4 (*.mp4)</span>
                     </div>
                     <div class="video-quality-option" onclick="selectVideoFormat('webm')">
@@ -645,6 +688,9 @@
         <div class="progress-bar hidden" id="progressBar">
             <div class="progress" id="progress"></div>
         </div>
+
+        <!-- Контейнер для статуса обработки видео -->
+        <div id="videoProcessingContainer"></div>
 
         <div class="result hidden" id="result">
             <h3>✅ Обработка завершена!</h3>
@@ -668,16 +714,37 @@
         let isProcessing = false;
         let selectedBackground = 'transparent';
         let selectedVideoResolution = '640x360';
-        let selectedVideoQuality = 'custom';
+        let selectedVideoQuality = 'medium';
         let selectedVideoFormat = 'mp4';
+        let ffmpeg = null;
+
+        // Инициализация FFmpeg
+        async function initFFmpeg() {
+            if (!ffmpeg) {
+                const { createFFmpeg } = FFmpeg;
+                ffmpeg = createFFmpeg({ 
+                    log: true,
+                    corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js',
+                    logger: ({ type, message }) => {
+                        if (type === 'fferr') {
+                            console.error('FFmpeg error:', message);
+                        }
+                    }
+                });
+                await ffmpeg.load();
+            }
+            return ffmpeg;
+        }
 
         // Инициализация
         document.getElementById('fileInput').addEventListener('change', handleFileSelect);
         setupDragAndDrop();
         updateStats();
 
-        // Автоматически выбираем опцию "Свое значение" для видео
-        document.querySelectorAll('.video-quality-option')[2].classList.add('selected');
+        // Предзагрузка FFmpeg в фоне
+        setTimeout(() => {
+            initFFmpeg().catch(console.error);
+        }, 1000);
 
         // Функции для работы с файлами
         function handleFileSelect(event) {
@@ -963,7 +1030,7 @@
             updateStats();
         }
 
-        // Функции пресетов - ОБНОВЛЕНЫ
+        // Функции пресетов
         function loadPreset(presetName) {
             const presets = {
                 'creatives': '1200x600, 800x400, 400x200',
@@ -1001,10 +1068,12 @@
             const result = document.getElementById('result');
             const resultFiles = document.getElementById('resultFiles');
             const downloadSection = document.getElementById('downloadSection');
+            const videoContainer = document.getElementById('videoProcessingContainer');
             
             progressBar.classList.remove('hidden');
             result.classList.add('hidden');
             downloadSection.classList.add('hidden');
+            videoContainer.innerHTML = '';
 
             const totalFiles = uploadedFiles.length;
             let processedFiles = 0;
@@ -1012,6 +1081,9 @@
             resultFiles.innerHTML = '';
             
             try {
+                // Предзагрузка FFmpeg если нужно
+                await initFFmpeg();
+                
                 for (let i = 0; i < uploadedFiles.length; i++) {
                     const file = uploadedFiles[i];
                     const fileType = getFileType(file.name);
@@ -1028,8 +1100,8 @@
                         const compressionRatio = fileObj ? ((1 - fileObj.blob.size / file.size) * 100).toFixed(1) : 0;
                         
                         let sizeInfo = '';
-                        if (fileType === 'Видео') {
-                            sizeInfo = `<span class="file-size-compression">(демо-версия: ${originalSize}МБ)</span>`;
+                        if (fileType === 'Видео' && fileObj && fileObj.blob.size !== file.size) {
+                            sizeInfo = `<span class="file-size-compression">(${originalSize}МБ → ${compressedSize}МБ, -${compressionRatio}%)</span>`;
                         } else if (fileObj && fileObj.blob.size !== file.size) {
                             sizeInfo = `<span class="file-size-compression">(${originalSize}МБ → ${compressedSize}МБ, -${compressionRatio}%)</span>`;
                         }
@@ -1047,7 +1119,7 @@
                         `;
                     });
 
-                    await new Promise(resolve => setTimeout(resolve, 300));
+                    await new Promise(resolve => setTimeout(resolve, 100));
                 }
 
                 progress.style.width = '100%';
@@ -1071,7 +1143,7 @@
             }
         }
 
-        // Функция обработки файла
+        // Функция обработки файла с реальным сжатием видео
         async function processFile(file, fileType, index) {
             const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
             const processedFiles = [];
@@ -1089,7 +1161,6 @@
                     for (const format of formats) {
                         try {
                             const processedBlob = await resizeImageOnCanvas(file, width, height, format);
-                            // Простое имя файла без размеров
                             const fileName = `${baseName}.${format}`;
                             
                             saveProcessedFile(processedBlob, fileName);
@@ -1114,13 +1185,146 @@
                 }
             }
             else if (fileType === 'Видео') {
-                // В демо-версии просто переименовываем видео файл
-                const fileName = `${baseName}.${selectedVideoFormat}`;
-                saveProcessedFile(file, fileName);
-                processedFiles.push({name: fileName, type: 'video'});
+                try {
+                    const compressedBlob = await compressVideoWithFFmpeg(file, baseName);
+                    const fileName = `${baseName}.${selectedVideoFormat}`;
+                    
+                    saveProcessedFile(compressedBlob, fileName);
+                    processedFiles.push({name: fileName, type: 'video'});
+                } catch (error) {
+                    console.error('Ошибка сжатия видео:', error);
+                    // В случае ошибки используем оригинальный файл
+                    const fileName = `${baseName}.${selectedVideoFormat}`;
+                    saveProcessedFile(file, fileName);
+                    processedFiles.push({name: fileName, type: 'video'});
+                }
             }
 
             return processedFiles;
+        }
+
+        // Реальное сжатие видео с FFmpeg
+        async function compressVideoWithFFmpeg(file, baseName) {
+            const container = document.getElementById('videoProcessingContainer');
+            const statusId = `video-status-${Date.now()}`;
+            
+            container.innerHTML += `
+                <div class="video-processing-status" id="${statusId}">
+                    <div class="video-status-text">🎬 Обрабатываем видео: ${baseName}</div>
+                    <div class="video-progress-bar">
+                        <div class="video-progress" id="${statusId}-progress"></div>
+                    </div>
+                    <div class="video-status-text" id="${statusId}-text">⏳ Инициализация FFmpeg...</div>
+                </div>
+            `;
+
+            const updateStatus = (text, progress = 0) => {
+                const textElement = document.getElementById(`${statusId}-text`);
+                const progressElement = document.getElementById(`${statusId}-progress`);
+                if (textElement) textElement.textContent = text;
+                if (progressElement) progressElement.style.width = `${progress}%`;
+            };
+
+            try {
+                updateStatus('⏳ Загружаем видео в FFmpeg...', 10);
+                
+                const ffmpeg = await initFFmpeg();
+                const inputFilename = `input_${Date.now()}.mp4`;
+                const outputFilename = `output_${Date.now()}.${selectedVideoFormat}`;
+                
+                // Записываем файл в память FFmpeg
+                ffmpeg.FS('writeFile', inputFilename, await fetchFile(file));
+                
+                updateStatus('🎯 Настраиваем параметры сжатия...', 30);
+                
+                // Параметры сжатия в зависимости от выбранного качества
+                const crfValues = {
+                    'high': '18',
+                    'medium': '23', 
+                    'low': '28'
+                };
+                
+                const crf = crfValues[selectedVideoQuality] || '23';
+                const [width, height] = selectedVideoResolution.split('x');
+                
+                // Аргументы для FFmpeg
+                const args = [
+                    '-i', inputFilename,
+                    '-c:v', 'libx264',
+                    '-crf', crf,
+                    '-preset', 'medium',
+                    '-c:a', 'aac',
+                    '-b:a', '128k',
+                ];
+                
+                // Добавляем изменение разрешения если нужно
+                if (selectedVideoResolution !== 'original') {
+                    args.push('-vf', `scale=${width}:${height}`);
+                }
+                
+                // Добавляем выходной формат
+                args.push('-y', outputFilename);
+                
+                updateStatus('🚀 Запускаем кодирование...', 50);
+                
+                // Запускаем FFmpeg
+                await ffmpeg.run(...args);
+                
+                updateStatus('✅ Извлекаем результат...', 90);
+                
+                // Читаем результат
+                const data = ffmpeg.FS('readFile', outputFilename);
+                const compressedBlob = new Blob([data.buffer], { type: `video/${selectedVideoFormat}` });
+                
+                // Очищаем файлы из памяти
+                ffmpeg.FS('unlink', inputFilename);
+                ffmpeg.FS('unlink', outputFilename);
+                
+                updateStatus('🎉 Видео успешно сжато!', 100);
+                
+                // Показываем статистику сжатия
+                const originalSize = (file.size / 1024 / 1024).toFixed(2);
+                const compressedSize = (compressedBlob.size / 1024 / 1024).toFixed(2);
+                const compressionRatio = ((1 - compressedBlob.size / file.size) * 100).toFixed(1);
+                
+                setTimeout(() => {
+                    const statusElement = document.getElementById(statusId);
+                    if (statusElement) {
+                        statusElement.innerHTML = `
+                            <div class="success-message">
+                                ✅ <strong>${baseName}</strong> - Успешно сжато!<br>
+                                📊 ${originalSize}МБ → ${compressedSize}МБ (экономия ${compressionRatio}%)<br>
+                                🎯 Качество: ${selectedVideoQuality}, Разрешение: ${selectedVideoResolution}
+                            </div>
+                        `;
+                    }
+                }, 1000);
+                
+                return compressedBlob;
+                
+            } catch (error) {
+                console.error('FFmpeg error:', error);
+                updateStatus('❌ Ошибка при обработке видео', 0);
+                
+                setTimeout(() => {
+                    const statusElement = document.getElementById(statusId);
+                    if (statusElement) {
+                        statusElement.innerHTML = `
+                            <div class="error-message">
+                                ❌ <strong>${baseName}</strong> - Ошибка обработки<br>
+                                ${error.message}
+                            </div>
+                        `;
+                    }
+                }, 1000);
+                
+                throw error;
+            }
+        }
+
+        // Вспомогательная функция для загрузки файла
+        async function fetchFile(file) {
+            return new Uint8Array(await file.arrayBuffer());
         }
 
         // Функция для размещения изображения на подложке с сохранением пропорций
