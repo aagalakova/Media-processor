@@ -851,11 +851,11 @@
                 <div class="resize-mode-options">
                     <div class="resize-mode-option selected" data-mode="fit">
                         <span>Вписать в рамку</span>
-                        <span class="mode-description">+ подложка</span>
+                        <span class="mode-description">+ подложка (пропорционально)</span>
                     </div>
                     <div class="resize-mode-option" data-mode="resize">
                         <span>Изменить размер</span>
-                        <span class="mode-description">без подложки</span>
+                        <span class="mode-description">пропорционально, без подложки</span>
                     </div>
                     <div class="resize-mode-option" data-mode="crop">
                         <span>Обрезать</span>
@@ -1223,20 +1223,20 @@
                             
                             switch (settings.selectedResizeMode) {
                                 case 'resize':
-                                    processedBlob = await ImageProcessor.resizeImageDirect(file, width, height, format);
+                                    processedBlob = await ImageProcessor.resizeImageProportional(file, width, height, format);
                                     break;
                                 case 'crop':
                                     processedBlob = await ImageProcessor.cropImage(file, width, height, format);
                                     break;
                                 case 'fit':
                                 default:
-                                    processedBlob = await ImageProcessor.resizeImageOnCanvas(
+                                    processedBlob = await ImageProcessor.fitImageWithBackground(
                                         file, width, height, format, settings.getBackgroundColor()
                                     );
                                     break;
                             }
                             
-                            // ИСПРАВЛЕНИЕ: Простое имя без размеров
+                            // Простое имя без размеров
                             const fileName = this.generateFileName(baseName, format, 'image', file.name);
                             processedFiles.push({
                                 blob: processedBlob,
@@ -1800,8 +1800,131 @@
             }
         }
 
+        // ===============================
+        // ОБРАБОТКА ИЗОБРАЖЕНИЙ С ПРОПОРЦИОНАЛЬНЫМ ИЗМЕНЕНИЕМ
+        // ===============================
+        class ImageProcessor {
+            // Пропорциональное изменение размера без подложки
+            static async resizeImageProportional(file, targetWidth, targetHeight, format) {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    const img = new Image();
+                    img.onload = function() {
+                        // Рассчитываем пропорциональные размеры
+                        const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
+                        const newWidth = Math.round(img.width * scale);
+                        const newHeight = Math.round(img.height * scale);
+                        
+                        canvas.width = newWidth;
+                        canvas.height = newHeight;
+                        
+                        // Рисуем изображение с сохранением пропорций
+                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Не удалось обработать изображение'));
+                            }
+                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
+                    };
+                    
+                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
+                    img.src = URL.createObjectURL(file);
+                });
+            }
+
+            // Вписать в рамку с подложкой (пропорционально)
+            static async fitImageWithBackground(file, targetWidth, targetHeight, format, backgroundColor) {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    
+                    const img = new Image();
+                    img.onload = function() {
+                        // Заполняем фон (если не прозрачный)
+                        if (backgroundColor !== 'transparent') {
+                            ctx.fillStyle = backgroundColor;
+                            ctx.fillRect(0, 0, targetWidth, targetHeight);
+                        }
+                        
+                        // Рассчитываем пропорциональные размеры для вписывания
+                        const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
+                        const newWidth = Math.round(img.width * scale);
+                        const newHeight = Math.round(img.height * scale);
+                        
+                        // Центрируем изображение
+                        const x = (targetWidth - newWidth) / 2;
+                        const y = (targetHeight - newHeight) / 2;
+                        
+                        // Рисуем изображение по центру с сохранением пропорций
+                        ctx.drawImage(img, x, y, newWidth, newHeight);
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Не удалось обработать изображение'));
+                            }
+                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
+                    };
+                    
+                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
+                    img.src = URL.createObjectURL(file);
+                });
+            }
+
+            // Обрезка изображения
+            static async cropImage(file, targetWidth, targetHeight, format) {
+                return new Promise((resolve, reject) => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    canvas.width = targetWidth;
+                    canvas.height = targetHeight;
+                    
+                    const img = new Image();
+                    img.onload = function() {
+                        // Рассчитываем масштаб для обрезки по центру
+                        const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
+                        const scaledWidth = img.width * scale;
+                        const scaledHeight = img.height * scale;
+                        
+                        // Центрируем и обрезаем
+                        const x = (scaledWidth - targetWidth) / 2 / scale;
+                        const y = (scaledHeight - targetHeight) / 2 / scale;
+                        
+                        ctx.drawImage(
+                            img, 
+                            x, y, 
+                            targetWidth / scale, targetHeight / scale,
+                            0, 0,
+                            targetWidth, targetHeight
+                        );
+                        
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(blob);
+                            } else {
+                                reject(new Error('Не удалось обработать изображение'));
+                            }
+                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
+                    };
+                    
+                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
+                    img.src = URL.createObjectURL(file);
+                });
+            }
+        }
+
         // Остальные класссы остаются без изменений...
-        // FileValidator, ThumbnailGenerator, MediaProcessor, ImageProcessor, 
+        // FileValidator, ThumbnailGenerator, MediaProcessor, 
         // AIService, FileUtils, FileDownloader, UIManager, Logger
 
         // ===============================
@@ -1921,113 +2044,6 @@
 
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
-            }
-        }
-
-        // ===============================
-        // ОБРАБОТКА ИЗОБРАЖЕНИЙ
-        // ===============================
-        class ImageProcessor {
-            static async resizeImageDirect(file, width, height, format) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Не удалось обработать изображение'));
-                            }
-                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-                    img.src = URL.createObjectURL(file);
-                });
-            }
-
-            static async cropImage(file, width, height, format) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        const scale = Math.max(width / img.width, height / img.height);
-                        const scaledWidth = img.width * scale;
-                        const scaledHeight = img.height * scale;
-                        
-                        const x = (scaledWidth - width) / 2 / scale;
-                        const y = (scaledHeight - height) / 2 / scale;
-                        
-                        ctx.drawImage(
-                            img, 
-                            x, y, 
-                            width / scale, height / scale,
-                            0, 0,
-                            width, height
-                        );
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Не удалось обработать изображение'));
-                            }
-                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-                    img.src = URL.createObjectURL(file);
-                });
-            }
-
-            static async resizeImageOnCanvas(file, width, height, format, backgroundColor) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        if (backgroundColor !== 'transparent') {
-                            ctx.fillStyle = backgroundColor;
-                            ctx.fillRect(0, 0, width, height);
-                        }
-                        
-                        const scale = Math.min(width / img.width, height / img.height) * 0.8;
-                        const newWidth = img.width * scale;
-                        const newHeight = img.height * scale;
-                        const x = (width - newWidth) / 2;
-                        const y = (height - newHeight) / 2;
-                        
-                        ctx.drawImage(img, x, y, newWidth, newHeight);
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Не удалось обработать изображение'));
-                            }
-                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-                    img.src = URL.createObjectURL(file);
-                });
             }
         }
 
