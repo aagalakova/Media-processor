@@ -6,7 +6,6 @@
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        /* Стили остаются без изменений */
         * {
             margin: 0;
             padding: 0;
@@ -1231,7 +1230,7 @@
                                 case 'fit':
                                 default:
                                     processedBlob = await ImageProcessor.fitImageWithBackground(
-                                        file, width, height, format, settings.getBackgroundColor()
+                                        file, width, height, format, this.getBackgroundColor(format)
                                     );
                                     break;
                             }
@@ -1769,7 +1768,12 @@
                 if (save) this.saveSettings();
             }
 
-            getBackgroundColor() {
+            getBackgroundColor(format) {
+                // Для JPG формата всегда используем белый фон
+                if (format === 'jpg') {
+                    return 'white';
+                }
+                
                 switch(this.settings.selectedBackground) {
                     case 'white': return 'white';
                     case 'gray': return '#f0f0f0';
@@ -1823,13 +1827,16 @@
                         // Рисуем изображение с сохранением пропорций
                         ctx.drawImage(img, 0, 0, newWidth, newHeight);
                         
+                        const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+                        const quality = format === 'jpg' ? 0.9 : 1;
+                        
                         canvas.toBlob((blob) => {
                             if (blob) {
                                 resolve(blob);
                             } else {
                                 reject(new Error('Не удалось обработать изображение'));
                             }
-                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
+                        }, mimeType, quality);
                     };
                     
                     img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
@@ -1848,8 +1855,11 @@
                     
                     const img = new Image();
                     img.onload = function() {
-                        // Заполняем фон (если не прозрачный)
-                        if (backgroundColor !== 'transparent') {
+                        // Для прозрачного фона - очищаем canvas
+                        if (backgroundColor === 'transparent') {
+                            ctx.clearRect(0, 0, targetWidth, targetHeight);
+                        } else {
+                            // Для цветного фона - заливаем выбранным цветом
                             ctx.fillStyle = backgroundColor;
                             ctx.fillRect(0, 0, targetWidth, targetHeight);
                         }
@@ -1866,13 +1876,17 @@
                         // Рисуем изображение по центру с сохранением пропорций
                         ctx.drawImage(img, x, y, newWidth, newHeight);
                         
+                        // Для JPG формата всегда используем белый фон, даже если выбран прозрачный
+                        const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+                        const quality = format === 'jpg' ? 0.9 : 1;
+                        
                         canvas.toBlob((blob) => {
                             if (blob) {
                                 resolve(blob);
                             } else {
                                 reject(new Error('Не удалось обработать изображение'));
                             }
-                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
+                        }, mimeType, quality);
                     };
                     
                     img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
@@ -1908,13 +1922,16 @@
                             targetWidth, targetHeight
                         );
                         
+                        const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
+                        const quality = format === 'jpg' ? 0.9 : 1;
+                        
                         canvas.toBlob((blob) => {
                             if (blob) {
                                 resolve(blob);
                             } else {
                                 reject(new Error('Не удалось обработать изображение'));
                             }
-                        }, `image/${format === 'jpg' ? 'jpeg' : format}`, format === 'png' ? 1 : 0.9);
+                        }, mimeType, quality);
                     };
                     
                     img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
@@ -1922,10 +1939,6 @@
                 });
             }
         }
-
-        // Остальные класссы остаются без изменений...
-        // FileValidator, ThumbnailGenerator, MediaProcessor, 
-        // AIService, FileUtils, FileDownloader, UIManager, Logger
 
         // ===============================
         // ВАЛИДАЦИЯ ФАЙЛОВ
