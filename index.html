@@ -357,20 +357,6 @@
             margin-left: auto;
         }
 
-        .file-size-input {
-            width: 120px;
-            padding: 8px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            font-size: 0.9em;
-        }
-
-        .size-unit {
-            font-size: 0.8em;
-            color: #666;
-            margin-left: 5px;
-        }
-
         .preset-buttons {
             display: flex;
             gap: 10px;
@@ -406,6 +392,174 @@
             align-items: center;
             gap: 10px;
             margin: 10px 0;
+        }
+
+        /* AI СОВЕТНИК СТИЛИ */
+        .ai-advisor-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .ai-advisor-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .ai-tip {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #27ae60;
+        }
+
+        .ai-tip-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .ai-tip-content {
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+
+        .ai-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .ai-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .ai-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .ai-btn.secondary {
+            background: rgba(39, 174, 96, 0.3);
+            border-color: rgba(39, 174, 96, 0.5);
+        }
+
+        .ai-results {
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .ai-stats {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+
+        .ai-tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .ai-tip-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px 15px;
+            border-left: 3px solid #3498db;
+            animation: slideIn 0.3s ease;
+        }
+
+        .ai-tip-item:nth-child(2n) {
+            border-left-color: #9b59b6;
+        }
+
+        .ai-tip-item:nth-child(3n) {
+            border-left-color: #e74c3c;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 5px;
+            margin: 10px 0;
+        }
+
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .color-swatch::after {
+            content: attr(data-hex);
+            position: absolute;
+            bottom: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .color-swatch:hover::after {
+            opacity: 1;
+        }
+
+        .image-analysis-result {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .analysis-technical {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .tech-item {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .tech-value {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #27ae60;
         }
 
         .process-btn {
@@ -559,149 +713,6 @@
             background: #d4edda;
         }
 
-        .video-processing-status {
-            background: #e3f2fd;
-            border: 2px solid #3498db;
-            border-radius: 10px;
-            padding: 15px;
-            margin: 10px 0;
-            text-align: center;
-        }
-
-        .video-progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #ecf0f1;
-            border-radius: 4px;
-            margin: 10px 0;
-            overflow: hidden;
-        }
-
-        .video-progress {
-            height: 100%;
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .video-status-text {
-            font-size: 0.9em;
-            color: #2c3e50;
-            margin: 5px 0;
-        }
-
-        .success-message {
-            background: #d4edda;
-            border: 2px solid #27ae60;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            color: #155724;
-        }
-
-        .error-message {
-            background: #f8d7da;
-            border: 2px solid #e74c3c;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            color: #721c24;
-        }
-
-        .info-message {
-            background: #d1ecf1;
-            border: 2px solid #3498db;
-            border-radius: 8px;
-            padding: 10px;
-            margin: 10px 0;
-            color: #0c5460;
-        }
-
-        .resize-mode-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .resize-mode-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .resize-mode-option:hover {
-            border-color: #3498db;
-            background: #e3f2fd;
-        }
-
-        .resize-mode-option.selected {
-            border-color: #27ae60;
-            background: #d4edda;
-        }
-
-        .mode-description {
-            font-size: 0.8em;
-            color: #666;
-            margin-left: 10px;
-        }
-
-        .file-progress {
-            margin: 10px 0;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-        }
-
-        .file-progress .progress-bar {
-            height: 4px;
-            margin: 5px 0;
-        }
-
-        .file-thumbnail {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-
-        .cancel-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-
-        .cancel-btn:hover {
-            background: #c0392b;
-        }
-
-        .file-validation-error {
-            color: #e74c3c;
-            font-size: 0.8em;
-            margin-top: 2px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
-        }
-
-        .empty-state .upload-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-
         .checkbox-controls {
             display: flex;
             gap: 10px;
@@ -752,6 +763,85 @@
             align-items: center;
             gap: 8px;
             margin: 8px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .empty-state .upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        .file-thumbnail {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        .cancel-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .cancel-btn:hover {
+            background: #c0392b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Адаптивность для мобильных */
+        @media (max-width: 768px) {
+            .ai-actions {
+                flex-direction: column;
+            }
+            
+            .ai-btn {
+                flex: none;
+            }
+            
+            .analysis-technical {
+                grid-template-columns: 1fr 1fr;
+            }
+            
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            
+            .file-rename {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .rename-input {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -809,6 +899,36 @@
                 </div>
             </div>
 
+            <!-- AI СОВЕТНИК -->
+            <div class="ai-advisor-section">
+                <h3>🧠 AI-Советник</h3>
+                <div class="ai-advisor-card">
+                    <div class="ai-tip" id="aiTip">
+                        <div class="ai-tip-header">
+                            <span class="ai-icon">💡</span>
+                            <strong>Советник готов к работе</strong>
+                        </div>
+                        <div class="ai-tip-content">
+                            Загрузите файлы для получения персональных рекомендаций по оптимизации
+                        </div>
+                    </div>
+                    
+                    <div class="ai-actions">
+                        <button class="ai-btn" onclick="appState.getAIAdvice()" id="aiAdviceBtn">
+                            🤖 Получить советы
+                        </button>
+                        <button class="ai-btn secondary" onclick="appState.analyzeAllImages()" id="analyzeImagesBtn">
+                            🎨 Анализ изображений
+                        </button>
+                    </div>
+                    
+                    <div class="ai-results hidden" id="aiResults">
+                        <div class="ai-stats" id="aiStats"></div>
+                        <div class="ai-tips-list" id="aiTipsList"></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- AI Секция -->
             <div class="ai-section">
                 <h3>🧠 AI-Анализ бренда</h3>
@@ -846,38 +966,6 @@
                     <button class="preset-btn" onclick="appState.loadPreset('icons')">Иконки</button>
                 </div>
 
-                <h4 style="margin: 20px 0 10px 0;">🔧 Режим изменения размера:</h4>
-                <div class="resize-mode-options">
-                    <div class="resize-mode-option selected" data-mode="fit">
-                        <span>Вписать в рамку</span>
-                        <span class="mode-description">+ подложка (пропорционально)</span>
-                    </div>
-                    <div class="resize-mode-option" data-mode="resize">
-                        <span>Изменить размер</span>
-                        <span class="mode-description">пропорционально, без подложки</span>
-                    </div>
-                    <div class="resize-mode-option" data-mode="crop">
-                        <span>Обрезать</span>
-                        <span class="mode-description">центрированно</span>
-                    </div>
-                </div>
-
-                <h4 style="margin: 20px 0 10px 0;">🎨 Фон подложки (только для режима "Вписать в рамку"):</h4>
-                <div class="background-options">
-                    <div class="background-option selected" data-bg="transparent">
-                        <div class="background-preview" style="background: conic-gradient(#eee 25%, white 0 50%, #eee 0 75%, white 0);"></div>
-                        <span>Прозрачный</span>
-                    </div>
-                    <div class="background-option" data-bg="white">
-                        <div class="background-preview" style="background: white; border: 2px solid #ddd;"></div>
-                        <span>Белый</span>
-                    </div>
-                    <div class="background-option" data-bg="gray">
-                        <div class="background-preview" style="background: #f0f0f0;"></div>
-                        <span>Серый</span>
-                    </div>
-                </div>
-                
                 <div class="checkbox-controls">
                     <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('image')">
                         ✅ Выбрать все форматы
@@ -925,10 +1013,6 @@
             <div class="settings-section">
                 <h3>🎬 Настройки видео</h3>
                 
-                <div class="info-message">
-                    💡 <strong>FFmpeg загружается автоматически</strong> при первой обработке видео
-                </div>
-                
                 <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
                 <div class="resolution-options">
                     <div class="resolution-option selected" data-resolution="640x360">
@@ -957,16 +1041,6 @@
                         <span class="quality-info">~25% от оригинала</span>
                     </div>
                 </div>
-
-                <h4 style="margin: 15px 0 5px 0;">📹 Формат видео:</h4>
-                <div class="video-format-options">
-                    <div class="video-quality-option selected" data-format="mp4">
-                        <span>MP4 (*.mp4)</span>
-                    </div>
-                    <div class="video-quality-option" data-format="webm">
-                        <span>WebM (*.webm)</span>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -979,9 +1053,6 @@
         <div class="progress-bar hidden" id="progressBar">
             <div class="progress" id="progress"></div>
         </div>
-
-        <!-- Контейнер для статуса обработки видео -->
-        <div id="videoProcessingContainer"></div>
 
         <div class="result hidden" id="result">
             <h3>✅ Обработка завершена!</h3>
@@ -999,6 +1070,234 @@
     </div>
 
     <script>
+        // ===============================
+        // РЕАЛЬНЫЙ AI-АНАЛИЗ ИЗОБРАЖЕНИЙ ЧЕРЕЗ CANVAS API
+        // ===============================
+        class RealTimeImageAnalyzer {
+            static async analyzeImageColors(imageFile) {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    img.onload = () => {
+                        canvas.width = Math.min(img.width, 200);
+                        canvas.height = Math.min(img.height, 200);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const analysis = {
+                            dominantColors: this.extractDominantColors(imageData),
+                            brightness: this.calculateBrightness(imageData),
+                            contrast: this.calculateContrast(imageData),
+                            aspectRatio: (img.width / img.height).toFixed(2),
+                            resolution: `${img.width}x${img.height}`
+                        };
+                        
+                        URL.revokeObjectURL(img.src);
+                        resolve(analysis);
+                    };
+                    
+                    img.onerror = () => resolve(null);
+                    img.src = URL.createObjectURL(imageFile);
+                });
+            }
+            
+            static extractDominantColors(imageData) {
+                const colorMap = {};
+                const data = imageData.data;
+                const colorBuckets = {};
+                
+                for (let i = 0; i < data.length; i += 16) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    
+                    const bucket = `${Math.floor(r/32)*32},${Math.floor(g/32)*32},${Math.floor(b/32)*32}`;
+                    colorBuckets[bucket] = (colorBuckets[bucket] || 0) + 1;
+                }
+                
+                return Object.entries(colorBuckets)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 5)
+                    .map(([bucket]) => {
+                        const [r, g, b] = bucket.split(',').map(Number);
+                        return {
+                            rgb: `rgb(${r},${g},${b})`,
+                            hex: this.rgbToHex(r, g, b),
+                            name: this.colorToName(r, g, b)
+                        };
+                    });
+            }
+            
+            static calculateBrightness(imageData) {
+                const data = imageData.data;
+                let totalBrightness = 0;
+                let count = 0;
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const r = data[i];
+                    const g = data[i + 1];
+                    const b = data[i + 2];
+                    totalBrightness += (r + g + b) / 3;
+                    count++;
+                }
+                
+                return Math.round(totalBrightness / count);
+            }
+            
+            static calculateContrast(imageData) {
+                const data = imageData.data;
+                const brightnessValues = [];
+                
+                for (let i = 0; i < data.length; i += 4) {
+                    const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
+                    brightnessValues.push(brightness);
+                }
+                
+                const max = Math.max(...brightnessValues);
+                const min = Math.min(...brightnessValues);
+                return Math.round(max - min);
+            }
+            
+            static rgbToHex(r, g, b) {
+                return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+            }
+            
+            static colorToName(r, g, b) {
+                if (r > 200 && g > 200 && b > 200) return 'белый';
+                if (r < 50 && g < 50 && b < 50) return 'черный';
+                if (r > g * 1.5 && r > b * 1.5) return 'красный';
+                if (g > r * 1.5 && g > b * 1.5) return 'зеленый';
+                if (b > r * 1.5 && b > g * 1.5) return 'синий';
+                if (r > 200 && g > 200) return 'желтый';
+                if (r > 200 && b > 200) return 'пурпурный';
+                if (g > 200 && b > 200) return 'голубой';
+                return 'нейтральный';
+            }
+            
+            static getImageTypeSuggestions(analysis) {
+                const suggestions = [];
+                
+                if (analysis.brightness < 80) {
+                    suggestions.push('Низкая яркость - рекомендую коррекцию');
+                }
+                if (analysis.contrast < 50) {
+                    suggestions.push('Низкая контрастность - можно улучшить');
+                }
+                if (parseFloat(analysis.aspectRatio) > 2) {
+                    suggestions.push('Широкоформатное изображение - идеально для баннеров');
+                }
+                if (parseFloat(analysis.aspectRatio) < 0.5) {
+                    suggestions.push('Вертикальное изображение - подходит для сторис');
+                }
+                
+                return suggestions;
+            }
+        }
+
+        // ===============================
+        // БЫСТРЫЙ AI-СОВЕТНИК
+        // ===============================
+        class AIAdvisor {
+            static async analyzeFiles(files) {
+                const tips = [];
+                const stats = {
+                    totalImages: 0,
+                    totalVideos: 0,
+                    totalAudio: 0,
+                    largeFiles: 0,
+                    totalSize: 0
+                };
+                
+                files.forEach(file => {
+                    const type = FileUtils.getFileType(file.name);
+                    stats.totalSize += file.size;
+                    
+                    if (type === 'Изображение') stats.totalImages++;
+                    if (type === 'Видео') stats.totalVideos++;
+                    if (type === 'Аудио') stats.totalAudio++;
+                    if (file.size > 5 * 1024 * 1024) stats.largeFiles++;
+                });
+                
+                if (stats.totalImages > 10) {
+                    tips.push(`🎯 <strong>Много изображений (${stats.totalImages})</strong> - рекомендую пакетную обработку`);
+                }
+                
+                if (stats.totalVideos > 3) {
+                    tips.push(`🎬 <strong>Видеофайлы (${stats.totalVideos})</strong> - используйте стандартное качество`);
+                }
+                
+                if (stats.largeFiles > 0) {
+                    tips.push(`💾 <strong>Большие файлы (${stats.largeFiles})</strong> - рекомендую сжатие`);
+                }
+                
+                if (stats.totalImages > 0) {
+                    const avgSize = stats.totalSize / stats.totalImages / 1024 / 1024;
+                    if (avgSize > 2) {
+                        tips.push(`📸 <strong>Средний размер: ${avgSize.toFixed(1)}MB</strong> - можно оптимизировать`);
+                    }
+                }
+                
+                const hasPNG = files.some(f => f.name.toLowerCase().endsWith('.png'));
+                const hasJPG = files.some(f => f.name.toLowerCase().endsWith('.jpg') || f.name.toLowerCase().endsWith('.jpeg'));
+                
+                if (hasPNG && !hasJPG) {
+                    tips.push("🖼️ <strong>Только PNG</strong> - для веба конвертируйте в JPG");
+                }
+                
+                if (files.length > 15) {
+                    tips.push("⚡ <strong>Много файлов</strong> - разбейте на несколько партий");
+                }
+                
+                if (tips.length === 0) {
+                    tips.push("✅ Файлы готовы к обработке! Используйте стандартные настройки");
+                }
+                
+                return {
+                    tips: tips,
+                    stats: stats,
+                    recommendation: this.generateOverallRecommendation(stats)
+                };
+            }
+            
+            static generateOverallRecommendation(stats) {
+                if (stats.totalImages > stats.totalVideos + stats.totalAudio) {
+                    return "Основной контент - изображения. Используйте пресеты для соцсетей";
+                }
+                if (stats.totalVideos > stats.totalImages + stats.totalAudio) {
+                    return "Основной контент - видео. Используйте стандартное качество";
+                }
+                if (stats.totalAudio > stats.totalImages + stats.totalVideos) {
+                    return "Основной контент - аудио. Используйте MP3";
+                }
+                return "Смешанный контент. Используйте стандартные настройки";
+            }
+            
+            static async getDetailedImageAdvice(imageFile) {
+                try {
+                    const analysis = await RealTimeImageAnalyzer.analyzeImageColors(imageFile);
+                    if (!analysis) return null;
+                    
+                    const advice = {
+                        colors: analysis.dominantColors.slice(0, 3),
+                        technical: {
+                            resolution: analysis.resolution,
+                            aspectRatio: analysis.aspectRatio,
+                            brightness: analysis.brightness,
+                            contrast: analysis.contrast
+                        },
+                        suggestions: RealTimeImageAnalyzer.getImageTypeSuggestions(analysis)
+                    };
+                    
+                    return advice;
+                } catch (error) {
+                    console.error('AI анализ изображения не удался:', error);
+                    return null;
+                }
+            }
+        }
+
         // ===============================
         // КЛАСС ДЛЯ УПРАВЛЕНИЯ СОСТОЯНИЕМ
         // ===============================
@@ -1024,13 +1323,9 @@
             loadSettings() {
                 const saved = localStorage.getItem('mediaProcessorSettings');
                 const defaults = {
-                    selectedBackground: 'transparent',
                     selectedVideoResolution: '640x360',
                     selectedVideoQuality: 'medium',
-                    selectedVideoFormat: 'mp4',
-                    selectedResizeMode: 'fit',
                     imageSizes: '1200x600, 800x400, 400x200',
-                    // Настройки по умолчанию для чекбоксов
                     defaultCheckboxes: {
                         formatPNG: false,
                         formatJPG: true,
@@ -1053,9 +1348,6 @@
                 localStorage.setItem('mediaProcessorSettings', JSON.stringify(this.settings));
             }
 
-            // ===============================
-            // ОБНОВЛЕНИЕ ПРИМЕРА ИМЕН ФАЙЛОВ
-            // ===============================
             updateNamingExample() {
                 const exampleElement = document.getElementById('namingExample');
                 const useOriginal = document.getElementById('useOriginalNames').checked;
@@ -1067,52 +1359,36 @@
                 }
             }
 
-            // ===============================
-            // ГЕНЕРАЦИЯ ИМЕН ФАЙЛОВ (БЕЗ РАЗМЕРОВ)
-            // ===============================
             generateFileName(baseName, format, fileType, originalName = '') {
                 const useOriginal = document.getElementById('useOriginalNames').checked;
                 
-                // Если выбрано использование оригинальных имен
                 if (useOriginal && originalName) {
                     const originalBase = originalName.replace(/\.[^/.]+$/, "");
                     return `${originalBase}.${format}`;
                 }
                 
-                // Простое имя + формат (без размеров)
                 return `${baseName}.${format}`;
             }
 
-            // ===============================
-            // УПРАВЛЕНИЕ ЧЕКБОКСАМИ И НАСТРОЙКАМИ
-            // ===============================
             resetAllSettings() {
-                if (confirm('Вы уверены, что хотите сбросить все настройки к значениям по умолчанию?')) {
-                    // Сбрасываем основные настройки
-                    this.settings.selectedBackground = 'transparent';
+                if (confirm('Сбросить все настройки к значениям по умолчанию?')) {
                     this.settings.selectedVideoResolution = '640x360';
                     this.settings.selectedVideoQuality = 'medium';
-                    this.settings.selectedVideoFormat = 'mp4';
-                    this.settings.selectedResizeMode = 'fit';
                     this.settings.imageSizes = '1200x600, 800x400, 400x200';
                     
-                    // Сбрасываем чекбоксы к значениям по умолчанию
                     this.resetCheckboxesToDefault();
-                    
-                    // Обновляем интерфейс
                     this.loadUISettings();
                     this.saveSettings();
                     this.updateStats();
                     this.updateNamingExample();
                     
-                    UIManager.showSuccess('Настройки сброшены', 'Все настройки восстановлены к значениям по умолчанию');
+                    UIManager.showSuccess('Настройки сброшены', 'Все настройки восстановлены');
                 }
             }
 
             resetCheckboxesToDefault() {
                 const defaultStates = this.settings.defaultCheckboxes;
                 
-                // Сбрасываем все чекбоксы к значениям по умолчанию
                 Object.keys(defaultStates).forEach(checkboxId => {
                     const checkbox = document.getElementById(checkboxId);
                     if (checkbox) {
@@ -1129,7 +1405,6 @@
             }
 
             clearAllCheckboxesState() {
-                // Список всех чекбоксов в приложении
                 const allCheckboxes = [
                     'formatPNG', 'formatJPG', 
                     'audioMP3', 'audioOGG',
@@ -1164,7 +1439,6 @@
                         break;
                 }
                 this.updateStats();
-                UIManager.showSuccess('Выбраны все', `Все чекбоксы в разделе "${this.getSectionName(type)}" отмечены`);
             }
 
             clearCheckboxes(type) {
@@ -1183,105 +1457,183 @@
                         break;
                 }
                 this.updateStats();
-                UIManager.showSuccess('Галочки убраны', `Все чекбоксы в разделе "${this.getSectionName(type)}" очищены`);
             }
 
-            getSectionName(type) {
-                const names = {
-                    'image': 'Изображения',
-                    'audio': 'Аудио',
-                    'ai': 'AI-Анализ'
-                };
-                return names[type] || type;
-            }
+            // AI-СОВЕТНИК МЕТОДЫ
+            async getAIAdvice() {
+                if (this.uploadedFiles.length === 0) {
+                    UIManager.showError('Сначала загрузите файлы для анализа');
+                    return;
+                }
 
-            // ===============================
-            // ОБРАБОТКА ФАЙЛОВ С ПРОСТЫМИ ИМЕНАМИ (БЕЗ РАЗМЕРОВ)
-            // ===============================
-            async processFile(file, settings) {
-                const fileType = FileUtils.getFileType(file.name);
-                const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
-                const processedFiles = [];
+                const aiAdviceBtn = document.getElementById('aiAdviceBtn');
+                const originalText = aiAdviceBtn.innerHTML;
+                aiAdviceBtn.innerHTML = '⏳ Анализируем...';
+                aiAdviceBtn.disabled = true;
 
-                if (fileType === 'Изображение') {
-                    const sizes = settings.imageSizes.split(',').map(s => s.trim());
-                    const formats = [];
+                try {
+                    const advice = await AIAdvisor.analyzeFiles(this.uploadedFiles);
+                    this.displayAIAdvice(advice);
                     
-                    if (document.getElementById('formatPNG').checked) formats.push('png');
-                    if (document.getElementById('formatJPG').checked) formats.push('jpg');
+                    UIManager.showSuccess('AI-анализ завершен', 'Получены персональные рекомендации');
+                } catch (error) {
+                    console.error('Ошибка AI-советника', error);
+                    UIManager.showError('Не удалось получить советы');
+                } finally {
+                    aiAdviceBtn.innerHTML = originalText;
+                    aiAdviceBtn.disabled = false;
+                }
+            }
 
-                    for (const size of sizes) {
-                        if (this.isCancelled) break;
+            async analyzeAllImages() {
+                const imageFiles = this.uploadedFiles.filter(f => 
+                    FileUtils.getFileType(f.name) === 'Изображение'
+                );
+                
+                if (imageFiles.length === 0) {
+                    UIManager.showError('Нет изображений для анализа');
+                    return;
+                }
 
-                        const [width, height] = size.split('x').map(Number);
+                const analyzeBtn = document.getElementById('analyzeImagesBtn');
+                const originalText = analyzeBtn.innerHTML;
+                analyzeBtn.innerHTML = `🎨 Анализ (0/${imageFiles.length})...`;
+                analyzeBtn.disabled = true;
+
+                try {
+                    const results = [];
+                    
+                    for (let i = 0; i < imageFiles.length; i++) {
+                        const file = imageFiles[i];
+                        analyzeBtn.innerHTML = `🎨 Анализ (${i+1}/${imageFiles.length})...`;
                         
-                        for (const format of formats) {
-                            if (this.isCancelled) break;
-
-                            let processedBlob;
-                            
-                            switch (settings.selectedResizeMode) {
-                                case 'resize':
-                                    processedBlob = await ImageProcessor.resizeImageProportional(file, width, height, format);
-                                    break;
-                                case 'crop':
-                                    processedBlob = await ImageProcessor.cropImage(file, width, height, format);
-                                    break;
-                                case 'fit':
-                                default:
-                                    processedBlob = await ImageProcessor.fitImageWithBackground(
-                                        file, width, height, format, this.getBackgroundColor(format)
-                                    );
-                                    break;
-                            }
-                            
-                            // Простое имя без размеров
-                            const fileName = this.generateFileName(baseName, format, 'image', file.name);
-                            processedFiles.push({
-                                blob: processedBlob,
-                                name: fileName,
-                                type: 'image',
-                                originalSize: file.size
+                        const analysis = await AIAdvisor.getDetailedImageAdvice(file);
+                        if (analysis) {
+                            results.push({
+                                fileName: file.name,
+                                analysis: analysis
                             });
                         }
+                        
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
+                    
+                    this.displayImageAnalysis(results);
+                    UIManager.showSuccess(
+                        'Анализ изображений завершен', 
+                        `Проанализировано ${results.length} изображений`
+                    );
+                    
+                } catch (error) {
+                    console.error('Ошибка анализа изображений', error);
+                    UIManager.showError('Ошибка при анализе изображений');
+                } finally {
+                    analyzeBtn.innerHTML = originalText;
+                    analyzeBtn.disabled = false;
                 }
-                else if (fileType === 'Аудио') {
-                    if (document.getElementById('audioMP3').checked) {
-                        const fileName = this.generateFileName(baseName, 'mp3', 'audio', file.name);
-                        processedFiles.push({
-                            blob: file,
-                            name: fileName,
-                            type: 'audio',
-                            originalSize: file.size
-                        });
-                    }
-                    if (document.getElementById('audioOGG').checked) {
-                        const fileName = this.generateFileName(baseName, 'ogg', 'audio', file.name);
-                        processedFiles.push({
-                            blob: file,
-                            name: fileName,
-                            type: 'audio',
-                            originalSize: file.size
-                        });
-                    }
-                }
-                else if (fileType === 'Видео') {
-                    const fileName = this.generateFileName(baseName, settings.selectedVideoFormat, 'video', file.name);
-                    processedFiles.push({
-                        blob: file,
-                        name: fileName,
-                        type: 'video',
-                        originalSize: file.size
-                    });
-                }
-
-                return processedFiles;
             }
 
-            // ===============================
+            displayAIAdvice(advice) {
+                const aiResults = document.getElementById('aiResults');
+                const aiStats = document.getElementById('aiStats');
+                const aiTipsList = document.getElementById('aiTipsList');
+                
+                aiStats.innerHTML = `
+                    <strong>📊 Статистика загруженных файлов:</strong><br>
+                    • 📷 Изображений: ${advice.stats.totalImages}<br>
+                    • 🎬 Видео: ${advice.stats.totalVideos}<br>
+                    • 🎵 Аудио: ${advice.stats.totalAudio}<br>
+                    • 💾 Больших файлов: ${advice.stats.largeFiles}<br>
+                    • 📦 Общий размер: ${(advice.stats.totalSize / 1024 / 1024).toFixed(1)}MB
+                `;
+                
+                aiTipsList.innerHTML = '';
+                advice.tips.forEach(tip => {
+                    const tipElement = document.createElement('div');
+                    tipElement.className = 'ai-tip-item';
+                    tipElement.innerHTML = tip;
+                    aiTipsList.appendChild(tipElement);
+                });
+                
+                const overallTip = document.createElement('div');
+                overallTip.className = 'ai-tip-item';
+                overallTip.style.borderLeftColor = '#f39c12';
+                overallTip.innerHTML = `🎯 <strong>Общая рекомендация:</strong> ${advice.recommendation}`;
+                aiTipsList.appendChild(overallTip);
+                
+                aiResults.classList.remove('hidden');
+            }
+
+            displayImageAnalysis(results) {
+                const aiResults = document.getElementById('aiResults');
+                const aiStats = document.getElementById('aiStats');
+                const aiTipsList = document.getElementById('aiTipsList');
+                
+                aiStats.innerHTML = `
+                    <strong>🎨 Результаты анализа изображений:</strong><br>
+                    Проанализировано ${results.length} изображений
+                `;
+                
+                aiTipsList.innerHTML = '';
+                
+                results.forEach(result => {
+                    const analysis = result.analysis;
+                    const analysisElement = document.createElement('div');
+                    analysisElement.className = 'image-analysis-result';
+                    
+                    analysisElement.innerHTML = `
+                        <div style="margin-bottom: 10px;">
+                            <strong>📄 ${result.fileName}</strong>
+                        </div>
+                        
+                        <div class="analysis-technical">
+                            <div class="tech-item">
+                                <div>Разрешение</div>
+                                <div class="tech-value">${analysis.technical.resolution}</div>
+                            </div>
+                            <div class="tech-item">
+                                <div>Соотношение</div>
+                                <div class="tech-value">${analysis.technical.aspectRatio}</div>
+                            </div>
+                            <div class="tech-item">
+                                <div>Яркость</div>
+                                <div class="tech-value">${analysis.technical.brightness}</div>
+                            </div>
+                            <div class="tech-item">
+                                <div>Контраст</div>
+                                <div class="tech-value">${analysis.technical.contrast}</div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin: 10px 0;">
+                            <strong>Основные цвета:</strong>
+                            <div class="color-palette">
+                                ${analysis.colors.map(color => 
+                                    `<div class="color-swatch" style="background: ${color.rgb};" 
+                                          data-hex="${color.hex}" title="${color.name}"></div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        
+                        ${analysis.suggestions.length > 0 ? `
+                            <div>
+                                <strong>💡 Рекомендации:</strong>
+                                <ul style="margin: 5px 0; padding-left: 20px;">
+                                    ${analysis.suggestions.map(suggestion => 
+                                        `<li style="font-size: 0.9em; margin: 3px 0;">${suggestion}</li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    `;
+                    
+                    aiTipsList.appendChild(analysisElement);
+                });
+                
+                aiResults.classList.remove('hidden');
+            }
+
             // ОСТАЛЬНЫЕ МЕТОДЫ
-            // ===============================
             subscribe(listener) {
                 this.listeners.push(listener);
             }
@@ -1309,7 +1661,7 @@
                 
                 this.uploadedFiles = [];
                 this.setFiles(this.uploadedFiles);
-                UIManager.showSuccess('Очистка завершена', 'Все файлы удалены из списка');
+                UIManager.showSuccess('Очистка завершена', 'Все файлы удалены');
             }
 
             async handleFileSelect(event) {
@@ -1335,7 +1687,7 @@
                         file.thumbnail = await ThumbnailGenerator.createThumbnail(file);
                         validatedFiles.push(file);
                     } catch (error) {
-                        Logger.error('Ошибка валидации файла', error);
+                        console.error('Ошибка валидации файла', error);
                         UIManager.showError(`Файл "${file.name}" не может быть обработан: ${error.message}`);
                     }
                 }
@@ -1353,9 +1705,12 @@
                     
                     this.setFiles(this.uploadedFiles);
                     
-                    if (document.getElementById('aiAnalysis').checked) {
-                        setTimeout(() => this.analyzeBrandAssets(), 500);
-                    }
+                    // Автоматически запускаем AI-советник
+                    setTimeout(() => {
+                        if (this.uploadedFiles.length > 0) {
+                            this.getAIAdvice();
+                        }
+                    }, 1000);
                 }
             }
 
@@ -1392,7 +1747,7 @@
                 const header = document.createElement('div');
                 header.className = 'file-list-header';
                 header.innerHTML = `
-                    <h3>📄 Загруженные файлы (введите новые имена):</h3>
+                    <h3>📄 Загруженные файлы:</h3>
                     <button class="clear-all-btn" id="clearAllBtn">
                         🗑️ Очистить все
                     </button>
@@ -1491,7 +1846,7 @@
                     FileUtils.getFileType(f.name) === 'Изображение');
                 
                 if (imageFiles.length === 0) {
-                    UIManager.showError('Для анализа бренда загрузите изображения (логотипы, бренд-ассеты)');
+                    UIManager.showError('Для анализа бренда загрузите изображения');
                     return;
                 }
 
@@ -1517,15 +1872,12 @@
                     UIManager.showSuccess(
                         `AI-анализ завершен!`,
                         `Основные цвета: ${analysis.dominantColors.join(', ')}\n` +
-                        `Рекомендованные размеры: ${analysis.suggestedSizes.join(', ')}\n` +
-                        `Стиль: ${analysis.brandStyle}\n` +
-                        `Экономия времени: ${analysis.estimatedTimeSave}`
+                        `Рекомендованные размеры: ${analysis.suggestedSizes.join(', ')}`
                     );
                     
-                    return analysis;
                 } catch (error) {
-                    Logger.error('Ошибка AI-анализа', error);
-                    UIManager.showError('Ошибка при анализе бренда: ' + error.message);
+                    console.error('Ошибка AI-анализа', error);
+                    UIManager.showError('Ошибка при анализе бренда');
                 }
             }
 
@@ -1562,8 +1914,8 @@
                     UIManager.showProcessingState(false);
                     
                 } catch (error) {
-                    Logger.error('Ошибка обработки', error);
-                    UIManager.showError('Произошла ошибка при обработке файлов: ' + error.message);
+                    console.error('Ошибка обработки', error);
+                    UIManager.showError('Произошла ошибка при обработке файлов');
                 } finally {
                     this.isProcessing = false;
                     this.currentProcessor = null;
@@ -1670,22 +2022,9 @@
                     this.updateStats();
                 });
 
-                // Слушатель для опции именования
                 document.getElementById('useOriginalNames').addEventListener('change', () => {
                     this.updateNamingExample();
                     this.updateStats();
-                });
-
-                document.querySelectorAll('.resize-mode-option').forEach(opt => {
-                    opt.addEventListener('click', () => {
-                        this.selectResizeMode(opt.dataset.mode);
-                    });
-                });
-
-                document.querySelectorAll('.background-option').forEach(opt => {
-                    opt.addEventListener('click', () => {
-                        this.selectBackground(opt.dataset.bg);
-                    });
                 });
 
                 document.querySelectorAll('.resolution-option').forEach(opt => {
@@ -1697,12 +2036,6 @@
                 document.querySelectorAll('.video-quality-option').forEach(opt => {
                     opt.addEventListener('click', () => {
                         this.selectVideoQuality(opt.dataset.quality);
-                    });
-                });
-
-                document.querySelectorAll('.video-quality-option[data-format]').forEach(opt => {
-                    opt.addEventListener('click', () => {
-                        this.selectVideoFormat(opt.dataset.format);
                     });
                 });
 
@@ -1718,30 +2051,10 @@
             loadUISettings() {
                 document.getElementById('imageSizes').value = this.settings.imageSizes;
                 
-                this.selectResizeMode(this.settings.selectedResizeMode, false);
-                this.selectBackground(this.settings.selectedBackground, false);
                 this.selectResolution(this.settings.selectedVideoResolution, false);
                 this.selectVideoQuality(this.settings.selectedVideoQuality, false);
-                this.selectVideoFormat(this.settings.selectedVideoFormat, false);
                 
-                // Загружаем состояния чекбоксов
                 this.resetCheckboxesToDefault();
-            }
-
-            selectResizeMode(mode, save = true) {
-                this.settings.selectedResizeMode = mode;
-                document.querySelectorAll('.resize-mode-option').forEach(opt => {
-                    opt.classList.toggle('selected', opt.dataset.mode === mode);
-                });
-                if (save) this.saveSettings();
-            }
-
-            selectBackground(type, save = true) {
-                this.settings.selectedBackground = type;
-                document.querySelectorAll('.background-option').forEach(opt => {
-                    opt.classList.toggle('selected', opt.dataset.bg === type);
-                });
-                if (save) this.saveSettings();
             }
 
             selectResolution(resolution, save = true) {
@@ -1760,28 +2073,6 @@
                 if (save) this.saveSettings();
             }
 
-            selectVideoFormat(format, save = true) {
-                this.settings.selectedVideoFormat = format;
-                document.querySelectorAll('.video-quality-option[data-format]').forEach(opt => {
-                    opt.classList.toggle('selected', opt.dataset.format === format);
-                });
-                if (save) this.saveSettings();
-            }
-
-            getBackgroundColor(format) {
-                // Для JPG формата всегда используем белый фон
-                if (format === 'jpg') {
-                    return 'white';
-                }
-                
-                switch(this.settings.selectedBackground) {
-                    case 'white': return 'white';
-                    case 'gray': return '#f0f0f0';
-                    case 'transparent': 
-                    default: return 'transparent';
-                }
-            }
-
             downloadSingleFile(fileName) {
                 const file = this.processedFilesStorage.find(f => f.name === fileName);
                 if (file) {
@@ -1798,154 +2089,18 @@
                 try {
                     await FileDownloader.downloadAsZip(this.processedFilesStorage);
                 } catch (error) {
-                    Logger.error('Ошибка скачивания', error);
-                    UIManager.showError('Ошибка при создании архива: ' + error.message);
+                    console.error('Ошибка скачивания', error);
+                    UIManager.showError('Ошибка при создании архива');
                 }
             }
         }
 
         // ===============================
-        // ОБРАБОТКА ИЗОБРАЖЕНИЙ С ПРОПОРЦИОНАЛЬНЫМ ИЗМЕНЕНИЕМ
-        // ===============================
-        class ImageProcessor {
-            // Пропорциональное изменение размера без подложки
-            static async resizeImageProportional(file, targetWidth, targetHeight, format) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        // Рассчитываем пропорциональные размеры
-                        const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
-                        const newWidth = Math.round(img.width * scale);
-                        const newHeight = Math.round(img.height * scale);
-                        
-                        canvas.width = newWidth;
-                        canvas.height = newHeight;
-                        
-                        // Рисуем изображение с сохранением пропорций
-                        ctx.drawImage(img, 0, 0, newWidth, newHeight);
-                        
-                        const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
-                        const quality = format === 'jpg' ? 0.9 : 1;
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Не удалось обработать изображение'));
-                            }
-                        }, mimeType, quality);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-                    img.src = URL.createObjectURL(file);
-                });
-            }
-
-            // Вписать в рамку с подложкой (пропорционально)
-            static async fitImageWithBackground(file, targetWidth, targetHeight, format, backgroundColor) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = targetWidth;
-                    canvas.height = targetHeight;
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        // Для прозрачного фона - очищаем canvas
-                        if (backgroundColor === 'transparent') {
-                            ctx.clearRect(0, 0, targetWidth, targetHeight);
-                        } else {
-                            // Для цветного фона - заливаем выбранным цветом
-                            ctx.fillStyle = backgroundColor;
-                            ctx.fillRect(0, 0, targetWidth, targetHeight);
-                        }
-                        
-                        // Рассчитываем пропорциональные размеры для вписывания
-                        const scale = Math.min(targetWidth / img.width, targetHeight / img.height);
-                        const newWidth = Math.round(img.width * scale);
-                        const newHeight = Math.round(img.height * scale);
-                        
-                        // Центрируем изображение
-                        const x = (targetWidth - newWidth) / 2;
-                        const y = (targetHeight - newHeight) / 2;
-                        
-                        // Рисуем изображение по центру с сохранением пропорций
-                        ctx.drawImage(img, x, y, newWidth, newHeight);
-                        
-                        // Для JPG формата всегда используем белый фон, даже если выбран прозрачный
-                        const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
-                        const quality = format === 'jpg' ? 0.9 : 1;
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Не удалось обработать изображение'));
-                            }
-                        }, mimeType, quality);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-                    img.src = URL.createObjectURL(file);
-                });
-            }
-
-            // Обрезка изображения
-            static async cropImage(file, targetWidth, targetHeight, format) {
-                return new Promise((resolve, reject) => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    
-                    canvas.width = targetWidth;
-                    canvas.height = targetHeight;
-                    
-                    const img = new Image();
-                    img.onload = function() {
-                        // Рассчитываем масштаб для обрезки по центру
-                        const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
-                        const scaledWidth = img.width * scale;
-                        const scaledHeight = img.height * scale;
-                        
-                        // Центрируем и обрезаем
-                        const x = (scaledWidth - targetWidth) / 2 / scale;
-                        const y = (scaledHeight - targetHeight) / 2 / scale;
-                        
-                        ctx.drawImage(
-                            img, 
-                            x, y, 
-                            targetWidth / scale, targetHeight / scale,
-                            0, 0,
-                            targetWidth, targetHeight
-                        );
-                        
-                        const mimeType = format === 'jpg' ? 'image/jpeg' : 'image/png';
-                        const quality = format === 'jpg' ? 0.9 : 1;
-                        
-                        canvas.toBlob((blob) => {
-                            if (blob) {
-                                resolve(blob);
-                            } else {
-                                reject(new Error('Не удалось обработать изображение'));
-                            }
-                        }, mimeType, quality);
-                    };
-                    
-                    img.onerror = () => reject(new Error('Ошибка загрузки изображения'));
-                    img.src = URL.createObjectURL(file);
-                });
-            }
-        }
-
-        // ===============================
-        // ВАЛИДАЦИЯ ФАЙЛОВ
+        // ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ
         // ===============================
         class FileValidator {
             static validateFile(file) {
-                const maxSize = 100 * 1024 * 1024; // 100MB
+                const maxSize = 100 * 1024 * 1024;
                 const allowedTypes = [
                     'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp',
                     'audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/flac', 'audio/aac', 'audio/ogg',
@@ -1964,9 +2119,6 @@
             }
         }
 
-        // ===============================
-        // ГЕНЕРАЦИЯ ПРЕВЬЮ
-        // ===============================
         class ThumbnailGenerator {
             static async createThumbnail(file) {
                 if (!file.type.startsWith('image/')) {
@@ -2001,9 +2153,6 @@
             }
         }
 
-        // ===============================
-        // ОБРАБОТЧИК МЕДИА
-        // ===============================
         class MediaProcessor {
             constructor() {
                 this.isCancelled = false;
@@ -2035,7 +2184,7 @@
                             onFileProcessed(processedFiles);
                             return processedFiles;
                         } catch (error) {
-                            Logger.error(`Ошибка обработки файла ${file.name}`, error);
+                            console.error(`Ошибка обработки файла ${file.name}`, error);
                             const fileName = appState.generateFileName(
                                 file.customName || file.name.replace(/\.[^/.]+$/, ""), 
                                 file.name.split('.').pop(), 
@@ -2060,9 +2209,6 @@
             }
         }
 
-        // ===============================
-        // AI СЕРВИС
-        // ===============================
         class AIService {
             static async analyzeBrand(imageFiles) {
                 await new Promise(resolve => setTimeout(resolve, 1500));
@@ -2105,9 +2251,6 @@
             }
         }
 
-        // ===============================
-        // УТИЛИТЫ ДЛЯ ФАЙЛОВ
-        // ===============================
         class FileUtils {
             static getFileType(filename) {
                 if (filename.match(/\.(jpg|jpeg|png|gif|webp|bmp)$/i)) return 'Изображение';
@@ -2127,9 +2270,6 @@
             }
         }
 
-        // ===============================
-        // СКАЧИВАНИЕ ФАЙЛОВ
-        // ===============================
         class FileDownloader {
             static downloadFile(blob, fileName) {
                 const downloadLink = document.createElement('a');
@@ -2168,9 +2308,6 @@
             }
         }
 
-        // ===============================
-        // УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ
-        // ===============================
         class UIManager {
             static showProcessingState(isProcessing) {
                 const processBtn = document.getElementById('processBtn');
@@ -2249,6 +2386,14 @@
 
                 const messageDiv = document.createElement('div');
                 messageDiv.className = `temp-message ${type}-message`;
+                messageDiv.style.cssText = `
+                    background: ${type === 'success' ? '#d4edda' : '#f8d7da'};
+                    border: 2px solid ${type === 'success' ? '#27ae60' : '#e74c3c'};
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin: 15px 30px;
+                    color: ${type === 'success' ? '#155724' : '#721c24'};
+                `;
                 messageDiv.innerHTML = `
                     <strong>${title}</strong><br>
                     ${message}
@@ -2262,23 +2407,6 @@
                         messageDiv.remove();
                     }
                 }, 5000);
-            }
-        }
-
-        // ===============================
-        // ЛОГГЕР
-        // ===============================
-        class Logger {
-            static info(message, data) {
-                console.log(`[INFO] ${message}`, data);
-            }
-
-            static error(message, error) {
-                console.error(`[ERROR] ${message}`, error);
-            }
-
-            static performance(name, duration) {
-                console.log(`[PERF] ${name}: ${duration}ms`);
             }
         }
 
