@@ -6,6 +6,7 @@
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
+        /* Стили остаются без изменений */
         * {
             margin: 0;
             padding: 0;
@@ -799,17 +800,13 @@
                 
                 <div class="naming-options">
                     <div class="naming-option">
-                        <input type="checkbox" id="includeSizeInName" checked>
-                        <label for="includeSizeInName">Добавлять размер в название файла (banner_1200x600.jpg)</label>
-                    </div>
-                    <div class="naming-option">
                         <input type="checkbox" id="useOriginalNames">
                         <label for="useOriginalNames">Использовать оригинальные имена файлов</label>
                     </div>
                 </div>
                 
                 <div class="naming-example">
-                    Пример имен после обработки: <strong id="namingExample">banner_1200x600.jpg, banner_800x400.jpg</strong>
+                    Пример имен после обработки: <strong id="namingExample">banner.jpg, banner.png</strong>
                 </div>
             </div>
 
@@ -1042,7 +1039,6 @@
                         audioOGG: false,
                         aiAnalysis: false,
                         smartRenaming: false,
-                        includeSizeInName: true,
                         useOriginalNames: false
                     }
                 };
@@ -1063,23 +1059,19 @@
             // ===============================
             updateNamingExample() {
                 const exampleElement = document.getElementById('namingExample');
-                const includeSize = document.getElementById('includeSizeInName').checked;
                 const useOriginal = document.getElementById('useOriginalNames').checked;
                 
                 if (useOriginal) {
                     exampleElement.textContent = 'image.jpg, photo.png (оригинальные имена)';
-                } else if (includeSize) {
-                    exampleElement.textContent = 'banner_1200x600.jpg, banner_800x400.jpg';
                 } else {
-                    exampleElement.textContent = 'banner.jpg, logo.png (простое имя)';
+                    exampleElement.textContent = 'banner.jpg, banner.png (простые имена)';
                 }
             }
 
             // ===============================
-            // ГЕНЕРАЦИЯ ИМЕН ФАЙЛОВ
+            // ГЕНЕРАЦИЯ ИМЕН ФАЙЛОВ (БЕЗ РАЗМЕРОВ)
             // ===============================
-            generateFileName(baseName, size, format, fileType, originalName = '') {
-                const includeSize = document.getElementById('includeSizeInName').checked;
+            generateFileName(baseName, format, fileType, originalName = '') {
                 const useOriginal = document.getElementById('useOriginalNames').checked;
                 
                 // Если выбрано использование оригинальных имен
@@ -1088,13 +1080,8 @@
                     return `${originalBase}.${format}`;
                 }
                 
-                // Если размер не нужно включать в имя или это не изображение
-                if (!includeSize || fileType !== 'image') {
-                    return `${baseName}.${format}`;
-                }
-                
-                // Для изображений с размером в имени
-                return `${baseName}_${size}.${format}`;
+                // Простое имя + формат (без размеров)
+                return `${baseName}.${format}`;
             }
 
             // ===============================
@@ -1148,7 +1135,7 @@
                     'formatPNG', 'formatJPG', 
                     'audioMP3', 'audioOGG',
                     'aiAnalysis', 'smartRenaming',
-                    'includeSizeInName', 'useOriginalNames'
+                    'useOriginalNames'
                 ];
                 
                 allCheckboxes.forEach(checkboxId => {
@@ -1210,7 +1197,7 @@
             }
 
             // ===============================
-            // ОБРАБОТКА ФАЙЛОВ С НОВОЙ СИСТЕМОЙ ИМЕН
+            // ОБРАБОТКА ФАЙЛОВ С ПРОСТЫМИ ИМЕНАМИ (БЕЗ РАЗМЕРОВ)
             // ===============================
             async processFile(file, settings) {
                 const fileType = FileUtils.getFileType(file.name);
@@ -1249,8 +1236,8 @@
                                     break;
                             }
                             
-                            // ИСПРАВЛЕНИЕ: Используем новую систему именования
-                            const fileName = this.generateFileName(baseName, `${width}x${height}`, format, 'image', file.name);
+                            // ИСПРАВЛЕНИЕ: Простое имя без размеров
+                            const fileName = this.generateFileName(baseName, format, 'image', file.name);
                             processedFiles.push({
                                 blob: processedBlob,
                                 name: fileName,
@@ -1262,7 +1249,7 @@
                 }
                 else if (fileType === 'Аудио') {
                     if (document.getElementById('audioMP3').checked) {
-                        const fileName = this.generateFileName(baseName, '', 'mp3', 'audio', file.name);
+                        const fileName = this.generateFileName(baseName, 'mp3', 'audio', file.name);
                         processedFiles.push({
                             blob: file,
                             name: fileName,
@@ -1271,7 +1258,7 @@
                         });
                     }
                     if (document.getElementById('audioOGG').checked) {
-                        const fileName = this.generateFileName(baseName, '', 'ogg', 'audio', file.name);
+                        const fileName = this.generateFileName(baseName, 'ogg', 'audio', file.name);
                         processedFiles.push({
                             blob: file,
                             name: fileName,
@@ -1281,7 +1268,7 @@
                     }
                 }
                 else if (fileType === 'Видео') {
-                    const fileName = this.generateFileName(baseName, '', settings.selectedVideoFormat, 'video', file.name);
+                    const fileName = this.generateFileName(baseName, settings.selectedVideoFormat, 'video', file.name);
                     processedFiles.push({
                         blob: file,
                         name: fileName,
@@ -1684,12 +1671,7 @@
                     this.updateStats();
                 });
 
-                // Слушатели для опций именования
-                document.getElementById('includeSizeInName').addEventListener('change', () => {
-                    this.updateNamingExample();
-                    this.updateStats();
-                });
-
+                // Слушатель для опции именования
                 document.getElementById('useOriginalNames').addEventListener('change', () => {
                     this.updateNamingExample();
                     this.updateStats();
@@ -1918,8 +1900,12 @@
                             return processedFiles;
                         } catch (error) {
                             Logger.error(`Ошибка обработки файла ${file.name}`, error);
-                            const baseName = file.customName || file.name.replace(/\.[^/.]+$/, "");
-                            const fileName = appState.generateFileName(baseName, '', file.name.split('.').pop(), FileUtils.getFileType(file.name), file.name);
+                            const fileName = appState.generateFileName(
+                                file.customName || file.name.replace(/\.[^/.]+$/, ""), 
+                                file.name.split('.').pop(), 
+                                FileUtils.getFileType(file.name), 
+                                file.name
+                            );
                             onFileProcessed([{
                                 blob: file,
                                 name: fileName,
