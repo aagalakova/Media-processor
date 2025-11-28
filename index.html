@@ -385,6 +385,7 @@
             padding: 20px;
             border-radius: 10px;
             margin: 20px 0;
+            position: relative;
         }
 
         .ai-feature {
@@ -560,6 +561,57 @@
             font-weight: bold;
             font-size: 1.1em;
             color: #27ae60;
+        }
+
+        .brand-analysis-results {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .brand-analysis-results .color-palette {
+            display: flex;
+            gap: 5px;
+            margin: 8px 0;
+        }
+
+        .brand-analysis-results .color-swatch {
+            width: 25px;
+            height: 25px;
+            border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .brand-analysis-results .color-swatch:hover {
+            transform: scale(1.1);
+        }
+
+        .brand-analysis-results .color-swatch::after {
+            content: attr(data-hex);
+            position: absolute;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7em;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+        }
+
+        .brand-analysis-results .color-swatch:hover::after {
+            opacity: 1;
         }
 
         .process-btn {
@@ -798,6 +850,21 @@
             background: #c0392b;
         }
 
+        .temp-message {
+            background: #d4edda;
+            border: 2px solid #27ae60;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 30px;
+            color: #155724;
+        }
+
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #e74c3c;
+            color: #721c24;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -951,6 +1018,7 @@
                 <button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background: #9b59b6;">
                     🔍 Проанализировать бренд
                 </button>
+                <!-- Результаты анализа будут появляться здесь -->
             </div>
 
             <div class="settings-section">
@@ -1633,6 +1701,124 @@
                 aiResults.classList.remove('hidden');
             }
 
+            // АНАЛИЗ БРЕНДА - ИСПРАВЛЕННЫЕ МЕТОДЫ
+            async analyzeBrandAssets() {
+                const imageFiles = this.uploadedFiles.filter(f => 
+                    FileUtils.getFileType(f.name) === 'Изображение');
+                
+                if (imageFiles.length === 0) {
+                    UIManager.showError('Для анализа бренда загрузите изображения');
+                    return;
+                }
+
+                try {
+                    // Показываем индикатор загрузки в самом блоке
+                    this.showBrandAnalysisLoading(true);
+                    
+                    const analysis = await AIService.analyzeBrand(imageFiles);
+                    
+                    document.getElementById('imageSizes').value = analysis.suggestedSizes.join(', ');
+                    this.settings.imageSizes = analysis.suggestedSizes.join(', ');
+                    this.saveSettings();
+                    
+                    if (document.getElementById('smartRenaming').checked) {
+                        this.uploadedFiles.forEach((file, index) => {
+                            file.customName = AIService.generateSmartFilename(
+                                file.name, 
+                                FileUtils.getFileType(file.name)
+                            );
+                        });
+                        this.updateFileList();
+                    }
+                    
+                    this.updateStats();
+                    
+                    // Показываем результаты в блоке анализа бренда
+                    this.displayBrandAnalysisResults(analysis);
+                    
+                } catch (error) {
+                    console.error('Ошибка AI-анализа', error);
+                    UIManager.showError('Ошибка при анализе бренда');
+                    this.showBrandAnalysisLoading(false);
+                }
+            }
+
+            showBrandAnalysisLoading(show) {
+                const brandSection = document.querySelector('.ai-section');
+                const analyzeBtn = brandSection.querySelector('.upload-btn');
+                
+                if (show) {
+                    analyzeBtn.innerHTML = '⏳ Анализируем...';
+                    analyzeBtn.disabled = true;
+                    
+                    // Скрываем предыдущие результаты
+                    const existingResults = brandSection.querySelector('.brand-analysis-results');
+                    if (existingResults) {
+                        existingResults.remove();
+                    }
+                } else {
+                    analyzeBtn.innerHTML = '🔍 Проанализировать бренд';
+                    analyzeBtn.disabled = false;
+                }
+            }
+
+            displayBrandAnalysisResults(analysis) {
+                const brandSection = document.querySelector('.ai-section');
+                
+                // Убираем индикатор загрузки
+                this.showBrandAnalysisLoading(false);
+                
+                // Удаляем предыдущие результаты
+                const existingResults = brandSection.querySelector('.brand-analysis-results');
+                if (existingResults) {
+                    existingResults.remove();
+                }
+                
+                // Создаем контейнер для результатов
+                const resultsDiv = document.createElement('div');
+                resultsDiv.className = 'brand-analysis-results';
+                
+                resultsDiv.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <strong>🎯 Результаты анализа бренда:</strong>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <strong>Основные цвета:</strong>
+                        <div class="color-palette" style="margin: 5px 0;">
+                            ${analysis.dominantColors.map(color => 
+                                `<div class="color-swatch" style="background: ${color};" 
+                                      data-hex="${color}" title="${color}"></div>`
+                            ).join('')}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 10px;">
+                        <strong>Рекомендованные размеры:</strong>
+                        <div style="font-size: 0.9em; margin-top: 5px;">
+                            ${analysis.suggestedSizes.join(', ')}
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 5px;">
+                        <strong>Стиль:</strong> ${analysis.brandStyle}
+                    </div>
+                    
+                    <div style="color: #27ae60; font-size: 0.9em;">
+                        ✅ Экономия времени: ${analysis.estimatedTimeSave}
+                    </div>
+                    
+                    <button class="upload-btn" onclick="this.parentElement.remove()" 
+                            style="background: #e74c3c; margin-top: 10px; padding: 5px 10px; font-size: 0.8em;">
+                        ✕ Закрыть
+                    </button>
+                `;
+                
+                // Вставляем результаты после кнопки анализа
+                const analyzeBtn = brandSection.querySelector('.upload-btn');
+                analyzeBtn.parentNode.insertBefore(resultsDiv, analyzeBtn.nextSibling);
+            }
+
             // ОСТАЛЬНЫЕ МЕТОДЫ
             subscribe(listener) {
                 this.listeners.push(listener);
@@ -1841,96 +2027,6 @@
                 `;
             }
 
-            async analyzeBrandAssets() {
-                const imageFiles = this.uploadedFiles.filter(f => 
-                    FileUtils.getFileType(f.name) === 'Изображение');
-                
-                if (imageFiles.length === 0) {
-                    UIManager.showError('Для анализа бренда загрузите изображения');
-                    return;
-                }
-
-                try {
-                    const analysis = await AIService.analyzeBrand(imageFiles);
-                    
-                    document.getElementById('imageSizes').value = analysis.suggestedSizes.join(', ');
-                    this.settings.imageSizes = analysis.suggestedSizes.join(', ');
-                    this.saveSettings();
-                    
-                    if (document.getElementById('smartRenaming').checked) {
-                        this.uploadedFiles.forEach((file, index) => {
-                            file.customName = AIService.generateSmartFilename(
-                                file.name, 
-                                FileUtils.getFileType(file.name)
-                            );
-                        });
-                        this.updateFileList();
-                    }
-                    
-                    this.updateStats();
-                    
-                    UIManager.showSuccess(
-                        `AI-анализ завершен!`,
-                        `Основные цвета: ${analysis.dominantColors.join(', ')}\n` +
-                        `Рекомендованные размеры: ${analysis.suggestedSizes.join(', ')}`
-                    );
-                    
-                } catch (error) {
-                    console.error('Ошибка AI-анализа', error);
-                    UIManager.showError('Ошибка при анализе бренда');
-                }
-            }
-
-            async startProcessing() {
-                if (this.uploadedFiles.length === 0) {
-                    UIManager.showError('Пожалуйста, сначала загрузите файлы!');
-                    return;
-                }
-
-                if (this.isProcessing) {
-                    UIManager.showError('Обработка уже выполняется!');
-                    return;
-                }
-
-                this.isProcessing = true;
-                this.currentProcessor = new MediaProcessor();
-                
-                UIManager.showProcessingState(true);
-                this.processedFilesStorage = [];
-
-                try {
-                    await this.currentProcessor.processFiles(
-                        this.uploadedFiles,
-                        this.settings,
-                        (progress) => {
-                            UIManager.updateProgress(progress);
-                        },
-                        (processedFiles) => {
-                            this.processedFilesStorage.push(...processedFiles);
-                        }
-                    );
-
-                    UIManager.showResults(this.processedFilesStorage);
-                    UIManager.showProcessingState(false);
-                    
-                } catch (error) {
-                    console.error('Ошибка обработки', error);
-                    UIManager.showError('Произошла ошибка при обработке файлов');
-                } finally {
-                    this.isProcessing = false;
-                    this.currentProcessor = null;
-                    UIManager.showProcessingState(false);
-                }
-            }
-
-            cancelProcessing() {
-                if (this.currentProcessor) {
-                    this.currentProcessor.cancel();
-                }
-                this.isProcessing = false;
-                UIManager.showProcessingState(false);
-            }
-
             calculateOutputFilesCount() {
                 let total = 0;
                 
@@ -2093,6 +2189,56 @@
                     UIManager.showError('Ошибка при создании архива');
                 }
             }
+
+            async startProcessing() {
+                if (this.uploadedFiles.length === 0) {
+                    UIManager.showError('Пожалуйста, сначала загрузите файлы!');
+                    return;
+                }
+
+                if (this.isProcessing) {
+                    UIManager.showError('Обработка уже выполняется!');
+                    return;
+                }
+
+                this.isProcessing = true;
+                this.currentProcessor = new MediaProcessor();
+                
+                UIManager.showProcessingState(true);
+                this.processedFilesStorage = [];
+
+                try {
+                    await this.currentProcessor.processFiles(
+                        this.uploadedFiles,
+                        this.settings,
+                        (progress) => {
+                            UIManager.updateProgress(progress);
+                        },
+                        (processedFiles) => {
+                            this.processedFilesStorage.push(...processedFiles);
+                        }
+                    );
+
+                    UIManager.showResults(this.processedFilesStorage);
+                    UIManager.showProcessingState(false);
+                    
+                } catch (error) {
+                    console.error('Ошибка обработки', error);
+                    UIManager.showError('Произошла ошибка при обработке файлов');
+                } finally {
+                    this.isProcessing = false;
+                    this.currentProcessor = null;
+                    UIManager.showProcessingState(false);
+                }
+            }
+
+            cancelProcessing() {
+                if (this.currentProcessor) {
+                    this.currentProcessor.cancel();
+                }
+                this.isProcessing = false;
+                UIManager.showProcessingState(false);
+            }
         }
 
         // ===============================
@@ -2180,7 +2326,7 @@
                         if (this.isCancelled) return [];
 
                         try {
-                            const processedFiles = await appState.processFile(file, settings);
+                            const processedFiles = await this.processFile(file, settings);
                             onFileProcessed(processedFiles);
                             return processedFiles;
                         } catch (error) {
@@ -2206,6 +2352,56 @@
 
                     await new Promise(resolve => setTimeout(resolve, 100));
                 }
+            }
+
+            async processFile(file, settings) {
+                // Имитация обработки файла
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                const fileType = FileUtils.getFileType(file.name);
+                const processedFiles = [];
+                
+                if (fileType === 'Изображение') {
+                    const sizes = settings.imageSizes.split(',').map(s => s.trim());
+                    const formats = [];
+                    
+                    if (document.getElementById('formatPNG').checked) formats.push('png');
+                    if (document.getElementById('formatJPG').checked) formats.push('jpg');
+                    
+                    for (const size of sizes) {
+                        for (const format of formats) {
+                            const fileName = appState.generateFileName(
+                                file.customName, 
+                                format, 
+                                fileType, 
+                                file.name
+                            );
+                            
+                            processedFiles.push({
+                                blob: new Blob([`Processed ${file.name} as ${size} ${format}`], {type: file.type}),
+                                name: `${file.customName}_${size}.${format}`,
+                                type: fileType,
+                                originalSize: file.size
+                            });
+                        }
+                    }
+                } else {
+                    const fileName = appState.generateFileName(
+                        file.customName, 
+                        file.name.split('.').pop(), 
+                        fileType, 
+                        file.name
+                    );
+                    
+                    processedFiles.push({
+                        blob: new Blob([`Processed ${file.name}`], {type: file.type}),
+                        name: fileName,
+                        type: fileType,
+                        originalSize: file.size
+                    });
+                }
+                
+                return processedFiles;
             }
         }
 
@@ -2385,7 +2581,7 @@
                 oldMessages.forEach(msg => msg.remove());
 
                 const messageDiv = document.createElement('div');
-                messageDiv.className = `temp-message ${type}-message`;
+                messageDiv.className = `temp-message ${type === 'error' ? 'error-message' : ''}`;
                 messageDiv.style.cssText = `
                     background: ${type === 'success' ? '#d4edda' : '#f8d7da'};
                     border: 2px solid ${type === 'success' ? '#27ae60' : '#e74c3c'};
