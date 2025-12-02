@@ -372,7 +372,7 @@
             border-radius: 15px;
             cursor: pointer;
             font-size: 0.9em;
-            transition: background 0.3s.ease;
+            transition: background 0.3s ease;
         }
 
         .preset-btn:hover {
@@ -586,7 +586,7 @@
             border: 2px solid rgba(255, 255, 255, 0.5);
             position: relative;
             cursor: pointer;
-            transition: transform 0.2s.ease;
+            transition: transform 0.2s ease;
         }
 
         .brand-analysis-results .color-swatch:hover {
@@ -865,39 +865,17 @@
             color: #721c24;
         }
 
-        /* Иконка-тултип рядом с кнопкой AI-переименования */
-        .tooltip-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 1px solid #bdc3c7;
-            font-size: 12px;
-            color: #7f8c8d;
-            cursor: default;
-            background: #fff;
-        }
-
-        .ai-rename-row {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
 
         @keyframes slideIn {
-            from {
+            from { 
                 opacity: 0;
                 transform: translateX(-10px);
             }
-            to {
+            to { 
                 opacity: 1;
                 transform: translateX(0);
             }
@@ -908,26 +886,26 @@
             .ai-actions {
                 flex-direction: column;
             }
-
+            
             .ai-btn {
                 flex: none;
             }
-
+            
             .analysis-technical {
                 grid-template-columns: 1fr 1fr;
             }
-
+            
             .file-item {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 10px;
             }
-
+            
             .file-rename {
                 margin-left: 0;
                 width: 100%;
             }
-
+            
             .rename-input {
                 width: 100%;
             }
@@ -974,25 +952,15 @@
 
             <div class="naming-section">
                 <h3>🏷️ Переименование файлов</h3>
-                <p style="color: #666; margin-bottom: 10px;">Введите новое имя для каждого файла в списке выше или используйте AI-помощника</p>
-
+                <p style="color: #666; margin-bottom: 10px;">Введите новое имя для каждого файла в списке выше</p>
+                
                 <div class="naming-options">
                     <div class="naming-option">
                         <input type="checkbox" id="useOriginalNames">
                         <label for="useOriginalNames">Использовать оригинальные имена файлов</label>
                     </div>
-                    <div class="ai-rename-row">
-                        <button class="upload-btn" id="smartRenameBtn">
-                            🤖 AI-переименование файлов
-                        </button>
-                        <span
-                            class="tooltip-icon"
-                            title="AI предложит базовое имя (logo, banner, creative, img, ad) и сохранит номер из оригинального файла: logo_1, banner_3 и т.п.">
-                            i
-                        </span>
-                    </div>
                 </div>
-
+                
                 <div class="naming-example">
                     Пример имен после обработки: <strong id="namingExample">banner.jpg, banner.png</strong>
                 </div>
@@ -1011,7 +979,7 @@
                             Загрузите файлы для получения персональных рекомендаций по оптимизации
                         </div>
                     </div>
-
+                    
                     <div class="ai-actions">
                         <button class="ai-btn" onclick="appState.getAIAdvice()" id="aiAdviceBtn">
                             🤖 Получить советы
@@ -1019,11 +987,8 @@
                         <button class="ai-btn secondary" onclick="appState.analyzeAllImages()" id="analyzeImagesBtn">
                             🎨 Анализ изображений
                         </button>
-                        <button class="ai-btn secondary" onclick="appState.applyAIRecommendedPreset()" id="applyPresetBtn">
-                            ⚙️ Применить AI-пресет
-                        </button>
                     </div>
-
+                    
                     <div class="ai-results hidden" id="aiResults">
                         <div class="ai-stats" id="aiStats"></div>
                         <div class="ai-tips-list" id="aiTipsList"></div>
@@ -1056,48 +1021,12 @@
                 <!-- Результаты анализа будут появляться здесь -->
             </div>
 
-            <!-- Библиотека промтов -->
-            <div class="settings-section">
-                <h3>📚 Библиотека AI-промтов</h3>
-                <p style="color:#666; margin-bottom:10px;">
-                    Шаблоны запросов к LLM (ChatGPT / Gemini), которые используются в MediaProcessor и могут быть воспроизведены коллегами.
-                </p>
-                <details style="margin-bottom:8px;">
-                    <summary><strong>🤖 Smart Renaming</strong></summary>
-                    <pre style="white-space:pre-wrap; font-size:0.8em; margin-top:5px;">
-Ты — ассистент продюсера digital-контента.
-У тебя есть список файлов и их параметры.
-Нужно создать стандартизированные имена:
-{бренд}_{тип}_{ключевое_слово}_{размер}_{v1}.
-Верни JSON: [{ "original": "...", "new_name": "..." }].
-                    </pre>
-                </details>
-                <details style="margin-bottom:8px;">
-                    <summary><strong>🎨 Brand Analyzer</strong></summary>
-                    <pre style="white-space:pre-wrap; font-size:0.8em; margin-top:5px;">
-Ты — AI-аналитик брендов.
-Получаешь доминирующие цвета, яркость, контраст и соотношение сторон.
-Определи стиль бренда и рекомендуемые размеры/форматы.
-Верни JSON с полями brand_style, dominant_palette, recommended_sizes, recommended_formats, time_save.
-                    </pre>
-                </details>
-                <details>
-                    <summary><strong>⚙️ MediaSet Optimizer</strong></summary>
-                    <pre style="white-space:pre-wrap; font-size:0.8em; margin-top:5px;">
-Ты — AI-советник по обработке медиа.
-На вход список файлов: тип, размер, формат.
-Задача: подобрать оптимальные форматы, степень сжатия и пресеты.
-Ответ — список коротких понятных советов.
-                    </pre>
-                </details>
-            </div>
-
             <div class="settings-section">
                 <h3>📷 Настройки изображений</h3>
-                <input type="text" class="size-input" id="imageSizes"
-                       value="1200x600, 800x400, 400x200"
+                <input type="text" class="size-input" id="imageSizes" 
+                       value="1200x600, 800x400, 400x200" 
                        placeholder="Введите размеры через запятую">
-
+                
                 <div class="preset-buttons">
                     <button class="preset-btn" onclick="appState.loadPreset('creatives')">Креативы</button>
                     <button class="preset-btn" onclick="appState.loadPreset('vertical')">Вертикальные</button>
@@ -1151,7 +1080,7 @@
 
             <div class="settings-section">
                 <h3>🎬 Настройки видео</h3>
-
+                
                 <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
                 <div class="resolution-options">
                     <div class="resolution-option selected" data-resolution="640x360">
@@ -1218,12 +1147,12 @@
                     const img = new Image();
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-
+                    
                     img.onload = () => {
                         canvas.width = Math.min(img.width, 200);
                         canvas.height = Math.min(img.height, 200);
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
+                        
                         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
                         const analysis = {
                             dominantColors: this.extractDominantColors(imageData),
@@ -1232,29 +1161,30 @@
                             aspectRatio: (img.width / img.height).toFixed(2),
                             resolution: `${img.width}x${img.height}`
                         };
-
+                        
                         URL.revokeObjectURL(img.src);
                         resolve(analysis);
                     };
-
+                    
                     img.onerror = () => resolve(null);
                     img.src = URL.createObjectURL(imageFile);
                 });
             }
-
+            
             static extractDominantColors(imageData) {
+                const colorMap = {};
                 const data = imageData.data;
                 const colorBuckets = {};
-
+                
                 for (let i = 0; i < data.length; i += 16) {
                     const r = data[i];
                     const g = data[i + 1];
                     const b = data[i + 2];
-
+                    
                     const bucket = `${Math.floor(r/32)*32},${Math.floor(g/32)*32},${Math.floor(b/32)*32}`;
                     colorBuckets[bucket] = (colorBuckets[bucket] || 0) + 1;
                 }
-
+                
                 return Object.entries(colorBuckets)
                     .sort(([,a], [,b]) => b - a)
                     .slice(0, 5)
@@ -1267,12 +1197,12 @@
                         };
                     });
             }
-
+            
             static calculateBrightness(imageData) {
                 const data = imageData.data;
                 let totalBrightness = 0;
                 let count = 0;
-
+                
                 for (let i = 0; i < data.length; i += 4) {
                     const r = data[i];
                     const g = data[i + 1];
@@ -1280,28 +1210,28 @@
                     totalBrightness += (r + g + b) / 3;
                     count++;
                 }
-
+                
                 return Math.round(totalBrightness / count);
             }
-
+            
             static calculateContrast(imageData) {
                 const data = imageData.data;
                 const brightnessValues = [];
-
+                
                 for (let i = 0; i < data.length; i += 4) {
                     const brightness = (data[i] + data[i+1] + data[i+2]) / 3;
                     brightnessValues.push(brightness);
                 }
-
+                
                 const max = Math.max(...brightnessValues);
                 const min = Math.min(...brightnessValues);
                 return Math.round(max - min);
             }
-
+            
             static rgbToHex(r, g, b) {
                 return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
             }
-
+            
             static colorToName(r, g, b) {
                 if (r > 200 && g > 200 && b > 200) return 'белый';
                 if (r < 50 && g < 50 && b < 50) return 'черный';
@@ -1313,10 +1243,10 @@
                 if (g > 200 && b > 200) return 'голубой';
                 return 'нейтральный';
             }
-
+            
             static getImageTypeSuggestions(analysis) {
                 const suggestions = [];
-
+                
                 if (analysis.brightness < 80) {
                     suggestions.push('Низкая яркость - рекомендую коррекцию');
                 }
@@ -1329,7 +1259,7 @@
                 if (parseFloat(analysis.aspectRatio) < 0.5) {
                     suggestions.push('Вертикальное изображение - подходит для сторис');
                 }
-
+                
                 return suggestions;
             }
         }
@@ -1347,66 +1277,58 @@
                     largeFiles: 0,
                     totalSize: 0
                 };
-
+                
                 files.forEach(file => {
                     const type = FileUtils.getFileType(file.name);
                     stats.totalSize += file.size;
-
+                    
                     if (type === 'Изображение') stats.totalImages++;
                     if (type === 'Видео') stats.totalVideos++;
                     if (type === 'Аудио') stats.totalAudio++;
                     if (file.size > 5 * 1024 * 1024) stats.largeFiles++;
                 });
-
+                
                 if (stats.totalImages > 10) {
                     tips.push(`🎯 <strong>Много изображений (${stats.totalImages})</strong> - рекомендую пакетную обработку`);
                 }
-
+                
                 if (stats.totalVideos > 3) {
                     tips.push(`🎬 <strong>Видеофайлы (${stats.totalVideos})</strong> - используйте стандартное качество`);
                 }
-
+                
                 if (stats.largeFiles > 0) {
                     tips.push(`💾 <strong>Большие файлы (${stats.largeFiles})</strong> - рекомендую сжатие`);
                 }
-
+                
                 if (stats.totalImages > 0) {
                     const avgSize = stats.totalSize / stats.totalImages / 1024 / 1024;
                     if (avgSize > 2) {
                         tips.push(`📸 <strong>Средний размер: ${avgSize.toFixed(1)}MB</strong> - можно оптимизировать`);
                     }
                 }
-
+                
                 const hasPNG = files.some(f => f.name.toLowerCase().endsWith('.png'));
                 const hasJPG = files.some(f => f.name.toLowerCase().endsWith('.jpg') || f.name.toLowerCase().endsWith('.jpeg'));
-
+                
                 if (hasPNG && !hasJPG) {
                     tips.push("🖼️ <strong>Только PNG</strong> - для веба конвертируйте в JPG");
                 }
-
+                
                 if (files.length > 15) {
                     tips.push("⚡ <strong>Много файлов</strong> - разбейте на несколько партий");
                 }
-
+                
                 if (tips.length === 0) {
                     tips.push("✅ Файлы готовы к обработке! Используйте стандартные настройки");
                 }
-
-                const recommendation = this.generateOverallRecommendation(stats);
-
-                let preset = 'mixed';
-                if (stats.totalImages > 0 && stats.totalVideos === 0) preset = 'images';
-                else if (stats.totalVideos > 0 && stats.totalImages === 0) preset = 'video';
-                else if (stats.totalImages > 0 && stats.totalVideos > 0) preset = 'mixed';
-
+                
                 return {
-                    tips,
-                    stats,
-                    recommendation,
-                    preset
+                    tips: tips,
+                    stats: stats,
+                    recommendation: this.generateOverallRecommendation(stats)
                 };
             }
-
+            
             static generateOverallRecommendation(stats) {
                 if (stats.totalImages > stats.totalVideos + stats.totalAudio) {
                     return "Основной контент - изображения. Используйте пресеты для соцсетей";
@@ -1419,12 +1341,12 @@
                 }
                 return "Смешанный контент. Используйте стандартные настройки";
             }
-
+            
             static async getDetailedImageAdvice(imageFile) {
                 try {
                     const analysis = await RealTimeImageAnalyzer.analyzeImageColors(imageFile);
                     if (!analysis) return null;
-
+                    
                     const advice = {
                         colors: analysis.dominantColors.slice(0, 3),
                         technical: {
@@ -1435,7 +1357,7 @@
                         },
                         suggestions: RealTimeImageAnalyzer.getImageTypeSuggestions(analysis)
                     };
-
+                    
                     return advice;
                 } catch (error) {
                     console.error('AI анализ изображения не удался:', error);
@@ -1455,8 +1377,7 @@
                 this.currentProcessor = null;
                 this.settings = this.loadSettings();
                 this.listeners = [];
-                this.lastAIAdvice = null;
-
+                
                 this.init();
             }
 
@@ -1483,7 +1404,7 @@
                         useOriginalNames: false
                     }
                 };
-
+                
                 if (saved) {
                     const parsed = JSON.parse(saved);
                     return {...defaults, ...parsed};
@@ -1498,7 +1419,7 @@
             updateNamingExample() {
                 const exampleElement = document.getElementById('namingExample');
                 const useOriginal = document.getElementById('useOriginalNames').checked;
-
+                
                 if (useOriginal) {
                     exampleElement.textContent = 'image.jpg, photo.png (оригинальные имена)';
                 } else {
@@ -1506,14 +1427,31 @@
                 }
             }
 
+            // 🔽 НОВЫЙ МЕТОД: строит имя на основе базового имени и цифр из оригинального файла
+            buildNameFromBase(originalName, baseName) {
+                // убираем расширение у baseName, если вдруг ввели "QB3_logo.png"
+                let cleanBase = baseName.replace(/\.[^/.]+$/, '').trim();
+                if (!cleanBase) {
+                    cleanBase = 'file';
+                }
+
+                // ищем первое число в оригинальном имени
+                const numMatch = originalName.match(/(\d+)/);
+                const number = numMatch ? numMatch[1] : '';
+
+                const suffix = number ? '_' + number : '';
+
+                return cleanBase + suffix;
+            }
+
             generateFileName(baseName, format, fileType, originalName = '') {
                 const useOriginal = document.getElementById('useOriginalNames').checked;
-
+                
                 if (useOriginal && originalName) {
                     const originalBase = originalName.replace(/\.[^/.]+$/, "");
                     return `${originalBase}.${format}`;
                 }
-
+                
                 return `${baseName}.${format}`;
             }
 
@@ -1522,20 +1460,20 @@
                     this.settings.selectedVideoResolution = '640x360';
                     this.settings.selectedVideoQuality = 'medium';
                     this.settings.imageSizes = '1200x600, 800x400, 400x200';
-
+                    
                     this.resetCheckboxesToDefault();
                     this.loadUISettings();
                     this.saveSettings();
                     this.updateStats();
                     this.updateNamingExample();
-
+                    
                     UIManager.showSuccess('Настройки сброшены', 'Все настройки восстановлены');
                 }
             }
 
             resetCheckboxesToDefault() {
                 const defaultStates = this.settings.defaultCheckboxes;
-
+                
                 Object.keys(defaultStates).forEach(checkboxId => {
                     const checkbox = document.getElementById(checkboxId);
                     if (checkbox) {
@@ -1553,19 +1491,19 @@
 
             clearAllCheckboxesState() {
                 const allCheckboxes = [
-                    'formatPNG', 'formatJPG',
+                    'formatPNG', 'formatJPG', 
                     'audioMP3', 'audioOGG',
                     'aiAnalysis', 'smartRenaming',
                     'useOriginalNames'
                 ];
-
+                
                 allCheckboxes.forEach(checkboxId => {
                     const checkbox = document.getElementById(checkboxId);
                     if (checkbox) {
                         checkbox.checked = false;
                     }
                 });
-
+                
                 this.updateStats();
                 this.updateNamingExample();
             }
@@ -1620,9 +1558,8 @@
 
                 try {
                     const advice = await AIAdvisor.analyzeFiles(this.uploadedFiles);
-                    this.lastAIAdvice = advice;
                     this.displayAIAdvice(advice);
-
+                    
                     UIManager.showSuccess('AI-анализ завершен', 'Получены персональные рекомендации');
                 } catch (error) {
                     console.error('Ошибка AI-советника', error);
@@ -1634,10 +1571,10 @@
             }
 
             async analyzeAllImages() {
-                const imageFiles = this.uploadedFiles.filter(f =>
+                const imageFiles = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Изображение'
                 );
-
+                
                 if (imageFiles.length === 0) {
                     UIManager.showError('Нет изображений для анализа');
                     return;
@@ -1650,11 +1587,11 @@
 
                 try {
                     const results = [];
-
+                    
                     for (let i = 0; i < imageFiles.length; i++) {
                         const file = imageFiles[i];
                         analyzeBtn.innerHTML = `🎨 Анализ (${i+1}/${imageFiles.length})...`;
-
+                        
                         const analysis = await AIAdvisor.getDetailedImageAdvice(file);
                         if (analysis) {
                             results.push({
@@ -1662,16 +1599,16 @@
                                 analysis: analysis
                             });
                         }
-
+                        
                         await new Promise(resolve => setTimeout(resolve, 100));
                     }
-
+                    
                     this.displayImageAnalysis(results);
                     UIManager.showSuccess(
-                        'Анализ изображений завершен',
+                        'Анализ изображений завершен', 
                         `Проанализировано ${results.length} изображений`
                     );
-
+                    
                 } catch (error) {
                     console.error('Ошибка анализа изображений', error);
                     UIManager.showError('Ошибка при анализе изображений');
@@ -1681,35 +1618,11 @@
                 }
             }
 
-            applyAIRecommendedPreset() {
-                if (!this.lastAIAdvice) {
-                    UIManager.showError('Сначала получите AI-советы');
-                    return;
-                }
-
-                const preset = this.lastAIAdvice.preset;
-
-                if (preset === 'images') {
-                    document.getElementById('imageSizes').value = '1200x630, 1080x1080, 1080x1920';
-                    document.getElementById('formatJPG').checked = true;
-                    document.getElementById('formatPNG').checked = false;
-                } else if (preset === 'video') {
-                    this.selectResolution('1280x720');
-                    this.selectVideoQuality('medium');
-                } else {
-                    document.getElementById('formatJPG').checked = true;
-                    document.getElementById('formatPNG').checked = true;
-                }
-
-                this.updateStats();
-                UIManager.showSuccess('AI-пресет применен', `Тип контента: ${preset}`);
-            }
-
             displayAIAdvice(advice) {
                 const aiResults = document.getElementById('aiResults');
                 const aiStats = document.getElementById('aiStats');
                 const aiTipsList = document.getElementById('aiTipsList');
-
+                
                 aiStats.innerHTML = `
                     <strong>📊 Статистика загруженных файлов:</strong><br>
                     • 📷 Изображений: ${advice.stats.totalImages}<br>
@@ -1718,7 +1631,7 @@
                     • 💾 Больших файлов: ${advice.stats.largeFiles}<br>
                     • 📦 Общий размер: ${(advice.stats.totalSize / 1024 / 1024).toFixed(1)}MB
                 `;
-
+                
                 aiTipsList.innerHTML = '';
                 advice.tips.forEach(tip => {
                     const tipElement = document.createElement('div');
@@ -1726,13 +1639,13 @@
                     tipElement.innerHTML = tip;
                     aiTipsList.appendChild(tipElement);
                 });
-
+                
                 const overallTip = document.createElement('div');
                 overallTip.className = 'ai-tip-item';
                 overallTip.style.borderLeftColor = '#f39c12';
                 overallTip.innerHTML = `🎯 <strong>Общая рекомендация:</strong> ${advice.recommendation}`;
                 aiTipsList.appendChild(overallTip);
-
+                
                 aiResults.classList.remove('hidden');
             }
 
@@ -1740,31 +1653,31 @@
                 const aiResults = document.getElementById('aiResults');
                 const aiStats = document.getElementById('aiStats');
                 const aiTipsList = document.getElementById('aiTipsList');
-
+                
                 aiStats.innerHTML = `
                     <strong>🎨 Результаты анализа изображений:</strong><br>
                     Проанализировано ${results.length} изображений
                 `;
-
+                
                 aiTipsList.innerHTML = '';
-
+                
                 results.forEach(result => {
                     const analysis = result.analysis;
                     const analysisElement = document.createElement('div');
                     analysisElement.className = 'image-analysis-result';
-
+                    
                     analysisElement.innerHTML = `
                         <div style="margin-bottom: 10px;">
                             <strong>📄 ${result.fileName}</strong>
                         </div>
-
+                        
                         <div class="analysis-technical">
                             <div class="tech-item">
                                 <div>Разрешение</div>
                                 <div class="tech-value">${analysis.technical.resolution}</div>
                             </div>
                             <div class="tech-item">
-                                <div>Соотношение сторон</div>
+                                <div>Соотношение</div>
                                 <div class="tech-value">${analysis.technical.aspectRatio}</div>
                             </div>
                             <div class="tech-item">
@@ -1776,67 +1689,97 @@
                                 <div class="tech-value">${analysis.technical.contrast}</div>
                             </div>
                         </div>
-
+                        
                         <div style="margin: 10px 0;">
                             <strong>Основные цвета:</strong>
                             <div class="color-palette">
-                                ${analysis.colors.map(color =>
-                                    `<div class="color-swatch" style="background: ${color.rgb};"
+                                ${analysis.colors.map(color => 
+                                    `<div class="color-swatch" style="background: ${color.rgb};" 
                                           data-hex="${color.hex}" title="${color.name}"></div>`
                                 ).join('')}
                             </div>
                         </div>
-
+                        
                         ${analysis.suggestions.length > 0 ? `
                             <div>
                                 <strong>💡 Рекомендации:</strong>
                                 <ul style="margin: 5px 0; padding-left: 20px;">
-                                    ${analysis.suggestions.map(suggestion =>
+                                    ${analysis.suggestions.map(suggestion => 
                                         `<li style="font-size: 0.9em; margin: 3px 0;">${suggestion}</li>`
                                     ).join('')}
                                 </ul>
                             </div>
                         ` : ''}
                     `;
-
+                    
                     aiTipsList.appendChild(analysisElement);
                 });
-
+                
                 aiResults.classList.remove('hidden');
             }
 
-            // АНАЛИЗ БРЕНДА
+            // АНАЛИЗ БРЕНДА - ОБНОВЛЕННЫЕ МЕТОДЫ
             async analyzeBrandAssets() {
-                const imageFiles = this.uploadedFiles.filter(f =>
+                const imageFiles = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Изображение');
-
+                
                 if (imageFiles.length === 0) {
                     UIManager.showError('Для анализа бренда загрузите изображения');
                     return;
                 }
 
                 try {
+                    // Показываем индикатор загрузки в самом блоке
                     this.showBrandAnalysisLoading(true);
-
+                    
                     const analysis = await AIService.analyzeBrand(imageFiles);
-
+                    
                     document.getElementById('imageSizes').value = analysis.suggestedSizes.join(', ');
                     this.settings.imageSizes = analysis.suggestedSizes.join(', ');
                     this.saveSettings();
-
+                    
                     if (document.getElementById('smartRenaming').checked) {
-                        this.uploadedFiles.forEach((file, index) => {
-                            file.customName = AIService.generateSmartFilename(
-                                file.name,
-                                FileUtils.getFileType(file.name)
-                            );
-                        });
+                        // Спросим у пользователя базовое имя (можно своё, например QB3_logo)
+                        let baseName = prompt(
+                            'Введите тип имени для файлов (logo, banner, creative, img, ad или своё — например, QB3_logo):',
+                            'logo'
+                        );
+
+                        if (baseName !== null) {
+                            baseName = baseName.trim();
+
+                            if (baseName) {
+                                // Используем кастомную базу + цифры из оригинальных имен
+                                this.uploadedFiles.forEach((file) => {
+                                    file.customName = this.buildNameFromBase(file.name, baseName);
+                                });
+                            } else {
+                                // Пустая строка — fallback на старый AIService
+                                this.uploadedFiles.forEach((file) => {
+                                    file.customName = AIService.generateSmartFilename(
+                                        file.name, 
+                                        FileUtils.getFileType(file.name)
+                                    );
+                                });
+                            }
+                        } else {
+                            // Нажали "Отмена" — тоже fallback на AIService
+                            this.uploadedFiles.forEach((file) => {
+                                file.customName = AIService.generateSmartFilename(
+                                    file.name, 
+                                    FileUtils.getFileType(file.name)
+                                );
+                            });
+                        }
+
                         this.updateFileList();
                     }
-
+                    
                     this.updateStats();
+                    
+                    // Показываем результаты в блоке анализа бренда
                     this.displayBrandAnalysisResults(analysis);
-
+                    
                 } catch (error) {
                     console.error('Ошибка AI-анализа', error);
                     UIManager.showError('Ошибка при анализе бренда');
@@ -1847,11 +1790,11 @@
             showBrandAnalysisLoading(show) {
                 const brandSection = document.querySelector('.ai-section');
                 const analyzeBtn = brandSection.querySelector('.upload-btn');
-
+                
                 if (show) {
                     analyzeBtn.innerHTML = '⏳ Анализируем...';
                     analyzeBtn.disabled = true;
-
+                    
                     const existingResults = brandSection.querySelector('.brand-analysis-results');
                     if (existingResults) {
                         existingResults.remove();
@@ -1864,112 +1807,55 @@
 
             displayBrandAnalysisResults(analysis) {
                 const brandSection = document.querySelector('.ai-section');
-
+                
                 this.showBrandAnalysisLoading(false);
-
+                
                 const existingResults = brandSection.querySelector('.brand-analysis-results');
                 if (existingResults) {
                     existingResults.remove();
                 }
-
+                
                 const resultsDiv = document.createElement('div');
                 resultsDiv.className = 'brand-analysis-results';
-
+                
                 resultsDiv.innerHTML = `
                     <div style="margin-bottom: 10px;">
                         <strong>🎯 Результаты анализа бренда:</strong>
                     </div>
-
+                    
                     <div style="margin-bottom: 10px;">
                         <strong>Основные цвета:</strong>
                         <div class="color-palette" style="margin: 5px 0;">
-                            ${analysis.dominantColors.map(color =>
-                                `<div class="color-swatch" style="background: ${color};"
+                            ${analysis.dominantColors.map(color => 
+                                `<div class="color-swatch" style="background: ${color};" 
                                       data-hex="${color}" title="${color}"></div>`
                             ).join('')}
                         </div>
                     </div>
-
+                    
                     <div style="margin-bottom: 10px;">
                         <strong>Рекомендованные размеры:</strong>
                         <div style="font-size: 0.9em; margin-top: 5px;">
                             ${analysis.suggestedSizes.join(', ')}
                         </div>
                     </div>
-
+                    
                     <div style="margin-bottom: 5px;">
                         <strong>Стиль:</strong> ${analysis.brandStyle}
                     </div>
-
+                    
                     <div style="color: #27ae60; font-size: 0.9em;">
                         ✅ Экономия времени: ${analysis.estimatedTimeSave}
                     </div>
-
-                    <button class="upload-btn" onclick="this.parentElement.remove()"
+                    
+                    <button class="upload-btn" onclick="this.parentElement.remove()" 
                             style="background: #e74c3c; margin-top: 10px; padding: 5px 10px; font-size: 0.8em;">
                         ✕ Закрыть
                     </button>
                 `;
-
+                
                 const analyzeBtn = brandSection.querySelector('.upload-btn');
                 analyzeBtn.parentNode.insertBefore(resultsDiv, analyzeBtn.nextSibling);
-            }
-
-            // AI-ПЕРЕИМЕНОВАНИЕ ФАЙЛОВ (ОБНОВЛЁННО)
-            async smartRenameFiles() {
-                if (this.uploadedFiles.length === 0) {
-                    UIManager.showError('Нет файлов для переименования');
-                    return;
-                }
-
-                const renameBtn = document.getElementById('smartRenameBtn');
-                const originalText = renameBtn.innerHTML;
-                renameBtn.innerHTML = '⏳ Переименовываем...';
-                renameBtn.disabled = true;
-
-                try {
-                    const allowedPrefixes = ['logo', 'banner', 'creative', 'img', 'ad'];
-                    let prefix = prompt(
-                        'Введите тип имени для файлов (logo, banner, creative, img, ad):',
-                        'logo'
-                    );
-
-                    if (!prefix) {
-                        renameBtn.innerHTML = originalText;
-                        renameBtn.disabled = false;
-                        return;
-                    }
-
-                    prefix = prefix.trim().toLowerCase();
-
-                    if (!allowedPrefixes.includes(prefix)) {
-                        alert('Неверный тип имени. Используйте: logo, banner, creative, img, ad.');
-                        renameBtn.innerHTML = originalText;
-                        renameBtn.disabled = false;
-                        return;
-                    }
-
-                    // Небольшая "имитация" AI-задержки (для UX)
-                    await new Promise(resolve => setTimeout(resolve, 700));
-
-                    this.uploadedFiles.forEach((file, index) => {
-                        const number = AIService.extractNumberFromName(file.name) ?? (index + 1);
-                        file.customName = `${prefix}_${number}`;
-                    });
-
-                    this.updateFileList();
-                    UIManager.showSuccess(
-                        'AI-переименование завершено',
-                        `Файлы переименованы по шаблону ${prefix}_N с сохранением номеров из оригинальных имен`
-                    );
-
-                } catch (error) {
-                    console.error('Ошибка AI-переименования', error);
-                    UIManager.showError('Ошибка при переименовании файлов');
-                } finally {
-                    renameBtn.innerHTML = originalText;
-                    renameBtn.disabled = false;
-                }
             }
 
             // ОСТАЛЬНЫЕ МЕТОДЫ
@@ -1997,7 +1883,7 @@
                         URL.revokeObjectURL(file.thumbnail);
                     }
                 });
-
+                
                 this.uploadedFiles = [];
                 this.setFiles(this.uploadedFiles);
                 UIManager.showSuccess('Очистка завершена', 'Все файлы удалены');
@@ -2011,14 +1897,14 @@
             async handleDrop(event) {
                 event.preventDefault();
                 document.getElementById('dropZone').classList.remove('dragover');
-
+                
                 const newFiles = Array.from(event.dataTransfer.files);
                 await this.addFiles(newFiles);
             }
 
             async addFiles(newFiles) {
                 const validatedFiles = [];
-
+                
                 for (const file of newFiles) {
                     try {
                         FileValidator.validateFile(file);
@@ -2036,14 +1922,15 @@
                     this.uploadedFiles.forEach(file => {
                         currentCustomNames[file.name] = file.customName;
                     });
-
+                    
                     this.uploadedFiles = [...this.uploadedFiles, ...validatedFiles];
                     this.uploadedFiles.forEach(file => {
                         file.customName = currentCustomNames[file.name] || file.customName;
                     });
-
+                    
                     this.setFiles(this.uploadedFiles);
-
+                    
+                    // Автоматически запускаем AI-советник
                     setTimeout(() => {
                         if (this.uploadedFiles.length > 0) {
                             this.getAIAdvice();
@@ -2073,7 +1960,7 @@
             updateFileList() {
                 const fileList = document.getElementById('fileList');
                 const emptyState = document.getElementById('emptyState');
-
+                
                 if (this.uploadedFiles.length === 0) {
                     fileList.innerHTML = '';
                     fileList.appendChild(emptyState);
@@ -2081,7 +1968,7 @@
                 }
 
                 const fragment = document.createDocumentFragment();
-
+                
                 const header = document.createElement('div');
                 header.className = 'file-list-header';
                 header.innerHTML = `
@@ -2108,26 +1995,26 @@
             createFileElement(file, index) {
                 const fileType = FileUtils.getFileType(file.name);
                 const fileSize = (file.size / 1024 / 1024).toFixed(2);
-
+                
                 const item = document.createElement('div');
                 item.className = 'file-item';
                 item.innerHTML = `
                     <div class="file-info">
-                        ${file.thumbnail ?
-                            `<img src="${file.thumbnail}" class="file-thumbnail" alt="Превью">` :
+                        ${file.thumbnail ? 
+                            `<img src="${file.thumbnail}" class="file-thumbnail" alt="Превью">` : 
                             `<span class="file-icon">${FileUtils.getFileIcon(fileType)}</span>`
                         }
                         <div>
                             <div><strong>${this.escapeHtml(file.name)}</strong></div>
                             <div class="file-size">${fileSize} MB • ${fileType}</div>
                             <div style="color: #27ae60; font-size: 0.8em; margin-top: 2px;">
-                                ➡️ Новое имя: <strong>${this.escapeHtml(file.customName)}</strong>.*
+                                ➡️ Новое имя: <strong>${this.escapeHtml(file.customName)}</strong>.* 
                             </div>
                         </div>
                     </div>
                     <div class="file-rename">
-                        <input type="text" class="rename-input" value="${this.escapeHtml(file.customName)}"
-                               placeholder="Введите новое имя"
+                        <input type="text" class="rename-input" value="${this.escapeHtml(file.customName)}" 
+                               placeholder="Введите новое имя" 
                                data-index="${index}">
                     </div>
                     <button class="cancel-btn" data-index="${index}">×</button>
@@ -2162,18 +2049,18 @@
                     return;
                 }
 
-                const imageCount = this.uploadedFiles.filter(f =>
+                const imageCount = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Изображение').length;
-                const audioCount = this.uploadedFiles.filter(f =>
+                const audioCount = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Аудио').length;
-                const videoCount = this.uploadedFiles.filter(f =>
+                const videoCount = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Видео').length;
 
                 const totalOutputFiles = this.calculateOutputFilesCount();
                 const efficiency = this.calculateEfficiencyMetrics();
-
+                
                 statsInfo.innerHTML = `
-                    📊 Статистика: ${this.uploadedFiles.length} файлов (📷${imageCount} 🎵${audioCount} 🎬${videoCount})
+                    📊 Статистика: ${this.uploadedFiles.length} файлов (📷${imageCount} 🎵${audioCount} 🎬${videoCount}) 
                     → ${totalOutputFiles} обработанных файлов
                     <br>⏱️ Экономия времени: ~${efficiency.timeSaved} минут
                 `;
@@ -2181,19 +2068,19 @@
 
             calculateOutputFilesCount() {
                 let total = 0;
-
+                
                 this.uploadedFiles.forEach(file => {
                     const fileType = FileUtils.getFileType(file.name);
-
+                    
                     if (fileType === 'Изображение') {
                         const sizes = document.getElementById('imageSizes').value.split(',').map(s => s.trim());
                         const formats = [];
-
+                        
                         if (document.getElementById('formatPNG').checked) formats.push('png');
                         if (document.getElementById('formatJPG').checked) formats.push('jpg');
-
+                        
                         total += sizes.length * formats.length;
-                    }
+                    } 
                     else if (fileType === 'Аудио') {
                         const formats = [];
                         if (document.getElementById('audioMP3').checked) formats.push('mp3');
@@ -2204,16 +2091,16 @@
                         total += 1;
                     }
                 });
-
+                
                 return total;
             }
 
             calculateEfficiencyMetrics() {
-                const imageCount = this.uploadedFiles.filter(f =>
+                const imageCount = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Изображение').length;
-                const videoCount = this.uploadedFiles.filter(f =>
+                const videoCount = this.uploadedFiles.filter(f => 
                     FileUtils.getFileType(f.name) === 'Видео').length;
-
+                
                 return {
                     timeSaved: Math.round((imageCount * 2 + videoCount * 10) * 0.85),
                     originalSize: this.uploadedFiles.reduce((sum, file) => sum + file.size, 0),
@@ -2228,7 +2115,7 @@
                     'logos': '800x800, 400x400, 200x200',
                     'icons': '512x512, 256x256, 128x128, 64x64, 32x32'
                 };
-
+                
                 if (presets[presetName]) {
                     document.getElementById('imageSizes').value = presets[presetName];
                     this.settings.imageSizes = presets[presetName];
@@ -2262,10 +2149,6 @@
 
                 document.getElementById('downloadAllBtn').addEventListener('click', () => {
                     this.downloadAllFiles();
-                });
-
-                document.getElementById('smartRenameBtn').addEventListener('click', () => {
-                    this.smartRenameFiles();
                 });
 
                 document.getElementById('imageSizes').addEventListener('input', () => {
@@ -2302,10 +2185,10 @@
 
             loadUISettings() {
                 document.getElementById('imageSizes').value = this.settings.imageSizes;
-
+                
                 this.selectResolution(this.settings.selectedVideoResolution, false);
                 this.selectVideoQuality(this.settings.selectedVideoQuality, false);
-
+                
                 this.resetCheckboxesToDefault();
             }
 
@@ -2359,7 +2242,7 @@
 
                 this.isProcessing = true;
                 this.currentProcessor = new MediaProcessor();
-
+                
                 UIManager.showProcessingState(true);
                 this.processedFilesStorage = [];
 
@@ -2377,7 +2260,7 @@
 
                     UIManager.showResults(this.processedFilesStorage);
                     UIManager.showProcessingState(false);
-
+                    
                 } catch (error) {
                     console.error('Ошибка обработки', error);
                     UIManager.showError('Произошла ошибка при обработке файлов');
@@ -2431,24 +2314,24 @@
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
                     const img = new Image();
-
+                    
                     canvas.width = 50;
                     canvas.height = 50;
-
+                    
                     img.onload = () => {
                         const scale = Math.min(50 / img.width, 50 / img.height);
                         const width = img.width * scale;
                         const height = img.height * scale;
                         const x = (50 - width) / 2;
                         const y = (50 - height) / 2;
-
+                        
                         ctx.fillStyle = '#f0f0f0';
                         ctx.fillRect(0, 0, 50, 50);
                         ctx.drawImage(img, x, y, width, height);
-
+                        
                         resolve(canvas.toDataURL());
                     };
-
+                    
                     img.onerror = () => resolve(null);
                     img.src = URL.createObjectURL(file);
                 });
@@ -2488,9 +2371,9 @@
                         } catch (error) {
                             console.error(`Ошибка обработки файла ${file.name}`, error);
                             const fileName = appState.generateFileName(
-                                file.customName || file.name.replace(/\.[^/.]+$/, ""),
-                                file.name.split('.').pop(),
-                                FileUtils.getFileType(file.name),
+                                file.customName || file.name.replace(/\.[^/.]+$/, ""), 
+                                file.name.split('.').pop(), 
+                                FileUtils.getFileType(file.name), 
                                 file.name
                             );
                             onFileProcessed([{
@@ -2511,27 +2394,28 @@
             }
 
             async processFile(file, settings) {
+                // Имитация обработки файла
                 await new Promise(resolve => setTimeout(resolve, 500));
-
+                
                 const fileType = FileUtils.getFileType(file.name);
                 const processedFiles = [];
-
+                
                 if (fileType === 'Изображение') {
                     const sizes = settings.imageSizes.split(',').map(s => s.trim());
                     const formats = [];
-
+                    
                     if (document.getElementById('formatPNG').checked) formats.push('png');
                     if (document.getElementById('formatJPG').checked) formats.push('jpg');
-
+                    
                     for (const size of sizes) {
                         for (const format of formats) {
                             const fileName = appState.generateFileName(
-                                file.customName,
-                                format,
-                                fileType,
+                                file.customName, 
+                                format, 
+                                fileType, 
                                 file.name
                             );
-
+                            
                             processedFiles.push({
                                 blob: new Blob([`Processed ${file.name} as ${size} ${format}`], {type: file.type}),
                                 name: `${file.customName}_${size}.${format}`,
@@ -2542,12 +2426,12 @@
                     }
                 } else {
                     const fileName = appState.generateFileName(
-                        file.customName,
-                        file.name.split('.').pop(),
-                        fileType,
+                        file.customName, 
+                        file.name.split('.').pop(), 
+                        fileType, 
                         file.name
                     );
-
+                    
                     processedFiles.push({
                         blob: new Blob([`Processed ${file.name}`], {type: file.type}),
                         name: fileName,
@@ -2555,7 +2439,7 @@
                         originalSize: file.size
                     });
                 }
-
+                
                 return processedFiles;
             }
         }
@@ -2563,7 +2447,7 @@
         class AIService {
             static async analyzeBrand(imageFiles) {
                 await new Promise(resolve => setTimeout(resolve, 1500));
-
+                
                 return {
                     dominantColors: ['#2c3e50', '#3498db', '#e74c3c'],
                     suggestedSizes: ['1200x630', '1080x1080', '800x400'],
@@ -2575,7 +2459,7 @@
 
             static generateSmartFilename(originalName, fileType) {
                 const base = originalName.replace(/\.[^/.]+$/, "").toLowerCase();
-
+                
                 if (base.includes('logo') || base.includes('logotype')) {
                     return 'brand-logo';
                 } else if (base.includes('banner') || base.includes('header')) {
@@ -2591,23 +2475,14 @@
                 } else if (fileType === 'Аудио') {
                     return 'brand-audio';
                 }
-
+                
                 const prefixes = {
                     'Изображение': 'image',
                     'Аудио': 'audio',
                     'Видео': 'video'
                 };
-
+                
                 return `${prefixes[fileType] || 'file'}-${Date.now().toString().slice(-4)}`;
-            }
-
-            // Новый метод: вытащить цифру из исходного имени файла
-            static extractNumberFromName(originalName) {
-                const nameWithoutExt = originalName.replace(/\.[^/.]+$/, "");
-                // берем последнее встречающееся число
-                const match = nameWithoutExt.match(/(\d+)(?!.*\d)/);
-                if (!match) return null;
-                return parseInt(match[1], 10);
             }
         }
 
@@ -2634,12 +2509,12 @@
             static downloadFile(blob, fileName) {
                 const downloadLink = document.createElement('a');
                 const url = URL.createObjectURL(blob);
-
+                
                 downloadLink.href = url;
                 downloadLink.download = fileName;
                 document.body.appendChild(downloadLink);
                 downloadLink.click();
-
+                
                 setTimeout(() => {
                     document.body.removeChild(downloadLink);
                     URL.revokeObjectURL(url);
@@ -2649,19 +2524,19 @@
             static async downloadAsZip(files) {
                 try {
                     const zip = new JSZip();
-
+                    
                     files.forEach(file => {
                         zip.file(file.name, file.blob);
                     });
-
+                    
                     const zipBlob = await zip.generateAsync({
                         type: 'blob',
                         compression: 'DEFLATE',
                         compressionOptions: { level: 6 }
                     });
-
+                    
                     this.downloadFile(zipBlob, `processed_media_${new Date().getTime()}.zip`);
-
+                    
                 } catch (error) {
                     throw new Error('Ошибка при создании ZIP-архива: ' + error.message);
                 }
@@ -2672,7 +2547,7 @@
             static showProcessingState(isProcessing) {
                 const processBtn = document.getElementById('processBtn');
                 const progressBar = document.getElementById('progressBar');
-
+                
                 if (isProcessing) {
                     processBtn.disabled = true;
                     processBtn.innerHTML = '⏳ Обработка...';
@@ -2695,20 +2570,20 @@
                 const result = document.getElementById('result');
                 const resultFiles = document.getElementById('resultFiles');
                 const downloadSection = document.getElementById('downloadSection');
-
+                
                 resultFiles.innerHTML = '';
-
+                
                 files.forEach(file => {
                     const originalSize = file.originalSize ? (file.originalSize / 1024 / 1024).toFixed(2) : 'N/A';
                     const compressedSize = (file.blob.size / 1024 / 1024).toFixed(2);
-                    const compressionRatio = file.originalSize ?
+                    const compressionRatio = file.originalSize ? 
                         ((1 - file.blob.size / file.originalSize) * 100).toFixed(1) : 0;
-
+                    
                     let sizeInfo = '';
                     if (file.originalSize && file.blob.size !== file.originalSize) {
                         sizeInfo = `<span class="file-size-compression">(${originalSize}МБ → ${compressedSize}МБ, -${compressionRatio}%)</span>`;
                     }
-
+                    
                     const fileElement = document.createElement('div');
                     fileElement.className = 'result-file';
                     fileElement.innerHTML = `
@@ -2720,11 +2595,11 @@
                             📥 Скачать
                         </button>
                     `;
-
+                    
                     fileElement.querySelector('button').addEventListener('click', () => {
                         appState.downloadSingleFile(file.name);
                     });
-
+                    
                     resultFiles.appendChild(fileElement);
                 });
 
@@ -2777,7 +2652,7 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             appState = new AppState();
-
+            
             window.addEventListener('beforeunload', () => {
                 appState.uploadedFiles.forEach(file => {
                     if (file.objectURL) {
