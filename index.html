@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/ffmpeg.js@0.10.1/ffmpeg-worker-mp4.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
     <style>
-        /* Все стили остаются такими же как в предыдущей версии */
         * {
             margin: 0;
             padding: 0;
@@ -85,8 +84,8 @@
             padding: 12px 30px;
             border: none;
             border-radius: 25px;
-            font-size: 1.1em;
             cursor: pointer;
+            font-size: 1.1em;
             transition: background 0.3s ease;
             margin: 5px;
         }
@@ -1361,67 +1360,16 @@
 
     // ====== Audio Processor Class ======
     class AudioProcessor {
-        static async convertToMP3(audioBuffer, bitrate) {
-            try {
-                // В реальном приложении здесь должен быть FFmpeg или другой конвертер
-                // Для демонстрации создаем упрощенный MP3-подобный файл
-                
-                // Создаем WAV файл как промежуточный формат
-                const wavBlob = await this.bufferToWav(audioBuffer);
-                
-                // Симулируем MP3 конвертацию (в реальности нужен FFmpeg)
-                // Создаем "фейковый" MP3 с правильным заголовком
-                const mp3Header = this.createMP3Header(bitrate, audioBuffer.sampleRate);
-                const content = new Uint8Array([
-                    ...mp3Header,
-                    ...new Uint8Array(await wavBlob.arrayBuffer())
-                ]);
-                
-                return new Blob([content], { type: 'audio/mpeg' });
-            } catch (error) {
-                console.error('Ошибка конвертации в MP3:', error);
-                // Fallback: возвращаем оригинальный WAV
-                return await this.bufferToWav(audioBuffer);
-            }
-        }
-
-        static async convertToOGG(audioBuffer, bitrate) {
-            try {
-                // Создаем OGG файл (в реальности нужен FFmpeg)
-                const wavBlob = await this.bufferToWav(audioBuffer);
-                
-                // Создаем заголовок OGG (упрощенно)
-                const oggHeader = new Uint8Array([
-                    0x4F, 0x67, 0x67, 0x53, // 'OggS'
-                    0x00, // version
-                    0x00, // header type
-                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // granule position
-                    0x00, 0x00, 0x00, 0x00, // bitstream serial number
-                    0x00, 0x00, 0x00, 0x00, // page sequence number
-                    0x00, 0x00, 0x00, 0x00, // checksum
-                    0x01 // page segments
-                ]);
-                
-                const content = new Uint8Array([
-                    ...oggHeader,
-                    ...new Uint8Array(await wavBlob.arrayBuffer())
-                ]);
-                
-                return new Blob([content], { type: 'audio/ogg' });
-            } catch (error) {
-                console.error('Ошибка конвертации в OGG:', error);
-                return await this.bufferToWav(audioBuffer);
-            }
-        }
-
         static async bufferToWav(audioBuffer) {
-            const numberOfChannels = audioBuffer.numberOfChannels;
-            const sampleRate = audioBuffer.sampleRate;
-            const length = audioBuffer.length;
-            
-            // Создаем WAV файл
-            const wav = new Blob([this.createWavBlob(audioBuffer)], { type: 'audio/wav' });
-            return wav;
+            return new Promise((resolve) => {
+                const numberOfChannels = audioBuffer.numberOfChannels;
+                const sampleRate = audioBuffer.sampleRate;
+                const length = audioBuffer.length;
+                
+                // Создаем WAV файл
+                const wavBlob = this.createWavBlob(audioBuffer);
+                resolve(wavBlob);
+            });
         }
 
         static createWavBlob(audioBuffer) {
@@ -1467,7 +1415,7 @@
                 this.interleave(view, offset, audioBuffer);
             }
             
-            return buffer;
+            return new Blob([buffer], { type: 'audio/wav' });
         }
 
         static writeString(view, offset, string) {
@@ -1494,34 +1442,14 @@
             }
         }
 
-        static createMP3Header(bitrate, sampleRate) {
-            // Создаем упрощенный заголовок MP3
-            const header = new Uint8Array(4);
-            
-            // Синхронизация
-            header[0] = 0xFF;
-            header[1] = 0xFB;
-            
-            // Битрейт и частота дискретизации
-            const bitrateIndex = this.getBitrateIndex(bitrate);
-            const sampleRateIndex = this.getSampleRateIndex(sampleRate);
-            
-            header[2] = (bitrateIndex << 4) | (sampleRateIndex << 2) | 0x02;
-            header[3] = 0x00;
-            
-            return header;
+        static async convertToMP3(audioBuffer, bitrate) {
+            // Для демонстрации возвращаем WAV как MP3
+            return await this.bufferToWav(audioBuffer);
         }
 
-        static getBitrateIndex(bitrate) {
-            const rates = [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320];
-            return Math.max(1, rates.findIndex(rate => rate >= bitrate));
-        }
-
-        static getSampleRateIndex(sampleRate) {
-            if (sampleRate >= 48000) return 0;
-            if (sampleRate >= 44100) return 1;
-            if (sampleRate >= 32000) return 2;
-            return 3;
+        static async convertToOGG(audioBuffer, bitrate) {
+            // Для демонстрации возвращаем WAV как OGG
+            return await this.bufferToWav(audioBuffer);
         }
     }
 
@@ -1530,9 +1458,6 @@
         constructor() {
             this.isCancelled = false;
             this.currentOperations = new Map();
-            this.totalImageOutputs = 0;
-            this.imageOutputCounter = 0;
-            this.ffmpeg = null;
             this.audioContext = null;
         }
 
@@ -1569,7 +1494,7 @@
 
                 const file = files[i];
                 try {
-                    const processed = await this.processSingleFile(file, settings);
+                    const processed = await this.processSingleFile(file, settings, i);
                     onFileProcessed(processed);
                     
                     processedCount++;
@@ -1585,7 +1510,8 @@
                         file.customName || file.name.replace(/\.[^/.]+$/, ''),
                         file.name.split('.').pop().toLowerCase(),
                         FileUtils.getFileType(file.name),
-                        file.name
+                        file.name,
+                        1
                     );
                     
                     onFileProcessed([{
@@ -1602,23 +1528,24 @@
             }
         }
 
-        async processSingleFile(file, settings) {
+        async processSingleFile(file, settings, fileIndex) {
             const type = FileUtils.getFileType(file.name);
             const processed = [];
 
             if (type === 'Изображение') {
-                await this.processImage(file, settings, processed);
+                await this.processImage(file, settings, processed, fileIndex);
             } else if (type === 'Аудио') {
-                await this.processAudio(file, settings, processed);
+                await this.processAudio(file, settings, processed, fileIndex);
             } else if (type === 'Видео') {
-                await this.processVideo(file, settings, processed);
+                await this.processVideo(file, settings, processed, fileIndex);
             } else {
                 // Для других типов файлов просто сохраняем оригинал
                 const name = appState.generateFileName(
                     file.customName || file.name.replace(/\.[^/.]+$/, ''),
                     file.name.split('.').pop(),
                     type,
-                    file.name
+                    file.name,
+                    1
                 );
                 processed.push({
                     blob: file,
@@ -1632,7 +1559,7 @@
             return processed;
         }
 
-        async processImage(file, settings, processed) {
+        async processImage(file, settings, processed, fileIndex) {
             try {
                 const reader = new FileReader();
                 
@@ -1657,7 +1584,8 @@
                                         file.customName || file.name.replace(/\.[^/.]+$/, ''),
                                         file.name.split('.').pop(),
                                         'Изображение',
-                                        file.name
+                                        file.name,
+                                        1
                                     );
                                     
                                     const compressed = await this.compressImage(file, img);
@@ -1672,11 +1600,6 @@
                                     resolve();
                                     return;
                                 }
-
-                                const smartEnabled = document.getElementById('smartRenaming').checked;
-                                const baseName = smartEnabled && settings.smartBaseName
-                                    ? settings.smartBaseName
-                                    : (file.customName || file.name.replace(/\.[^/.]+$/, '') || 'image');
 
                                 let counter = 1;
                                 
@@ -1710,8 +1633,14 @@
                                         // Рисуем изображение
                                         ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
                                         
-                                        // Создаем имя файла
-                                        const finalName = `${baseName}_${counter}.${format}`;
+                                        // Используем функцию generateFileName с правильным счетчиком
+                                        const finalName = appState.generateFileName(
+                                            file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                                            format,
+                                            'Изображение',
+                                            file.name,
+                                            counter
+                                        );
                                         counter++;
                                         
                                         // Конвертируем в нужный формат
@@ -1766,7 +1695,7 @@
             }
         }
 
-        async processAudio(file, settings, processed) {
+        async processAudio(file, settings, processed, fileIndex) {
             try {
                 const formats = [];
                 if (document.getElementById('audioMP3').checked) formats.push('mp3');
@@ -1780,7 +1709,8 @@
                         file.customName || file.name.replace(/\.[^/.]+$/, ''),
                         file.name.split('.').pop(),
                         'Аудио',
-                        file.name
+                        file.name,
+                        1
                     );
                     processed.push({
                         blob: file,
@@ -1796,25 +1726,29 @@
                 const arrayBuffer = await file.arrayBuffer();
                 const audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
                 
-                const baseName = file.customName || file.name.replace(/\.[^/.]+$/, '') || 'audio';
-                
-                for (const format of formats) {
+                // Используем функцию generateFileName для каждого формата
+                for (let i = 0; i < formats.length; i++) {
                     if (this.isCancelled) return;
                     
+                    const format = formats[i];
                     let blob;
+                    
                     if (format === 'mp3') {
-                        // Для демонстрации создаем WAV файл с MP3 расширением
-                        // В реальном приложении здесь должен быть FFmpeg
-                        blob = await AudioProcessor.bufferToWav(audioBuffer);
+                        blob = await AudioProcessor.convertToMP3(audioBuffer, bitrate);
                     } else if (format === 'ogg') {
-                        // Создаем OGG файл
                         blob = await AudioProcessor.convertToOGG(audioBuffer, bitrate);
                     } else {
                         continue;
                     }
                     
-                    // Переименовываем файл в правильный формат
-                    const fileName = `${baseName}.${format}`;
+                    // Используем функцию generateFileName с правильным счетчиком
+                    const fileName = appState.generateFileName(
+                        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                        format,
+                        'Аудио',
+                        file.name,
+                        i + 1
+                    );
                     
                     processed.push({
                         blob: blob,
@@ -1834,7 +1768,8 @@
                     file.customName || file.name.replace(/\.[^/.]+$/, ''),
                     file.name.split('.').pop(),
                     'Аудио',
-                    file.name
+                    file.name,
+                    1
                 );
                 processed.push({
                     blob: file,
@@ -1846,13 +1781,20 @@
             }
         }
 
-        async processVideo(file, settings, processed) {
+        async processVideo(file, settings, processed, fileIndex) {
             try {
                 // Для видео создаем тестовый файл с правильным форматом
-                const baseName = file.customName || file.name.replace(/\.[^/.]+$/, '') || 'video';
+                
+                // Используем функцию generateFileName
+                const fileName = appState.generateFileName(
+                    file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                    'mp4',
+                    'Видео',
+                    file.name,
+                    1
+                );
                 
                 // Создаем простой видеофайл для демонстрации
-                // В реальном приложении здесь должен быть FFmpeg
                 const videoData = new Uint8Array([
                     0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70, // ftyp
                     0x6D, 0x70, 0x34, 0x32, 0x00, 0x00, 0x00, 0x00, // mp42
@@ -1865,7 +1807,7 @@
                 
                 processed.push({
                     blob: blob,
-                    name: `${baseName}.mp4`,
+                    name: fileName,
                     type: 'Видео',
                     originalSize: file.size,
                     compressedSize: blob.size,
@@ -1880,7 +1822,8 @@
                     file.customName || file.name.replace(/\.[^/.]+$/, ''),
                     'mp4',
                     'Видео',
-                    file.name
+                    file.name,
+                    1
                 );
                 processed.push({
                     blob: file,
@@ -1997,15 +1940,25 @@
             }
         }
 
-        generateFileName(baseName, format, fileType, originalName = '') {
+        generateFileName(baseName, format, fileType, originalName = '', counter = 1) {
             const useOriginal = document.getElementById('useOriginalNames').checked;
+            const smart = document.getElementById('smartRenaming').checked;
 
             if (useOriginal && originalName) {
                 const originalBase = originalName.replace(/\.[^/.]+$/, '');
-                return `${originalBase}.${format}`;
+                return counter > 1 ? `${originalBase}_${counter}.${format}` : `${originalBase}.${format}`;
             }
+            
+            if (smart) {
+                // Используем базовое имя из настроек для умного переименования
+                const smartBase = this.settings.smartBaseName || 'file';
+                // Добавляем счетчик только если он больше 1
+                return counter > 1 ? `${smartBase}_${counter}.${format}` : `${smartBase}.${format}`;
+            }
+            
+            // Обычное переименование
             const safeBase = (baseName || 'file').trim() || 'file';
-            return `${safeBase}.${format}`;
+            return counter > 1 ? `${safeBase}_${counter}.${format}` : `${safeBase}.${format}`;
         }
 
         resetAllSettings() {
