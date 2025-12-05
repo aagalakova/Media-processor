@@ -1488,30 +1488,40 @@
             const totalFiles = files.length;
             let processedCount = 0;
 
-            // Обработка файлов
+            // Обработка файлов последовательно для стабильности
             for (let i = 0; i < files.length; i++) {
                 if (this.isCancelled) break;
 
                 const file = files[i];
                 try {
+                    console.log(`Обработка файла ${i+1}/${totalFiles}: ${file.name}`);
+                    
                     const processed = await this.processSingleFile(file, settings, i);
-                    onFileProcessed(processed);
+                    
+                    if (processed && processed.length > 0) {
+                        onFileProcessed(processed);
+                        console.log(`  Создано ${processed.length} версий`);
+                    } else {
+                        console.log(`  Файл не был обработан: ${file.name}`);
+                    }
                     
                     processedCount++;
                     onProgress((processedCount / totalFiles) * 100);
                     
-                    // Небольшая задержка для UI
-                    await new Promise(r => setTimeout(r, 50));
+                    // Небольшая задержка для стабильности
+                    await new Promise(r => setTimeout(r, 100));
                     
                 } catch (e) {
                     console.error(`Ошибка обработки файла ${file.name}:`, e);
-                    // Создаем fallback файл
+                    
+                    // Fallback файл
                     const fallbackName = appState.generateFileName(
                         file.customName || file.name.replace(/\.[^/.]+$/, ''),
                         file.name.split('.').pop().toLowerCase(),
                         FileUtils.getFileType(file.name),
                         file.name,
-                        1
+                        1,
+                        i
                     );
                     
                     onFileProcessed([{
@@ -1526,6 +1536,8 @@
                     onProgress((processedCount / totalFiles) * 100);
                 }
             }
+            
+            console.log(`Обработка завершена. Всего файлов: ${processedCount}`);
         }
 
         async processSingleFile(file, settings, fileIndex) {
@@ -1545,7 +1557,8 @@
                     file.name.split('.').pop(),
                     type,
                     file.name,
-                    1
+                    1,
+                    fileIndex
                 );
                 processed.push({
                     blob: file,
@@ -1585,22 +1598,41 @@
                                         file.name.split('.').pop(),
                                         'Изображение',
                                         file.name,
-                                        1
+                                        1,
+                                        fileIndex
                                     );
                                     
-                                    const compressed = await this.compressImage(file, img);
-                                    processed.push({
-                                        blob: compressed.blob,
-                                        name: name,
-                                        type: 'Изображение',
-                                        originalSize: file.size,
-                                        compressedSize: compressed.blob.size,
-                                        format: compressed.format
+                                    const canvas = document.createElement('canvas');
+                                    const ctx = canvas.getContext('2d');
+                                    canvas.width = img.width;
+                                    canvas.height = img.height;
+                                    ctx.drawImage(img, 0, 0);
+                                    
+                                    const mimeType = file.type.includes('png') ? 'image/png' : 'image/jpeg';
+                                    const quality = file.type.includes('png') ? 0.9 : 0.85;
+                                    
+                                    await new Promise((resolveCanvas) => {
+                                        canvas.toBlob((blob) => {
+                                            if (blob) {
+                                                processed.push({
+                                                    blob: blob,
+                                                    name: name,
+                                                    type: 'Изображение',
+                                                    originalSize: file.size,
+                                                    compressedSize: blob.size,
+                                                    format: file.type.includes('png') ? 'png' : 'jpg'
+                                                });
+                                            }
+                                            resolveCanvas();
+                                        }, mimeType, quality);
                                     });
+                                    
                                     resolve();
                                     return;
                                 }
 
+                                // Собираем все промисы для параллельной обработки
+                                const promises = [];
                                 let counter = 1;
                                 
                                 for (const size of sizes) {
@@ -1612,61 +1644,16 @@
                                             return;
                                         }
                                         
-                                        const canvas = document.createElement('canvas');
-                                        const ctx = canvas.getContext('2d');
-                                        
-                                        // Масштабируем изображение
-                                        canvas.width = width;
-                                        canvas.height = height;
-                                        
-                                        // Сохраняем пропорции
-                                        const scale = Math.min(width / img.width, height / img.height);
-                                        const scaledWidth = img.width * scale;
-                                        const scaledHeight = img.height * scale;
-                                        const offsetX = (width - scaledWidth) / 2;
-                                        const offsetY = (height - scaledHeight) / 2;
-                                        
-                                        // Очищаем canvas
-                                        ctx.fillStyle = format === 'png' ? 'transparent' : 'white';
-                                        ctx.fillRect(0, 0, width, height);
-                                        
-                                        // Рисуем изображение
-                                        ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
-                                        
-                                        // Используем функцию generateFileName с правильным счетчиком
-                                        const finalName = appState.generateFileName(
-                                            file.customName || file.name.replace(/\.[^/.]+$/, ''),
-                                            format,
-                                            'Изображение',
-                                            file.name,
-                                            counter
-                                        );
+                                        promises.push(this.createImageVersion(
+                                            img, width, height, format, file, processed, counter, fileIndex
+                                        ));
                                         counter++;
-                                        
-                                        // Конвертируем в нужный формат
-                                        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-                                        const quality = format === 'png' ? 0.9 : 0.85;
-                                        
-                                        canvas.toBlob((blob) => {
-                                            if (blob) {
-                                                processed.push({
-                                                    blob: blob,
-                                                    name: finalName,
-                                                    type: 'Изображение',
-                                                    originalSize: file.size,
-                                                    compressedSize: blob.size,
-                                                    format: format,
-                                                    resolution: size
-                                                });
-                                            }
-                                            
-                                            // Если это последняя итерация, завершаем
-                                            if (size === sizes[sizes.length - 1] && format === formats[formats.length - 1]) {
-                                                resolve();
-                                            }
-                                        }, mimeType, quality);
                                     }
                                 }
+                                
+                                // Ждем завершения всех промисов
+                                await Promise.all(promises);
+                                resolve();
                                 
                             } catch (error) {
                                 console.error('Ошибка обработки изображения:', error);
@@ -1676,6 +1663,22 @@
                         
                         img.onerror = () => {
                             console.error('Не удалось загрузить изображение');
+                            // Fallback - сохраняем оригинал
+                            const name = appState.generateFileName(
+                                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                                file.name.split('.').pop(),
+                                'Изображение',
+                                file.name,
+                                1,
+                                fileIndex
+                            );
+                            processed.push({
+                                blob: file,
+                                name: name,
+                                type: 'Изображение',
+                                originalSize: file.size,
+                                compressedSize: file.size
+                            });
                             resolve();
                         };
                         
@@ -1695,6 +1698,59 @@
             }
         }
 
+        async createImageVersion(img, width, height, format, file, processed, counter, fileIndex) {
+            return new Promise((resolveVersion) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = width;
+                canvas.height = height;
+                
+                // Сохраняем пропорции
+                const scale = Math.min(width / img.width, height / img.height);
+                const scaledWidth = img.width * scale;
+                const scaledHeight = img.height * scale;
+                const offsetX = (width - scaledWidth) / 2;
+                const offsetY = (height - scaledHeight) / 2;
+                
+                // Очищаем canvas
+                ctx.fillStyle = format === 'png' ? 'transparent' : 'white';
+                ctx.fillRect(0, 0, width, height);
+                
+                // Рисуем изображение
+                ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+                
+                // Используем функцию generateFileName с правильными параметрами
+                const finalName = appState.generateFileName(
+                    file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                    format,
+                    'Изображение',
+                    file.name,
+                    counter,
+                    fileIndex
+                );
+                
+                // Конвертируем в нужный формат
+                const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+                const quality = format === 'png' ? 0.9 : 0.85;
+                
+                canvas.toBlob((blob) => {
+                    if (blob) {
+                        processed.push({
+                            blob: blob,
+                            name: finalName,
+                            type: 'Изображение',
+                            originalSize: file.size,
+                            compressedSize: blob.size,
+                            format: format,
+                            resolution: `${width}x${height}`
+                        });
+                    }
+                    resolveVersion();
+                }, mimeType, quality);
+            });
+        }
+
         async processAudio(file, settings, processed, fileIndex) {
             try {
                 const formats = [];
@@ -1710,7 +1766,8 @@
                         file.name.split('.').pop(),
                         'Аудио',
                         file.name,
-                        1
+                        1,
+                        fileIndex
                     );
                     processed.push({
                         blob: file,
@@ -1741,13 +1798,14 @@
                         continue;
                     }
                     
-                    // Используем функцию generateFileName с правильным счетчиком
+                    // Используем функцию generateFileName с правильными параметрами
                     const fileName = appState.generateFileName(
                         file.customName || file.name.replace(/\.[^/.]+$/, ''),
                         format,
                         'Аудио',
                         file.name,
-                        i + 1
+                        i + 1,
+                        fileIndex
                     );
                     
                     processed.push({
@@ -1769,7 +1827,8 @@
                     file.name.split('.').pop(),
                     'Аудио',
                     file.name,
-                    1
+                    1,
+                    fileIndex
                 );
                 processed.push({
                     blob: file,
@@ -1785,13 +1844,14 @@
             try {
                 // Для видео создаем тестовый файл с правильным форматом
                 
-                // Используем функцию generateFileName
+                // Используем функцию generateFileName с правильными параметрами
                 const fileName = appState.generateFileName(
                     file.customName || file.name.replace(/\.[^/.]+$/, ''),
                     'mp4',
                     'Видео',
                     file.name,
-                    1
+                    1,
+                    fileIndex
                 );
                 
                 // Создаем простой видеофайл для демонстрации
@@ -1823,7 +1883,8 @@
                     'mp4',
                     'Видео',
                     file.name,
-                    1
+                    1,
+                    fileIndex
                 );
                 processed.push({
                     blob: file,
@@ -1879,6 +1940,8 @@
             this.currentProcessor = null;
             this.settings = this.loadSettings();
             this.listeners = [];
+            this.smartNameCounter = 1;
+            this.smartFileMapping = new Map();
             this.init();
         }
 
@@ -1932,7 +1995,7 @@
             const smart = document.getElementById('smartRenaming').checked;
 
             if (smart) {
-                element.textContent = 'logo.png или logo_1.png, logo_2.png';
+                element.textContent = 'logo1.png, logo2.png, logo3.png';
             } else if (useOriginal) {
                 element.textContent = 'image01.jpg, photo_002.png (оригинальные имена)';
             } else {
@@ -1940,20 +2003,56 @@
             }
         }
 
-        generateFileName(baseName, format, fileType, originalName = '', counter = 1) {
+        extractNumberFromFilename(filename) {
+            // Ищем последовательность цифр в имени файла
+            const match = filename.match(/(\d+)/);
+            return match ? parseInt(match[1]) : null;
+        }
+
+        getNextSmartNumber() {
+            const next = this.smartNameCounter;
+            this.smartNameCounter++;
+            return next;
+        }
+
+        resetSmartCounter() {
+            this.smartNameCounter = 1;
+            this.smartFileMapping.clear();
+        }
+
+        generateFileName(baseName, format, fileType, originalName = '', counter = 1, fileIndex = 0) {
             const useOriginal = document.getElementById('useOriginalNames').checked;
             const smart = document.getElementById('smartRenaming').checked;
 
             if (useOriginal && originalName) {
                 const originalBase = originalName.replace(/\.[^/.]+$/, '');
-                return counter > 1 ? `${originalBase}_${counter}.${format}` : `${originalBase}.${format}`;
+                // Убираем все цифры в конце имени, чтобы не дублировать
+                const cleanBase = originalBase.replace(/\d+$/, '');
+                return counter > 1 ? `${cleanBase}_${counter}.${format}` : `${cleanBase}.${format}`;
             }
             
             if (smart) {
-                // Используем базовое имя из настроек для умного переименования
+                // Используем базовое имя из настроек
                 const smartBase = this.settings.smartBaseName || 'file';
-                // Добавляем счетчик только если он больше 1
-                return counter > 1 ? `${smartBase}_${counter}.${format}` : `${smartBase}.${format}`;
+                
+                // Пытаемся извлечь число из оригинального имени
+                const originalNum = this.extractNumberFromFilename(originalName);
+                
+                if (originalNum !== null) {
+                    // Если в оригинальном имени есть число - используем его
+                    return `${smartBase}${originalNum}.${format}`;
+                } else {
+                    // Иначе используем порядковый номер (начиная с 1)
+                    // Создаем уникальный ключ для файла
+                    const fileKey = originalName || `${fileIndex}`;
+                    
+                    if (!this.smartFileMapping.has(fileKey)) {
+                        this.smartFileMapping.set(fileKey, this.getNextSmartNumber());
+                    }
+                    
+                    const fileNum = this.smartFileMapping.get(fileKey);
+                    return `${smartBase}${fileNum}.${format}`;
+                }
             }
             
             // Обычное переименование
@@ -2604,6 +2703,9 @@
                 return;
             }
 
+            // Сброс счетчиков для умного переименования перед началом обработки
+            this.resetSmartCounter();
+
             // Умное переименование — запросить базу
             if (document.getElementById('smartRenaming').checked) {
                 const prev = this.settings.smartBaseName || '';
@@ -2620,6 +2722,8 @@
             this.isProcessing = true;
             this.currentProcessor = new MediaProcessor();
             UIManager.showProcessingState(true);
+            
+            // Очищаем предыдущие результаты
             this.processedFilesStorage = [];
 
             try {
@@ -2627,13 +2731,38 @@
                     this.uploadedFiles,
                     this.settings,
                     (progress) => UIManager.updateProgress(progress),
-                    (processed) => this.processedFilesStorage.push(...processed)
+                    (processed) => {
+                        // Отладочная информация
+                        console.log(`Обработано: ${processed.length} файлов`);
+                        
+                        // Добавляем обработанные файлы в хранилище
+                        this.processedFilesStorage.push(...processed);
+                        
+                        // Обновляем UI после каждой партии
+                        if (this.processedFilesStorage.length > 0) {
+                            setTimeout(() => {
+                                UIManager.showResults(this.processedFilesStorage);
+                            }, 100);
+                        }
+                    }
                 );
+                
+                // Финальное обновление UI
                 UIManager.showResults(this.processedFilesStorage);
-                UIManager.showSuccess('Обработка завершена', 'Файлы готовы к скачиванию');
+                
+                // Проверяем количество обработанных файлов
+                const totalOutput = this.calculateOutputFilesCount();
+                console.log(`Ожидалось: ~${totalOutput} файлов, Получено: ${this.processedFilesStorage.length} файлов`);
+                
+                if (this.processedFilesStorage.length > 0) {
+                    UIManager.showSuccess('Обработка завершена', `Создано ${this.processedFilesStorage.length} файлов`);
+                } else {
+                    UIManager.showError('Не удалось обработать файлы');
+                }
+                
             } catch (e) {
                 console.error('Ошибка обработки', e);
-                UIManager.showError('Произошла ошибка при обработке файлов');
+                UIManager.showError('Произошла ошибка при обработке файлов: ' + e.message);
             } finally {
                 this.isProcessing = false;
                 this.currentProcessor = null;
@@ -2772,21 +2901,33 @@
                     return;
                 }
 
+                UIManager.showMessage('info', 'Создание архива...', 'Пожалуйста, подождите');
+                
                 const zip = new JSZip();
+                let addedFiles = 0;
                 
-                // Группируем файлы по папкам для организации
-                const folders = {
-                    'images/': [],
-                    'audio/': [],
-                    'video/': [],
-                    'other/': []
-                };
+                // Добавляем файлы с проверкой на дубликаты имен
+                const usedNames = new Set();
                 
-                files.forEach(file => {
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
                     if (!file || !file.blob || !file.name) {
                         console.warn('Неверный объект файла:', file);
-                        return;
+                        continue;
                     }
+                    
+                    // Генерируем уникальное имя файла
+                    let fileName = file.name;
+                    let counter = 1;
+                    
+                    while (usedNames.has(fileName)) {
+                        const ext = file.name.split('.').pop();
+                        const base = file.name.slice(0, -(ext.length + 1));
+                        fileName = `${base}_${counter}.${ext}`;
+                        counter++;
+                    }
+                    
+                    usedNames.add(fileName);
                     
                     // Определяем папку по типу файла
                     let folder = '';
@@ -2795,40 +2936,63 @@
                     else if (file.type === 'Видео') folder = 'video/';
                     else folder = 'other/';
                     
-                    const fullPath = folder + file.name;
-                    zip.file(fullPath, file.blob);
+                    const fullPath = folder + fileName;
                     
-                    folders[folder].push(fullPath);
-                });
-
+                    try {
+                        zip.file(fullPath, file.blob);
+                        addedFiles++;
+                        
+                        // Обновляем прогресс каждые 10 файлов
+                        if (addedFiles % 10 === 0) {
+                            console.log(`Добавлено в архив: ${addedFiles}/${files.length} файлов`);
+                        }
+                    } catch (e) {
+                        console.error(`Ошибка добавления файла ${fileName}:`, e);
+                    }
+                }
+                
                 // Создаем readme файл с информацией
                 const readmeContent = `
 MediaProcessor - Обработанные файлы
 ===================================
 Дата обработки: ${new Date().toLocaleString()}
 Всего файлов: ${files.length}
-
-Содержимое архива:
-${Object.entries(folders)
-    .filter(([_, files]) => files.length > 0)
-    .map(([folder, files]) => `
-${folder}:
-${files.map(f => `  • ${f.replace(folder, '')}`).join('\n')}`)
-    .join('\n')}
+Добавлено в архив: ${addedFiles} файлов
 
 Обработано с помощью MediaProcessor | Relation-AI Module
                 `.trim();
                 
                 zip.file('README.txt', readmeContent);
 
+                // Показываем прогресс создания архива
+                const progress = document.createElement('div');
+                progress.className = 'temp-message';
+                progress.style.background = '#3498db';
+                progress.style.color = 'white';
+                progress.style.padding = '15px';
+                progress.style.margin = '15px 30px';
+                progress.style.borderRadius = '8px';
+                progress.innerHTML = `<strong>Создание архива...</strong><br>Обработано ${addedFiles} файлов`;
+                
+                const container = document.querySelector('.container');
+                container.insertBefore(progress, container.firstChild);
+
                 const zipBlob = await zip.generateAsync({
                     type: 'blob',
                     compression: 'DEFLATE',
-                    compressionOptions: {level: 6}
+                    compressionOptions: {level: 6},
+                    streamFiles: true
                 });
 
-                const zipName = `media_processor_${Date.now()}.zip`;
+                // Удаляем сообщение о прогрессе
+                if (progress.parentNode) {
+                    progress.parentNode.removeChild(progress);
+                }
+
+                const zipName = `media_processor_${Date.now()}_${addedFiles}_files.zip`;
                 FileDownloader.downloadFile(zipBlob, zipName);
+                
+                UIManager.showSuccess('Архив создан', `Скачивается архив с ${addedFiles} файлами`);
                 
             } catch (e) {
                 console.error('Ошибка при создании ZIP-архива:', e);
