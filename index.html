@@ -864,6 +864,120 @@
             color: #721c24;
         }
 
+        /* Стили для выбора цвета подложки */
+        .background-color-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e3f2fd;
+            margin: 20px 0;
+        }
+
+        .background-color-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .background-color-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .background-color-option:hover {
+            border-color: #3498db;
+            background: #f0f8ff;
+            transform: translateY(-2px);
+        }
+
+        .background-color-option.selected {
+            border-color: #27ae60;
+            background: #e8f5e8;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+        }
+
+        .background-color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+
+        .background-color-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .background-color-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .background-color-description {
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+
+        .custom-color-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #bdc3c7;
+        }
+
+        .color-input {
+            width: 60px;
+            height: 40px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        .color-input::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        .color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+
+        .color-hex-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+
+        .transparent-grid {
+            background-image: 
+                linear-gradient(45deg, #ccc 25%, transparent 25%),
+                linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%),
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -906,6 +1020,10 @@
 
             .rename-input {
                 width: 100%;
+            }
+
+            .background-color-options {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -1020,6 +1138,71 @@
             <button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background:#9b59b6;">
                 🔍 Проанализировать бренд
             </button>
+        </div>
+
+        <!-- Секция выбора цвета подложки -->
+        <div class="background-color-section">
+            <h3>🎨 Цвет подложки для изображений</h3>
+            <p style="color: #666; margin-bottom: 15px;">
+                Выберите цвет фона для изображений (актуально для JPG и при изменении размеров)
+            </p>
+
+            <div class="background-color-options">
+                <div class="background-color-option selected" data-background="white">
+                    <div class="background-color-preview" style="background: white; border: 2px solid #ddd;">
+                        <span style="color: #666;">⬜</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Белый</div>
+                        <div class="background-color-description">Стандартный белый фон</div>
+                    </div>
+                </div>
+
+                <div class="background-color-option" data-background="lightgray">
+                    <div class="background-color-preview" style="background: #f0f0f0;">
+                        <span style="color: #666;">⬜</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Светло-серый</div>
+                        <div class="background-color-description">Нейтральный серый фон</div>
+                    </div>
+                </div>
+
+                <div class="background-color-option" data-background="transparent">
+                    <div class="background-color-preview transparent-grid" style="background: rgba(0,0,0,0);">
+                        <span>◻️</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Прозрачный</div>
+                        <div class="background-color-description">Для PNG с прозрачностью</div>
+                    </div>
+                </div>
+
+                <div class="background-color-option" data-background="black">
+                    <div class="background-color-preview" style="background: #000000;">
+                        <span style="color: white;">⬛</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Черный</div>
+                        <div class="background-color-description">Темный фон для контраста</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Пользовательский выбор цвета -->
+            <div class="custom-color-picker">
+                <label style="font-weight: 600; color: #2c3e50;">Свой цвет:</label>
+                <input type="color" class="color-input" id="customColorPicker" value="#ffffff">
+                <input type="text" class="color-hex-input" id="customColorHex" value="#ffffff" placeholder="#RRGGBB">
+                <button class="upload-btn" onclick="appState.applyCustomColor()" 
+                        style="padding: 8px 15px; font-size: 0.9em; background: #9b59b6;">
+                    Применить
+                </button>
+            </div>
+
+            <p style="margin-top: 10px; font-size: 0.9em; color: #7f8c8d;">
+                <strong>Примечание:</strong> Для PNG-файлов с прозрачностью рекомендуется выбирать "Прозрачный" фон.
+            </p>
         </div>
 
         <div class="settings-section">
@@ -1620,7 +1803,8 @@
                                                     type: 'Изображение',
                                                     originalSize: file.size,
                                                     compressedSize: blob.size,
-                                                    format: file.type.includes('png') ? 'png' : 'jpg'
+                                                    format: file.type.includes('png') ? 'png' : 'jpg',
+                                                    background: settings.selectedBackground
                                                 });
                                             }
                                             resolveCanvas();
@@ -1645,7 +1829,7 @@
                                         }
                                         
                                         promises.push(this.createImageVersion(
-                                            img, width, height, format, file, processed, counter, fileIndex
+                                            img, width, height, format, file, processed, counter, fileIndex, settings
                                         ));
                                         counter++;
                                     }
@@ -1677,7 +1861,8 @@
                                 name: name,
                                 type: 'Изображение',
                                 originalSize: file.size,
-                                compressedSize: file.size
+                                compressedSize: file.size,
+                                background: settings.selectedBackground
                             });
                             resolve();
                         };
@@ -1698,7 +1883,7 @@
             }
         }
 
-        async createImageVersion(img, width, height, format, file, processed, counter, fileIndex) {
+        async createImageVersion(img, width, height, format, file, processed, counter, fileIndex, settings) {
             return new Promise((resolveVersion) => {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
@@ -1706,16 +1891,28 @@
                 canvas.width = width;
                 canvas.height = height;
                 
+                // Получаем цвет фона из настроек
+                const backgroundColor = this.getBackgroundColor(settings.selectedBackground);
+                
+                // Очищаем canvas с выбранным фоном
+                if (backgroundColor === 'transparent' && format === 'png') {
+                    // Для PNG с прозрачностью - прозрачный фон
+                    ctx.clearRect(0, 0, width, height);
+                } else if (backgroundColor === 'transparent') {
+                    // Для JPG с прозрачным фоном - белый фон (JPG не поддерживает прозрачность)
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, width, height);
+                } else {
+                    ctx.fillStyle = backgroundColor;
+                    ctx.fillRect(0, 0, width, height);
+                }
+                
                 // Сохраняем пропорции
                 const scale = Math.min(width / img.width, height / img.height);
                 const scaledWidth = img.width * scale;
                 const scaledHeight = img.height * scale;
                 const offsetX = (width - scaledWidth) / 2;
                 const offsetY = (height - scaledHeight) / 2;
-                
-                // Очищаем canvas
-                ctx.fillStyle = format === 'png' ? 'transparent' : 'white';
-                ctx.fillRect(0, 0, width, height);
                 
                 // Рисуем изображение
                 ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
@@ -1743,12 +1940,37 @@
                             originalSize: file.size,
                             compressedSize: blob.size,
                             format: format,
-                            resolution: `${width}x${height}`
+                            resolution: `${width}x${height}`,
+                            background: settings.selectedBackground,
+                            backgroundColor: backgroundColor
                         });
                     }
                     resolveVersion();
                 }, mimeType, quality);
             });
+        }
+
+        getBackgroundColor(backgroundType) {
+            switch(backgroundType) {
+                case 'white':
+                    return '#ffffff';
+                case 'lightgray':
+                    return '#f0f0f0';
+                case 'transparent':
+                    return 'transparent';
+                case 'black':
+                    return '#000000';
+                case 'custom':
+                    const hexColor = document.getElementById('customColorHex').value;
+                    return this.validateColor(hexColor) ? hexColor : '#ffffff';
+                default:
+                    return '#ffffff';
+            }
+        }
+
+        validateColor(color) {
+            const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+            return hexRegex.test(color);
         }
 
         async processAudio(file, settings, processed, fileIndex) {
@@ -1959,6 +2181,7 @@
                 selectedVideoQuality: 'medium',
                 imageSizes: '1200x600, 800x400, 400x200',
                 smartBaseName: '',
+                selectedBackground: 'white', // Добавляем цвет подложки по умолчанию
                 defaultCheckboxes: {
                     formatPNG: false,
                     formatJPG: true,
@@ -2067,6 +2290,7 @@
             this.settings.selectedVideoQuality = 'medium';
             this.settings.imageSizes = '1200x600, 800x400, 400x200';
             this.settings.smartBaseName = '';
+            this.settings.selectedBackground = 'white'; // Сбрасываем цвет подложки
             this.resetCheckboxesToDefault();
             this.loadUISettings();
             this.saveSettings();
@@ -2133,6 +2357,69 @@
             }
             this.updateStats();
             this.updateNamingExample();
+        }
+
+        // Методы для работы с цветом подложки
+        selectBackground(backgroundType) {
+            this.settings.selectedBackground = backgroundType;
+            
+            // Обновляем UI - выделяем выбранную опцию
+            document.querySelectorAll('.background-color-option').forEach(option => {
+                option.classList.toggle('selected', option.dataset.background === backgroundType);
+            });
+            
+            // Если выбран custom, показываем актуальный цвет в пикере
+            if (backgroundType === 'custom') {
+                const customColor = document.getElementById('customColorHex').value;
+                document.getElementById('customColorPicker').value = this.ensureHexFormat(customColor);
+            }
+            
+            this.saveSettings();
+            this.updateStats();
+            
+            console.log(`Выбран цвет подложки: ${backgroundType}`);
+        }
+
+        applyCustomColor() {
+            const colorPicker = document.getElementById('customColorPicker');
+            const hexInput = document.getElementById('customColorHex');
+            
+            // Синхронизируем значения
+            const color = colorPicker.value;
+            hexInput.value = color;
+            
+            // Выбираем custom фон
+            this.selectBackground('custom');
+            
+            // Обновляем предпросмотр custom цвета (если есть элемент для этого)
+            const customOption = document.querySelector('.background-color-option[data-background="custom"]');
+            if (customOption) {
+                const preview = customOption.querySelector('.background-color-preview');
+                if (preview) {
+                    preview.style.background = color;
+                }
+            }
+            
+            UIManager.showSuccess('Цвет применен', `Выбран цвет: ${color}`);
+        }
+
+        ensureHexFormat(color) {
+            // Проверяем и исправляем формат hex цвета
+            if (!color.startsWith('#')) {
+                color = '#' + color;
+            }
+            
+            // Упрощаем #ffffff до #fff если возможно
+            if (color.length === 7) {
+                const r = color[1] + color[2];
+                const g = color[3] + color[4];
+                const b = color[5] + color[6];
+                if (r[0] === r[1] && g[0] === g[1] && b[0] === b[1]) {
+                    return '#' + r[0] + g[0] + b[0];
+                }
+            }
+            
+            return color;
         }
 
         async getAIAdvice() {
@@ -2548,11 +2835,29 @@
             const totalOutput = this.calculateOutputFilesCount();
             const eff = this.calculateEfficiencyMetrics();
 
+            // Добавляем информацию о выбранном цвете подложки
+            const backgroundInfo = this.getBackgroundInfo();
+            
             stats.innerHTML = `
                 📊 Статистика: ${this.uploadedFiles.length} файлов (📷${images} 🎵${audio} 🎬${video})
                 → ~${totalOutput} обработанных файлов
+                <br>🎨 Цвет подложки: ${backgroundInfo}
                 <br>⏱️ Примерная экономия времени: ~${eff.timeSaved} минут
             `;
+        }
+
+        getBackgroundInfo() {
+            const bg = this.settings.selectedBackground;
+            switch(bg) {
+                case 'white': return 'Белый';
+                case 'lightgray': return 'Светло-серый';
+                case 'transparent': return 'Прозрачный';
+                case 'black': return 'Черный';
+                case 'custom': 
+                    const color = document.getElementById('customColorHex').value;
+                    return `Пользовательский (${color})`;
+                default: return 'Белый';
+            }
         }
 
         calculateOutputFilesCount() {
@@ -2632,6 +2937,32 @@
                 this.updateNamingExample();
             });
 
+            // События для выбора цвета подложки
+            document.querySelectorAll('.background-color-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    const backgroundType = option.dataset.background;
+                    this.selectBackground(backgroundType);
+                });
+            });
+
+            // События для custom color picker
+            document.getElementById('customColorPicker').addEventListener('input', (e) => {
+                document.getElementById('customColorHex').value = e.target.value;
+            });
+
+            document.getElementById('customColorHex').addEventListener('input', (e) => {
+                const color = e.target.value;
+                document.getElementById('customColorPicker').value = this.ensureHexFormat(color);
+            });
+
+            document.getElementById('customColorHex').addEventListener('change', (e) => {
+                const color = e.target.value;
+                if (this.validateColor(color)) {
+                    document.getElementById('customColorPicker').value = this.ensureHexFormat(color);
+                    this.selectBackground('custom');
+                }
+            });
+
             document.querySelectorAll('.resolution-option').forEach(opt => {
                 opt.addEventListener('click', () => this.selectResolution(opt.dataset.resolution));
             });
@@ -2650,11 +2981,26 @@
             this.loadUISettings();
         }
 
+        validateColor(color) {
+            const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+            return hexRegex.test(color);
+        }
+
         loadUISettings() {
             document.getElementById('imageSizes').value = this.settings.imageSizes;
             this.selectResolution(this.settings.selectedVideoResolution, false);
             this.selectVideoQuality(this.settings.selectedVideoQuality, false);
             this.resetCheckboxesToDefault();
+            
+            // Загружаем настройки цвета подложки
+            this.selectBackground(this.settings.selectedBackground);
+            
+            // Устанавливаем начальные значения для custom color
+            const customColor = this.settings.selectedBackground === 'custom' ? 
+                (this.settings.customBackgroundColor || '#ffffff') : '#ffffff';
+            document.getElementById('customColorPicker').value = this.ensureHexFormat(customColor);
+            document.getElementById('customColorHex').value = this.ensureHexFormat(customColor);
+            
             this.updateNamingExample();
         }
 
@@ -2959,6 +3305,9 @@ MediaProcessor - Обработанные файлы
 Всего файлов: ${files.length}
 Добавлено в архив: ${addedFiles} файлов
 
+Настройки обработки:
+- Цвет подложки: ${files[0]?.background || 'стандартный'}
+
 Обработано с помощью MediaProcessor | Relation-AI Module
                 `.trim();
                 
@@ -3057,6 +3406,16 @@ MediaProcessor - Обработанные файлы
                 if (file.format) additionalInfo += ` • ${file.format.toUpperCase()}`;
                 if (file.resolution) additionalInfo += ` • ${file.resolution}`;
                 if (file.bitrate) additionalInfo += ` • ${file.bitrate}`;
+                if (file.background && file.background !== 'white') {
+                    const bgNames = {
+                        'white': 'белый',
+                        'lightgray': 'серый',
+                        'transparent': 'прозрачный',
+                        'black': 'черный',
+                        'custom': 'пользовательский'
+                    };
+                    additionalInfo += ` • фон: ${bgNames[file.background] || file.background}`;
+                }
 
                 const el = document.createElement('div');
                 el.className = 'result-file';
