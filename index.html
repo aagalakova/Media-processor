@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Библиотека FFmpeg -->
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
     <style>
         * {
@@ -1107,7 +1108,7 @@
             <div class="video-processing-info">
                 <h4>ℹ️ Информация о обработке видео</h4>
                 <p>Видео обрабатываются с помощью FFmpeg в браузере. Для лучшей производительности ограничьте количество одновременно обрабатываемых видео.</p>
-                <p><strong>Рекомендация:</strong> Обрабатывайте не более 1-2 видео одновременно.</p>
+                <p><strong>Рекомендация:</strong> Обрабатывайте не более 1–2 видео одновременно.</p>
             </div>
 
             <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
@@ -1136,21 +1137,21 @@
 
             <h4 style="margin: 15px 0 5px 0;">🎯 Качество сжатия:</h4>
             <div class="video-quality-options">
+                <div class="video-quality-option" data-quality="none">
+                    <span>Без сжатия (оригинал)</span>
+                    <span class="quality-info">исходное качество, без перекодирования</span>
+                </div>
                 <div class="video-quality-option" data-quality="high">
                     <span>Высокое (CRF 18)</span>
-                    <span class="quality-info">лучшее качество, больше размер</span>
+                    <span class="quality-info">~60% от оригинала</span>
                 </div>
                 <div class="video-quality-option selected" data-quality="medium">
                     <span>Стандартное (CRF 23)</span>
-                    <span class="quality-info">баланс качества и размера</span>
+                    <span class="quality-info">~40% от оригинала</span>
                 </div>
                 <div class="video-quality-option" data-quality="low">
                     <span>Экономное (CRF 28)</span>
-                    <span class="quality-info">минимальный размер</span>
-                </div>
-                <div class="video-quality-option" data-quality="none">
-                    <span>Без сжатия (оригинал)</span>
-                    <span class="quality-info">без перекодирования, исходный файл</span>
+                    <span class="quality-info">~25% от оригинала</span>
                 </div>
             </div>
         </div>
@@ -1198,20 +1199,29 @@ class VideoProcessor {
 
         try {
             const { createFFmpeg } = FFmpeg;
+            // single-thread core, чтобы работало без crossOriginIsolated
             this.ffmpeg = createFFmpeg({
-                log: false,
-                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                log: true,
+                corePath: 'https://unpkg.com/@ffmpeg/core-st@0.12.4/dist/ffmpeg-core.js'
             });
 
-            console.log('Загружаем FFmpeg...');
+            console.log('Загружаем FFmpeg (single-thread core)...');
             await this.ffmpeg.load();
             this.isFFmpegReady = true;
             console.log('✅ FFmpeg успешно загружен');
         } catch (e) {
             console.error('❌ Ошибка загрузки FFmpeg:', e);
+            this.isFFmpegReady = false;
         }
     }
 
+    /**
+     * Обработка видео с учётом режима качества:
+     * - quality = "none" → без сжатия, возвращаем оригинал, FFmpeg не трогаем
+     * - FFmpeg не готов → возвращаем оригинал с reason
+     * - Ошибка FFmpeg → возвращаем оригинал с reason
+     * Возвращает объект { blob, isOriginal, reason }
+     */
     async processVideo(file, settings) {
         const {
             resolution = '640x360',
@@ -1222,18 +1232,40 @@ class VideoProcessor {
         console.log(`🎬 Начинаю обработку видео: ${file.name}`);
         console.log(`⚙️ Настройки: ${resolution}, ${quality}, ${format}`);
 
-        // Если FFmpeg не готов — возвращаем оригинальный файл,
-        // чтобы не ломать совместимость
+        // Режим "Без сжатия": сразу отдаём оригинал
+        if (quality === 'none') {
+            console.log('🔁 Выбран режим "Без сжатия (оригинал)", FFmpeg не вызывается.');
+            return {
+                blob: file,
+                isOriginal: true,
+                reason: 'Без сжатия (оригинал)'
+            };
+        }
+
+        // Если FFmpeg не готов — честный fallback
         if (!this.isFFmpegReady || !this.ffmpeg) {
-            console.warn('⚠️ FFmpeg не доступен, возвращаю оригинальное видео без изменений');
-            return file;
+            console.warn('⚠️ FFmpeg не готов, возвращаю оригинальное видео без изменений');
+            return {
+                blob: file,
+                isOriginal: true,
+                reason: 'FFmpeg не загрузился, возвращён оригинальный файл'
+            };
         }
 
         try {
-            return await this.processWithFFmpeg(file, resolution, quality, format);
+            const blob = await this.processWithFFmpeg(file, resolution, quality, format);
+            return {
+                blob,
+                isOriginal: false,
+                reason: ''
+            };
         } catch (error) {
             console.error('❌ Ошибка FFmpeg обработки, возвращаю оригинальный файл:', error);
-            return file;
+            return {
+                blob: file,
+                isOriginal: true,
+                reason: 'FFmpeg не смог изменить размер, возвращён оригинальный файл'
+            };
         }
     }
 
@@ -1255,7 +1287,7 @@ class VideoProcessor {
 
             ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
 
-            let command = [
+            const command = [
                 '-i', inputName,
                 '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
                 '-c:v', 'libx264',
@@ -1269,7 +1301,7 @@ class VideoProcessor {
                 outputName
             ];
 
-            console.log('⚙️ Выполняю команду FFmpeg...');
+            console.log('⚙️ Выполняю команду FFmpeg...', command.join(' '));
             await ffmpeg.run(...command);
 
             const outputData = ffmpeg.FS('readFile', outputName);
@@ -1477,7 +1509,8 @@ class MediaProcessor {
             name: fallbackName,
             type: FileUtils.getFileType(file.name),
             originalSize: file.size,
-            compressedSize: file.size
+            compressedSize: file.size,
+            note: 'Оригинальный файл (fallback)'
         }]);
     }
 
@@ -1786,88 +1819,67 @@ class MediaProcessor {
         }
     }
 
-    // 🔥 Обновлённая логика обработки видео с режимом "Без сжатия" и fallback
+    getVideoQualityLabel(quality) {
+        switch (quality) {
+            case 'high':
+                return 'Высокое сжатие (CRF 18)';
+            case 'medium':
+                return 'Стандартное сжатие (CRF 23)';
+            case 'low':
+                return 'Экономное сжатие (CRF 28)';
+            case 'none':
+                return 'Без сжатия (оригинал)';
+            default:
+                return '';
+        }
+    }
+
     async processVideo(file, settings, processed, fileIndex) {
         try {
-            const resolution = settings.selectedVideoResolution || '640x360';
+            const resolutionSetting = settings.selectedVideoResolution || '640x360';
             const quality = settings.selectedVideoQuality || 'medium';
-            const selectedFormat = settings.selectedVideoFormat || 'mp4';
+            const format = settings.selectedVideoFormat || 'mp4';
 
-            const originalExt = (file.name.split('.').pop() || '').toLowerCase();
-            const originalBase = file.customName || file.name.replace(/\.[^/.]+$/, '') || 'video';
-
-            console.log(`🎬 Обработка видео: ${file.name}, режим качества: ${quality}`);
+            console.log(`🎬 Начинаю полноценную обработку видео: ${file.name}`);
 
             const videoStatus = document.createElement('div');
             videoStatus.className = 'video-processing-status';
+            videoStatus.innerHTML = `🔄 Обработка видео: ${file.name} (это может занять некоторое время)`;
             document.querySelector('.settings').appendChild(videoStatus);
 
-            // 👉 Режим "Без сжатия (оригинал)": не трогаем файл вообще
-            if (quality === 'none') {
-                videoStatus.innerHTML = `✅ Без сжатия: исходный файл без изменений (${file.name})`;
-
-                const fileName = appState.generateFileName(
-                    originalBase,
-                    originalExt,
-                    'Видео',
-                    file.name,
-                    1,
-                    fileIndex
-                );
-
-                processed.push({
-                    blob: file,
-                    name: fileName,
-                    type: 'Видео',
-                    originalSize: file.size,
-                    compressedSize: file.size,
-                    resolution: 'Оригинал',
-                    quality: 'none',
-                    qualityLabel: 'Без сжатия (оригинал)',
-                    format: originalExt,
-                    note: 'Видео сохранено без перекодирования и изменения разрешения'
-                });
-
-                setTimeout(() => videoStatus.remove(), 3000);
-                return;
-            }
-
-            // 👉 Режим через FFmpeg (high / medium / low)
-            videoStatus.innerHTML = `🔄 Обработка видео (FFmpeg): ${file.name} (это может занять некоторое время)`;
-
-            const processedBlob = await this.videoProcessor.processVideo(file, {
-                resolution,
+            const result = await this.videoProcessor.processVideo(file, {
+                resolution: resolutionSetting,
                 quality,
-                format: selectedFormat
+                format
             });
 
-            const isFallback = (processedBlob === file); // FFmpeg не сработал — вернули оригинал
+            const processedBlob = result.blob || file;
 
-            let effectiveResolution = isFallback ? 'Оригинал' : resolution;
+            let resolutionLabel = resolutionSetting;
             let qualityLabel = '';
-            if (quality === 'high') qualityLabel = 'Высокое качество';
-            if (quality === 'medium') qualityLabel = 'Стандартное качество';
-            if (quality === 'low') qualityLabel = 'Экономное сжатие';
 
-            let note = '';
+            if (quality === 'none') {
+                resolutionLabel = 'Оригинал';
+                qualityLabel = 'Без сжатия (оригинал)';
+            } else if (result.isOriginal && result.reason) {
+                resolutionLabel = 'Оригинал';
+                qualityLabel = result.reason;
+            } else {
+                qualityLabel = this.getVideoQualityLabel(quality);
+            }
 
-            if (isFallback) {
+            if (result.isOriginal && result.reason) {
                 videoStatus.className = 'video-processing-status error';
-                videoStatus.innerHTML = `⚠️ FFmpeg не смог перекодировать видео, возвращён оригинал: ${file.name}`;
-                note = 'Оригинальный файл (FFmpeg не смог изменить размер/сжать, возвращён без перекодирования)';
-                qualityLabel = qualityLabel
-                    ? qualityLabel + ' • FFmpeg fallback'
-                    : 'Оригинал (FFmpeg fallback)';
+                videoStatus.innerHTML = `⚠️ ${result.reason}: ${file.name}`;
             } else {
                 videoStatus.className = 'video-processing-status success';
                 videoStatus.innerHTML = `✅ Видео обработано: ${file.name}`;
             }
-
-            setTimeout(() => videoStatus.remove(), 4000);
+            setTimeout(() => videoStatus.remove(), 3000);
 
             const fileName = appState.generateFileName(
-                originalBase,
-                selectedFormat,
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                format,
                 'Видео',
                 file.name,
                 1,
@@ -1880,18 +1892,15 @@ class MediaProcessor {
                 type: 'Видео',
                 originalSize: file.size,
                 compressedSize: processedBlob.size,
-                resolution: effectiveResolution,
-                quality,
-                qualityLabel,
-                format: selectedFormat,
+                resolution: resolutionLabel,
+                quality: quality,
+                qualityLabel: qualityLabel,
+                format: format,
                 duration: 'Полная версия',
-                note
+                note: result.isOriginal && result.reason ? result.reason : undefined
             });
 
-            console.log('✅ Видео успешно обработано и добавлено в результаты', {
-                isFallback,
-                resolution: effectiveResolution
-            });
+            console.log('✅ Видео успешно обработано и добавлено в результаты');
         } catch (error) {
             console.error('❌ Критическая ошибка обработки видео:', error);
 
@@ -1900,32 +1909,24 @@ class MediaProcessor {
             errorStatus.innerHTML = `❌ Не удалось обработать видео: ${file.name}`;
             document.querySelector('.settings').appendChild(errorStatus);
 
-            const originalExt = (file.name.split('.').pop() || '').toLowerCase();
-            const originalBase = file.customName || file.name.replace(/\.[^/.]+$/, '') || 'video';
-
             const name = appState.generateFileName(
-                originalBase,
-                originalExt,
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                (file.name.split('.').pop() || '').toLowerCase(),
                 'Видео',
                 file.name,
                 1,
                 fileIndex
             );
-
             processed.push({
                 blob: file,
                 name: name,
                 type: 'Видео',
                 originalSize: file.size,
                 compressedSize: file.size,
-                resolution: 'Оригинал',
-                quality: 'error',
-                qualityLabel: 'Оригинал (ошибка обработки)',
-                format: originalExt,
-                note: 'Видео добавлено без изменений из-за ошибки FFmpeg'
+                note: 'Оригинальный файл (ошибка обработки)'
             });
 
-            setTimeout(() => errorStatus.remove(), 4000);
+            setTimeout(() => errorStatus.remove(), 3000);
         }
     }
 }
@@ -2392,10 +2393,6 @@ class AppState {
 
             const note = file.note ? `<div style="font-size:0.8em;color:#666;">${file.note}</div>` : '';
 
-            const resolutionLabel = file.resolution ? ` • ${file.resolution}` : '';
-            const formatLabel = file.format ? ` • ${String(file.format).toUpperCase()}` : '';
-            const qualityLabel = file.qualityLabel ? ` • ${file.qualityLabel}` : '';
-
             html += `
                 <div class="result-file">
                     <div>
@@ -2403,7 +2400,9 @@ class AppState {
                         <div class="file-size-compression">
                             ${FileUtils.formatFileSize(file.originalSize)} →
                             ${FileUtils.formatFileSize(file.compressedSize)}${compressionText}
-                            ${resolutionLabel}${formatLabel}${qualityLabel}
+                            ${file.resolution ? ` • ${file.resolution}` : ''}
+                            ${file.format ? ` • ${file.format.toUpperCase()}` : ''}
+                            ${file.qualityLabel ? ` • ${file.qualityLabel}` : ''}
                         </div>
                         ${note}
                     </div>
@@ -2426,7 +2425,7 @@ class AppState {
                 ${FileUtils.formatFileSize(totalCompressed)}<br>
                 Общее сжатие: ${totalCompression}%
             </div>
-        `;
+       `;
 
         resultFiles.innerHTML = statsHtml + html;
     }
