@@ -1132,13 +1132,6 @@
                     <span class="quality-info">~25% от оригинала</span>
                 </div>
             </div>
-
-            <div style="margin-top: 15px;">
-                <label class="format-option">
-                    <input type="checkbox" id="videoTrim" checked>
-                    <label for="videoTrim">Обрезать до 30 секунд (для быстрой обработки)</label>
-                </label>
-            </div>
         </div>
     </div>
 
@@ -1404,7 +1397,7 @@
             try {
                 const { createFFmpeg } = FFmpeg;
                 this.ffmpeg = createFFmpeg({ 
-                    log: false,
+                    log: true,
                     corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
                 });
                 
@@ -1420,13 +1413,12 @@
             const {
                 resolution = '640x360',
                 quality = 'medium',
-                format = 'mp4',
-                trim = true
+                format = 'mp4'
             } = settings;
 
             try {
                 if (this.isFFmpegReady && this.ffmpeg) {
-                    return await this.processWithFFmpeg(file, resolution, quality, format, trim);
+                    return await this.processWithFFmpeg(file, resolution, quality, format);
                 } else {
                     return await this.processSimple(file, resolution, format);
                 }
@@ -1436,8 +1428,11 @@
             }
         }
 
-        async processWithFFmpeg(file, resolution, quality, format, trim) {
+        async processWithFFmpeg(file, resolution, quality, format) {
             try {
+                console.log(`Начинаю обработку видео через FFmpeg: ${file.name}`);
+                console.log(`Настройки: resolution=${resolution}, quality=${quality}, format=${format}`);
+                
                 const { ffmpeg } = this;
                 const [width, height] = resolution.split('x').map(Number);
                 
@@ -1454,7 +1449,7 @@
                 const inputName = `input.${this.getFileExtension(file.name)}`;
                 const outputName = `output.${format}`;
                 
-                // Записываем файл в FFmpeg
+                console.log(`Записываем файл в FFmpeg: ${inputName}`);
                 ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
 
                 // Формируем команду FFmpeg
@@ -1465,16 +1460,19 @@
                     '-crf', crf.toString(),
                     '-preset', 'fast',
                     '-c:a', format === 'webm' ? 'libopus' : 'aac',
-                    '-b:a', '128k'
+                    '-b:a', '128k',
+                    '-y' // Перезаписывать выходной файл без подтверждения
                 ];
 
-                // Добавляем обрезку если нужно
-                if (trim) {
-                    command.unshift('-t', '30'); // Обрезать до 30 секунд
+                // Для WebM добавляем дополнительные параметры
+                if (format === 'webm') {
+                    command.push('-b:v', '1M');
                 }
 
                 command.push(outputName);
 
+                console.log(`Выполняем команду FFmpeg: ${command.join(' ')}`);
+                
                 // Выполняем команду
                 await ffmpeg.run(...command);
 
@@ -1486,7 +1484,10 @@
                 ffmpeg.FS('unlink', outputName);
 
                 const mimeType = format === 'webm' ? 'video/webm' : 'video/mp4';
-                return new Blob([outputData.buffer], { type: mimeType });
+                const blob = new Blob([outputData.buffer], { type: mimeType });
+                
+                console.log(`Видео успешно обработано: ${blob.size} байт`);
+                return blob;
 
             } catch (error) {
                 console.error('FFmpeg обработка не удалась:', error);
@@ -1496,79 +1497,55 @@
         }
 
         async processSimple(file, resolution, format) {
+            console.log(`Используем упрощенную обработку видео: ${file.name}`);
+            
+            // Для упрощенной обработки создаем миниатюру видео как изображение
             return new Promise((resolve) => {
                 const video = document.createElement('video');
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
                 
-                const [width, height] = resolution.split('x').map(Number);
-                canvas.width = width;
-                canvas.height = height;
-
                 video.src = URL.createObjectURL(file);
                 video.muted = true;
                 
                 video.onloadedmetadata = () => {
-                    // Ограничиваем обработку 5 секундами для производительности
-                    const duration = Math.min(video.duration, 5);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
                     
-                    // Устанавливаем размеры canvas
+                    const [width, height] = resolution.split('x').map(Number);
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    // Устанавливаем размеры
                     const scale = Math.min(width / video.videoWidth, height / video.videoHeight);
                     const scaledWidth = video.videoWidth * scale;
                     const scaledHeight = video.videoHeight * scale;
                     const offsetX = (width - scaledWidth) / 2;
                     const offsetY = (height - scaledHeight) / 2;
 
-                    // Обработка кадров
-                    const frames = [];
-                    const totalFrames = Math.min(Math.floor(duration * 10), 50); // Макс 50 кадров
-                    let currentFrame = 0;
-
-                    const captureFrame = () => {
-                        if (currentFrame >= totalFrames) {
-                            // Создаем видео из кадров
-                            this.createVideoFromFrames(frames, width, height, format).then(resolve);
-                            URL.revokeObjectURL(video.src);
-                            return;
-                        }
-
-                        // Устанавливаем время видео
-                        video.currentTime = (currentFrame / totalFrames) * duration;
-                        currentFrame++;
-                    };
-
+                    // Заполняем фон
+                    ctx.fillStyle = '#000000';
+                    ctx.fillRect(0, 0, width, height);
+                    
+                    // Делаем скриншот из середины видео
+                    video.currentTime = Math.min(video.duration / 2, 1);
+                    
                     video.onseeked = () => {
-                        // Очищаем canvas
-                        ctx.fillStyle = '#000000';
-                        ctx.fillRect(0, 0, width, height);
-                        
-                        // Рисуем видео кадр
                         ctx.drawImage(video, offsetX, offsetY, scaledWidth, scaledHeight);
                         
-                        // Сохраняем кадр
+                        // Конвертируем в JPEG как fallback
                         canvas.toBlob((blob) => {
-                            if (blob) {
-                                frames.push(blob);
-                            }
-                            captureFrame();
+                            URL.revokeObjectURL(video.src);
+                            resolve(blob);
                         }, 'image/jpeg', 0.8);
                     };
-
-                    captureFrame();
                 };
 
                 video.onerror = () => {
                     URL.revokeObjectURL(video.src);
                     // Возвращаем оригинальный файл как fallback
+                    console.log('Ошибка загрузки видео, возвращаем оригинальный файл');
                     resolve(file);
                 };
             });
-        }
-
-        async createVideoFromFrames(frames, width, height, format) {
-            // Для демо возвращаем первый кадр как изображение
-            // В реальном приложении здесь нужно использовать библиотеку для создания видео
-            return frames[0] || new Blob([], { type: 'image/jpeg' });
         }
 
         getFileExtension(filename) {
@@ -1589,7 +1566,6 @@
         cancel() {
             // Очистка ресурсов
             if (this.ffmpeg) {
-                // FFmpeg.js не имеет метода cancel, но можно очистить файловую систему
                 try {
                     const files = this.ffmpeg.FS('readdir', '/');
                     files.forEach(file => {
@@ -2143,17 +2119,15 @@
                 const resolution = settings.selectedVideoResolution || '640x360';
                 const quality = settings.selectedVideoQuality || 'medium';
                 const format = settings.selectedVideoFormat || 'mp4';
-                const trim = document.getElementById('videoTrim')?.checked || true;
                 
                 console.log(`Начинаю обработку видео: ${file.name}`);
-                console.log(`Настройки: resolution=${resolution}, quality=${quality}, format=${format}, trim=${trim}`);
+                console.log(`Настройки: resolution=${resolution}, quality=${quality}, format=${format}`);
                 
                 // Обрабатываем видео
                 const processedBlob = await this.videoProcessor.processVideo(file, {
                     resolution,
                     quality,
-                    format,
-                    trim
+                    format
                 });
                 
                 console.log(`Видео обработано: ${processedBlob.size} байт`);
@@ -2176,8 +2150,7 @@
                     compressedSize: processedBlob.size,
                     resolution: resolution,
                     quality: quality,
-                    format: format,
-                    trimmed: trim
+                    format: format
                 });
                 
             } catch (error) {
@@ -3131,7 +3104,7 @@
             if (videoFiles.length > 0) {
                 const useFFmpeg = this.videoProcessor.isFFmpegReady;
                 if (!useFFmpeg) {
-                    if (!confirm('⚠️ FFmpeg не загружен. Видео будут обработаны в упрощённом режиме (только первый кадр). Продолжить?')) {
+                    if (!confirm('⚠️ FFmpeg не загружен. Видео будут обработаны в упрощённом режиме (первый кадр как изображение). Продолжить?')) {
                         return;
                     }
                 } else if (videoFiles.length > 1) {
@@ -3510,7 +3483,6 @@ MediaProcessor - Обработанные файлы
                     };
                     additionalInfo += ` • фон: ${bgNames[file.background] || file.background}`;
                 }
-                if (file.trimmed) additionalInfo += ` • обрезано`;
 
                 const el = document.createElement('div');
                 el.className = 'result-file';
