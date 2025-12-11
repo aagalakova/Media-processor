@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Только @ffmpeg/ffmpeg, без старого ffmpeg.js -->
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
     <style>
         * {
@@ -205,40 +206,39 @@
             border: 2px solid #e3f2fd;
             margin: 20px 0;
         }
+        .naming-options {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .naming-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 8px 0;
+        }
         .naming-example {
             color: #7f8c8d;
             font-size: 0.9em;
             margin-top: 5px;
         }
-        .background-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        .background-option {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px;
+        .global-name-input {
+            padding: 8px 12px;
             border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .background-option:hover {
-            border-color: #3498db;
-            background: #e3f2fd;
-        }
-        .background-option.selected {
-            border-color: #27ae60;
-            background: #d4edda;
-        }
-        .background-preview {
-            width: 40px;
-            height: 40px;
             border-radius: 6px;
-            border: 2px solid #ddd;
+            font-size: 0.9em;
+            margin-left: 8px;
+            min-width: 160px;
+        }
+        .global-name-input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .naming-hint {
+            font-size: 0.85em;
+            color: #7f8c8d;
+            margin-top: 6px;
         }
         .format-options {
             display: flex;
@@ -255,52 +255,6 @@
             width: 18px;
             height: 18px;
         }
-        .video-quality-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .video-quality-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .video-quality-option:hover {
-            border-color: #3498db;
-            background: #e3f2fd;
-        }
-        .video-quality-option.selected {
-            border-color: #27ae60;
-            background: #d4edda;
-        }
-        .quality-info {
-            font-size: 0.8em;
-            color: #666;
-            margin-left: auto;
-        }
-        .preset-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        .preset-btn {
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 0.9em;
-            transition: background 0.3s ease;
-        }
-        .preset-btn:hover {background: #7f8c8d;}
         .ai-section {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
@@ -396,294 +350,7 @@
         }
         .ai-tip-item:nth-child(2n) {border-left-color: #9b59b6;}
         .ai-tip-item:nth-child(3n) {border-left-color: #e74c3c;}
-        .color-palette {
-            display: flex;
-            gap: 5px;
-            margin: 10px 0;
-        }
-        .color-swatch {
-            width: 30px;
-            height: 30px;
-            border-radius: 6px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        .color-swatch:hover {transform: scale(1.1);}
-        .color-swatch::after {
-            content: attr(data-hex);
-            position: absolute;
-            bottom: -25px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7em;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .color-swatch:hover::after {opacity: 1;}
-        .image-analysis-result {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-        }
-        .analysis-technical {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-            gap: 10px;
-            margin: 10px 0;
-        }
-        .tech-item {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 8px;
-            border-radius: 6px;
-        }
-        .tech-value {
-            font-weight: bold;
-            font-size: 1.1em;
-            color: #27ae60;
-        }
-        .brand-analysis-results {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            animation: fadeIn 0.5s ease;
-        }
-        .brand-analysis-results .color-palette {
-            display: flex;
-            gap: 5px;
-            margin: 8px 0;
-        }
-        .brand-analysis-results .color-swatch {
-            width: 25px;
-            height: 25px;
-            border-radius: 4px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        .brand-analysis-results .color-swatch:hover {
-            transform: scale(1.1);
-        }
-        .brand-analysis-results .color-swatch::after {
-            content: attr(data-hex);
-            position: absolute;
-            bottom: -30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 0.7em;
-            white-space: nowrap;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            z-index: 10;
-        }
-        .brand-analysis-results .color-swatch:hover::after {opacity: 1;}
-        .process-btn {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2em;
-            border-radius: 25px;
-            cursor: pointer;
-            display: block;
-            margin: 30px auto;
-            transition: transform 0.2s ease;
-        }
-        .process-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
-        }
-        .process-btn:active {transform: translateY(0);}
-        .process-btn:disabled {
-            background: #bdc3c7;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .result {
-            margin: 20px 30px;
-            padding: 25px;
-            background: #e8f5e8;
-            border-radius: 15px;
-            border-left: 4px solid #27ae60;
-        }
-        .result-files {margin-top: 15px;}
-        .result-file {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background: white;
-            border-radius: 8px;
-            margin-bottom: 8px;
-            border-left: 3px solid #27ae60;
-        }
-        .file-size-compression {
-            font-size: 0.8em;
-            color: #27ae60;
-            margin-left: 10px;
-        }
-        .download-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8em;
-        }
-        .download-btn:hover {background: #2980b9;}
-        .hidden {display: none;}
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #ecf0f1;
-            border-radius: 3px;
-            margin: 20px 0;
-            overflow: hidden;
-        }
-        .progress {
-            height: 100%;
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        .download-section {
-            text-align: center;
-            padding: 20px;
-            background: #f0f8ff;
-            margin: 20px 30px;
-            border-radius: 15px;
-            border: 2px dashed #9b59b6;
-        }
-        .download-all-btn {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            color: white;
-            border: none;
-            padding: 15px 40px;
-            font-size: 1.2em;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: transform 0.2s ease;
-        }
-        .download-all-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(155, 89, 182, 0.3);
-        }
-        .stats {
-            text-align: center;
-            margin: 10px 0;
-            color: #7f8c8d;
-            font-size: 0.9em;
-        }
-        .resolution-options {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .resolution-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px;
-            border: 2px solid #bdc3c7;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        .resolution-option:hover {
-            border-color: #3498db;
-            background: #e3f2fd;
-        }
-        .resolution-option.selected {
-            border-color: #27ae60;
-            background: #d4edda;
-        }
-        .checkbox-controls {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-            flex-wrap: wrap;
-        }
-        .checkbox-btn {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: background 0.3s ease;
-        }
-        .checkbox-btn:hover {background: #2980b9;}
-        .checkbox-btn.select-all {background: #27ae60;}
-        .checkbox-btn.select-all:hover {background: #219a52;}
-        .checkbox-btn.clear-all {background: #e74c3c;}
-        .checkbox-btn.clear-all:hover {background: #c0392b;}
-        .naming-options {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-        .naming-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin: 8px 0;
-        }
-        .empty-state {
-            text-align: center;
-            padding: 40px;
-            color: #7f8c8d;
-        }
-        .empty-state .upload-icon {
-            font-size: 3em;
-            margin-bottom: 10px;
-        }
-        .file-thumbnail {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 4px;
-            margin-right: 10px;
-        }
-        .cancel-btn {
-            background: #e74c3c;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        .cancel-btn:hover {background: #c0392b;}
-        .temp-message {
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 30px;
-        }
-        .error-message {
-            background: #f8d7da;
-            border: 2px solid #e74c3c;
-            color: #721c24;
-        }
+
         .background-color-section {
             background: white;
             padding: 20px;
@@ -780,6 +447,7 @@
             background-size: 20px 20px;
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
         }
+
         .video-processing-info {
             background: #e3f2fd;
             border-radius: 8px;
@@ -814,6 +482,36 @@
             border-color: #27ae60;
             background: #d4edda;
         }
+
+        .video-quality-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .video-quality-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .video-quality-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        .video-quality-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+        .quality-info {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: auto;
+        }
         .video-processing-status {
             background: #e3f2fd;
             border-radius: 8px;
@@ -830,6 +528,207 @@
             background: #f8d7da;
             border-left-color: #e74c3c;
         }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .preset-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: background 0.3s ease;
+        }
+        .preset-btn:hover {background: #7f8c8d;}
+
+        .process-btn {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            display: block;
+            margin: 30px auto;
+            transition: transform 0.2s ease;
+        }
+        .process-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3);
+        }
+        .process-btn:active {transform: translateY(0);}
+        .process-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin: 20px 30px;
+            padding: 25px;
+            background: #e8f5e8;
+            border-radius: 15px;
+            border-left: 4px solid #27ae60;
+        }
+        .result-files {margin-top: 15px;}
+        .result-file {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #27ae60;
+        }
+        .file-size-compression {
+            font-size: 0.8em;
+            color: #27ae60;
+            margin-left: 10px;
+        }
+        .download-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .download-btn:hover {background: #2980b9;}
+
+        .hidden {display: none;}
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+        .progress {
+            height: 100%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .download-section {
+            text-align: center;
+            padding: 20px;
+            background: #f0f8ff;
+            margin: 20px 30px;
+            border-radius: 15px;
+            border: 2px dashed #9b59b6;
+        }
+        .download-all-btn {
+            background: linear-gradient(135deg, #9b59b6, #8e44ad);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+        .download-all-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(155, 89, 182, 0.3);
+        }
+
+        .stats {
+            text-align: center;
+            margin: 10px 0;
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .resolution-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .resolution-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .resolution-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        .resolution-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+
+        .checkbox-controls {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        .checkbox-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: background 0.3s ease;
+        }
+        .checkbox-btn:hover {background: #2980b9;}
+        .checkbox-btn.select-all {background: #27ae60;}
+        .checkbox-btn.select-all:hover {background: #219a52;}
+        .checkbox-btn.clear-all {background: #e74c3c;}
+        .checkbox-btn.clear-all:hover {background: #c0392b;}
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+        .empty-state .upload-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+        .cancel-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .cancel-btn:hover {background: #c0392b;}
+
+        .temp-message {
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 30px;
+        }
+        .error-message {
+            background: #f8d7da;
+            border: 2px solid #e74c3c;
+            color: #721c24;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -844,10 +743,10 @@
                 transform: translateX(0);
             }
         }
+
         @media (max-width: 768px) {
             .ai-actions {flex-direction: column;}
             .ai-btn {flex: none;}
-            .analysis-technical {grid-template-columns: 1fr 1fr;}
             .file-item {
                 flex-direction: column;
                 align-items: flex-start;
@@ -902,10 +801,12 @@
             </div>
         </div>
 
+        <!-- Переименование -->
         <div class="naming-section">
             <h3>🏷️ Переименование файлов</h3>
             <p style="color: #666; margin-bottom: 10px;">
-                Введите новое имя для каждого файла в списке выше
+                Введите новое имя для каждого файла в списке выше<br>
+                или задайте общий шаблон имени для всех файлов.
             </p>
 
             <div class="naming-options">
@@ -915,13 +816,28 @@
                 </div>
                 <div class="naming-option">
                     <input type="checkbox" id="smartRenaming">
-                    <label for="smartRenaming">Умное переименование (единая база, например: logo)</label>
+                    <label for="smartRenaming">Умное переименование (единая база, номера, тип файла)</label>
+                </div>
+                <div class="naming-option">
+                    <label for="globalBaseName">
+                        Общее имя для всех файлов:
+                        <input type="text"
+                               id="globalBaseName"
+                               class="global-name-input"
+                               placeholder="например, audio_hook">
+                    </label>
                 </div>
             </div>
 
+            <p class="naming-hint">
+                Пример: если включено «Умное переименование» и задано общее имя <code>audio_hook</code>,
+                файлы <code>333 ... .MP3</code>, <code>361 ... .MP3</code> станут
+                <code>audio_hook333.mp3</code>, <code>audio_hook361.mp3</code> и т.д.
+            </p>
+
             <div class="naming-example">
                 Пример имен после обработки:
-                <strong id="namingExample">banner.png, banner_2.png, banner_3.png</strong>
+                <strong id="namingExample">banner.png, banner_1.png, banner_2.png</strong>
             </div>
         </div>
 
@@ -975,7 +891,7 @@
             </button>
         </div>
 
-        <!-- Секция выбора цвета подложки -->
+        <!-- Цвет подложки -->
         <div class="background-color-section">
             <h3>🎨 Цвет подложки для изображений</h3>
             <p style="color: #666; margin-bottom: 15px;">
@@ -1023,24 +939,22 @@
                     </div>
                 </div>
 
-                <!-- Пользовательский цвет -->
                 <div class="background-color-option" data-background="custom">
-                    <div class="background-color-preview" id="customColorPreview" style="background:#ffffff;">
-                        <span style="font-size:0.9em;color:#666;">🎨</span>
+                    <div class="background-color-preview" style="background: #ffffff;">
+                        <span style="color:#666;">🎯</span>
                     </div>
                     <div class="background-color-info">
                         <div class="background-color-name">Пользовательский</div>
-                        <div class="background-color-description">Цвет из поля ниже</div>
+                        <div class="background-color-description">Цвет из палитры ниже</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Пользовательский выбор цвета -->
             <div class="custom-color-picker">
                 <label style="font-weight: 600; color: #2c3e50;">Свой цвет:</label>
                 <input type="color" class="color-input" id="customColorPicker" value="#ffffff">
                 <input type="text" class="color-hex-input" id="customColorHex" value="#ffffff" placeholder="#RRGGBB">
-                <button class="upload-btn" onclick="appState.applyCustomColor()" 
+                <button class="upload-btn" onclick="appState.applyCustomColor()"
                         style="padding: 8px 15px; font-size: 0.9em; background: #9b59b6;">
                     Применить
                 </button>
@@ -1051,6 +965,7 @@
             </p>
         </div>
 
+        <!-- Изображения -->
         <div class="settings-section">
             <h3>📷 Настройки изображений</h3>
             <input type="text" class="size-input" id="imageSizes"
@@ -1082,6 +997,7 @@
             </div>
         </div>
 
+        <!-- Аудио -->
         <div class="settings-section">
             <h3>🎵 Настройки аудио</h3>
             <div class="checkbox-controls">
@@ -1108,6 +1024,7 @@
             </select>
         </div>
 
+        <!-- Видео -->
         <div class="settings-section">
             <h3>🎬 Настройки видео</h3>
 
@@ -1137,7 +1054,7 @@
             <div class="video-format-options">
                 <div class="video-format-option selected" data-format="mp4">
                     <span>MP4</span>
-                    <span style="font-size: 0.8em; color: #666;">(лучшая совместимость, рекомендуется)</span>
+                    <span style="font-size: 0.8em; color: #666;">(лучшая совместимость)</span>
                 </div>
             </div>
 
@@ -1185,7 +1102,7 @@
 </div>
 
 <script>
-// ====== Video Processor Class (исправленная версия) ======
+/* ================= VideoProcessor ================= */
 class VideoProcessor {
     constructor() {
         this.ffmpeg = null;
@@ -1195,7 +1112,7 @@ class VideoProcessor {
 
     async initFFmpeg() {
         if (typeof FFmpeg === 'undefined') {
-            console.warn('FFmpeg не подключён. Видео будут обрабатываться в упрощённом режиме.');
+            console.warn('FFmpeg не подключён. Видео будут обрабатываться без перекодирования.');
             return;
         }
 
@@ -1219,55 +1136,55 @@ class VideoProcessor {
         const {
             resolution = '640x360',
             quality = 'medium',
-            format = 'mp4'
+            format = 'mp4' // игнорируем webm, всегда mp4
         } = settings;
 
         console.log(`🎬 Начинаю обработку видео: ${file.name}`);
         console.log(`⚙️ Настройки: ${resolution}, ${quality}, ${format}`);
 
         if (!this.isFFmpegReady || !this.ffmpeg) {
-            console.warn('⚠️ FFmpeg не доступен, возвращаю оригинальный файл без изменений');
-            return await this.processEnhancedFallback(file);
+            console.warn('⚠️ FFmpeg не доступен, возвращаю оригинальное видео без изменений');
+            return file;
         }
 
         try {
-            return await this.processWithFFmpeg(file, resolution, quality, format);
+            return await this.processWithFFmpeg(file, resolution, quality);
         } catch (error) {
-            console.error('❌ Ошибка FFmpeg обработки:', error);
-            return await this.processEnhancedFallback(file);
+            console.error('❌ Ошибка FFmpeg обработки, возвращаю оригинальный файл:', error);
+            return file;
         }
     }
 
-    async processWithFFmpeg(file, resolution, quality, format) {
+    async processWithFFmpeg(file, resolution, quality) {
         const { ffmpeg } = this;
         const [width, height] = resolution.split('x').map(Number);
 
-        const bitrateValues = {
-            high: '1500k',
-            medium: '1000k',
-            low: '500k'
-        };
-        const videoBitrate = bitrateValues[quality] || '1000k';
+        const crfValues = { high: 18, medium: 23, low: 28 };
+        const crf = crfValues[quality] || 23;
 
         try {
             console.log(`📥 Читаю видео файл: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
             const inputData = await file.arrayBuffer();
             const inputName = `input.${this.getFileExtension(file.name)}`;
-            const outputName = `output.${format}`;
+            const outputName = `output.mp4`;
 
             ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
 
             const command = [
                 '-i', inputName,
                 '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
-                '-b:v', videoBitrate,
+                '-c:v', 'libx264',
+                '-preset', 'fast',
+                '-crf', String(crf),
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
                 '-b:a', '128k',
                 '-movflags', '+faststart',
                 '-y',
                 outputName
             ];
 
-            console.log('⚙️ Выполняю команду FFmpeg...', command.join(' '));
+            console.log('⚙️ Выполняю команду FFmpeg...');
             await ffmpeg.run(...command);
 
             const outputData = ffmpeg.FS('readFile', outputName);
@@ -1275,15 +1192,12 @@ class VideoProcessor {
             ffmpeg.FS('unlink', inputName);
             ffmpeg.FS('unlink', outputName);
 
-            const mimeType = format === 'webm' ? 'video/webm' : 'video/mp4';
-            const blob = new Blob([outputData.buffer], { type: mimeType });
-
+            const blob = new Blob([outputData.buffer], { type: 'video/mp4' });
             console.log(`✅ Видео успешно обработано: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
             return blob;
 
         } catch (error) {
             console.error('❌ Ошибка обработки видео через FFmpeg:', error);
-
             try {
                 const files = ffmpeg.FS('readdir', '/');
                 files.forEach(f => {
@@ -1292,14 +1206,8 @@ class VideoProcessor {
                     }
                 });
             } catch (e) {}
-
             throw error;
         }
-    }
-
-    async processEnhancedFallback(file) {
-        console.warn('🔄 Fallback: возвращаю оригинальный видеофайл без перекодирования');
-        return file;
     }
 
     getFileExtension(filename) {
@@ -1333,7 +1241,7 @@ class VideoProcessor {
     }
 }
 
-// ====== Media Processing Classes ======
+/* ================= MediaProcessor ================= */
 class MediaProcessor {
     constructor() {
         this.isCancelled = false;
@@ -1367,6 +1275,7 @@ class MediaProcessor {
 
             const file = files[i];
             const type = FileUtils.getFileType(file.name);
+
             if (type === 'Видео') continue;
 
             try {
@@ -1379,7 +1288,6 @@ class MediaProcessor {
 
                 processedCount++;
                 onProgress((processedCount / totalFiles) * 100);
-
                 await new Promise(r => setTimeout(r, 50));
             } catch (e) {
                 console.error(`❌ Ошибка обработки файла ${file.name}:`, e);
@@ -1417,8 +1325,8 @@ class MediaProcessor {
 
                 processedCount++;
                 onProgress((processedCount / totalFiles) * 100);
-
                 await new Promise(r => setTimeout(r, 500));
+
                 setTimeout(() => videoProgress.remove(), 3000);
 
             } catch (e) {
@@ -1780,7 +1688,6 @@ class MediaProcessor {
 
             videoStatus.className = 'video-processing-status success';
             videoStatus.innerHTML = `✅ Видео обработано: ${file.name}`;
-
             setTimeout(() => videoStatus.remove(), 3000);
 
             const fileName = appState.generateFileName(
@@ -1836,7 +1743,7 @@ class MediaProcessor {
     }
 }
 
-// ====== Вспомогательные утилиты ======
+/* ================= FileUtils ================= */
 class FileUtils {
     static getFileType(filename) {
         const ext = filename.split('.').pop().toLowerCase();
@@ -1859,7 +1766,7 @@ class FileUtils {
     }
 }
 
-// ====== Основной класс приложения ======
+/* ================= AppState ================= */
 class AppState {
     constructor() {
         this.files = [];
@@ -1906,6 +1813,20 @@ class AppState {
         this.initBackgroundColorListeners();
 
         processBtn.addEventListener('click', () => this.startProcessing());
+
+        const smartRenaming = document.getElementById('smartRenaming');
+        const useOriginalNames = document.getElementById('useOriginalNames');
+        const globalBaseInput = document.getElementById('globalBaseName');
+
+        if (smartRenaming) {
+            smartRenaming.addEventListener('change', () => this.updateNamingExample());
+        }
+        if (useOriginalNames) {
+            useOriginalNames.addEventListener('change', () => this.updateNamingExample());
+        }
+        if (globalBaseInput) {
+            globalBaseInput.addEventListener('input', () => this.updateNamingExample());
+        }
     }
 
     initVideoSettingsListeners() {
@@ -1948,6 +1869,11 @@ class AppState {
                     opt.classList.remove('selected'));
                 e.currentTarget.classList.add('selected');
                 this.currentSettings.selectedBackground = selected;
+
+                if (selected === 'custom') {
+                    document.getElementById('customColorPicker').value =
+                        document.getElementById('customColorHex').value;
+                }
             });
         });
 
@@ -1969,13 +1895,7 @@ class AppState {
             document.querySelectorAll('.background-color-option').forEach(opt =>
                 opt.classList.remove('selected'));
             customOption.classList.add('selected');
-        }
-        this.currentSettings.selectedBackground = 'custom';
-
-        const preview = document.getElementById('customColorPreview');
-        if (preview) {
-            const value = document.getElementById('customColorHex').value || '#ffffff';
-            preview.style.background = value;
+            this.currentSettings.selectedBackground = 'custom';
         }
     }
 
@@ -1996,7 +1916,6 @@ class AppState {
         if (this.files.length === 0) {
             emptyState.classList.remove('hidden');
             statsInfo.textContent = '';
-            document.getElementById('namingExample').textContent = 'banner.png, banner_2.png, banner_3.png';
             return;
         }
 
@@ -2021,8 +1940,8 @@ class AppState {
                     <div class="file-info">
                         <span class="file-icon">${this.getFileIcon(type)}</span>
                         <div>
-                            <input type="text" 
-                                   class="rename-input" 
+                            <input type="text"
+                                   class="rename-input"
                                    value="${file.customName}"
                                    onchange="appState.updateFileName(${index}, this.value)"
                                    placeholder="Введите имя файла">
@@ -2056,7 +1975,7 @@ class AppState {
 
     updateFileName(index, newName) {
         if (index >= 0 && index < this.files.length) {
-            this.files[index].customName = newName || 
+            this.files[index].customName = newName ||
                 this.files[index].name.replace(/\.[^/.]+$/, '');
             this.updateNamingExample();
         }
@@ -2069,44 +1988,56 @@ class AppState {
         }
     }
 
-    // Обновлённая логика примера именования
+    getGlobalBaseName() {
+        const input = document.getElementById('globalBaseName');
+        if (!input) return '';
+        return (input.value || '').trim();
+    }
+
+    extractNumberFromName(name) {
+        if (!name) return '';
+        const match = name.match(/\d+/);
+        return match ? match[0] : '';
+    }
+
     updateNamingExample() {
         const exampleEl = document.getElementById('namingExample');
         if (!exampleEl) return;
 
         if (this.files.length === 0) {
-            exampleEl.textContent = 'banner.png, banner_2.png, banner_3.png';
+            exampleEl.textContent = 'banner.png, banner_1.png, banner_2.png';
             return;
         }
 
         const useSmart = document.getElementById('smartRenaming')?.checked || false;
         const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
+        const globalBase = this.getGlobalBaseName();
 
         const firstFile = this.files[0];
         const type = FileUtils.getFileType(firstFile.name);
-
-        let baseName;
-        if (useOriginal) {
-            baseName = firstFile.name.replace(/\.[^/.]+$/, '') || 'file';
-        } else if (useSmart) {
-            baseName = this.getSmartPrefix(type); // image / audio / video
-        } else {
-            baseName = firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file';
-        }
 
         let ext = 'png';
         if (type === 'Видео') ext = 'mp4';
         else if (type === 'Аудио') ext = 'mp3';
 
-        const examples = [];
+        let examples = [];
 
-        if (useSmart) {
-            // Пример для умного: image_1.png, image_2.png, image_3.png
-            examples.push(`${baseName}_1.${ext}`);
-            examples.push(`${baseName}_2.${ext}`);
-            examples.push(`${baseName}_3.${ext}`);
+        if (useSmart && globalBase) {
+            const sampleFiles = this.files.slice(0, 3);
+            sampleFiles.forEach((f, idx) => {
+                const num = this.extractNumberFromName(f.name) || (idx + 1);
+                examples.push(`${globalBase}${num}.${ext}`);
+            });
         } else {
-            // Обычный режим: logo.png, logo_2.png, logo_3.png
+            let baseName;
+            if (useOriginal) {
+                baseName = firstFile.name.replace(/\.[^/.]+$/, '') || 'file';
+            } else if (useSmart) {
+                baseName = this.getSmartPrefix(type);
+            } else {
+                baseName = firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file';
+            }
+
             examples.push(`${baseName}.${ext}`);
             examples.push(`${baseName}_2.${ext}`);
             examples.push(`${baseName}_3.${ext}`);
@@ -2118,25 +2049,35 @@ class AppState {
     generateFileName(baseName, format, type, originalName, index, fileIndex) {
         const useSmart = document.getElementById('smartRenaming')?.checked || false;
         const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
+        const globalBase = this.getGlobalBaseName();
+
+        const originalExt = (originalName.split('.').pop() || '').toLowerCase();
+        const ext = (format || originalExt || '').toLowerCase() || 'dat';
+
+        const originalBase = originalName.replace(/\.[^/.]+$/, '') || baseName || 'file';
 
         if (useOriginal) {
-            const ext = originalName.split('.').pop();
-            return `${baseName}.${format || ext}`;
+            return `${originalBase}.${ext}`;
         }
 
-        if (useSmart) {
-            const prefix = this.getSmartPrefix(type);
-            if (index > 1) {
-                return `${prefix}_${fileIndex + 1}_${index}.${format}`;
+        if (useSmart && globalBase) {
+            const num = this.extractNumberFromName(originalName);
+            if (num) {
+                return `${globalBase}${num}.${ext}`;
             }
-            return `${prefix}_${fileIndex + 1}.${format}`;
         }
 
-        if (index > 1) {
-            return `${baseName}_${index}.${format}`;
+        let nameBase;
+        if (useSmart) {
+            nameBase = globalBase || this.getSmartPrefix(type);
+        } else {
+            nameBase = baseName || originalBase || 'file';
         }
 
-        return `${baseName}.${format}`;
+        if (index === 1) {
+            return `${nameBase}.${ext}`;
+        }
+        return `${nameBase}_${index}.${ext}`;
     }
 
     getSmartPrefix(type) {
@@ -2158,7 +2099,6 @@ class AppState {
         const progressBar = document.getElementById('progressBar');
         const progress = document.getElementById('progress');
         const result = document.getElementById('result');
-        const resultFiles = document.getElementById('resultFiles');
         const downloadSection = document.getElementById('downloadSection');
 
         processBtn.disabled = true;
@@ -2234,7 +2174,7 @@ class AppState {
                     <div>
                         <strong>${file.name}</strong>
                         <div class="file-size-compression">
-                            ${FileUtils.formatFileSize(file.originalSize)} → 
+                            ${FileUtils.formatFileSize(file.originalSize)} →
                             ${FileUtils.formatFileSize(file.compressedSize)}${compressionText}
                             ${file.resolution ? ` • ${file.resolution}` : ''}
                             ${file.format ? ` • ${file.format.toUpperCase()}` : ''}
@@ -2256,7 +2196,7 @@ class AppState {
             <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border-radius: 8px;">
                 <strong>📊 Итоговая статистика:</strong><br>
                 Обработано файлов: ${this.processedFiles.length}<br>
-                Общий размер: ${FileUtils.formatFileSize(totalOriginal)} → 
+                Общий размер: ${FileUtils.formatFileSize(totalOriginal)} →
                 ${FileUtils.formatFileSize(totalCompressed)}<br>
                 Общее сжатие: ${totalCompression}%
             </div>
@@ -2364,11 +2304,6 @@ class AppState {
             opt.classList.remove('selected'));
         document.querySelector('.background-color-option[data-background="white"]').classList.add('selected');
 
-        this.currentSettings.selectedBackground = 'white';
-        this.currentSettings.selectedVideoResolution = '640x360';
-        this.currentSettings.selectedVideoQuality = 'medium';
-        this.currentSettings.selectedVideoFormat = 'mp4';
-
         alert('Настройки сброшены!');
         this.updateNamingExample();
     }
@@ -2390,7 +2325,6 @@ class AppState {
         if (selector) {
             document.querySelectorAll(selector).forEach(cb => cb.checked = true);
         }
-        this.updateNamingExample();
     }
 
     clearCheckboxes(type) {
@@ -2403,7 +2337,6 @@ class AppState {
         if (selector) {
             document.querySelectorAll(selector).forEach(cb => cb.checked = false);
         }
-        this.updateNamingExample();
     }
 
     loadPreset(preset) {
@@ -2422,15 +2355,32 @@ class AppState {
                 break;
         }
         alert(`Пресет "${preset}" загружен!`);
-        this.updateNamingExample();
     }
 }
 
-// ====== Инициализация приложения ======
+/* ================= Инициализация ================= */
 let appState;
 
 document.addEventListener('DOMContentLoaded', () => {
     appState = new AppState();
+
+    // Дополнительная синхронизация цвета (необязательно, но ок)
+    const picker = document.getElementById('customColorPicker');
+    const hexInput = document.getElementById('customColorHex');
+
+    picker.addEventListener('input', (e) => {
+        hexInput.value = e.target.value;
+    });
+
+    hexInput.addEventListener('change', (e) => {
+        let value = e.target.value;
+        if (!value.startsWith('#')) {
+            value = '#' + value;
+            e.target.value = value;
+        }
+        picker.value = value;
+    });
+
     window.appState = appState;
 });
 </script>
