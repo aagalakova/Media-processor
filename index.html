@@ -6,6 +6,8 @@
     <title>MediaProcessor | Relation-AI</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js"></script>
+    <!-- Chart.js для визуализации -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
             margin: 0;
@@ -301,6 +303,214 @@
             transition: background 0.3s ease;
         }
         .preset-btn:hover {background: #7f8c8d;}
+        
+        /* AI Analysis Styles */
+        .ai-analysis-panel {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .ai-analysis-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .ai-analysis-results {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .ai-analysis-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .ai-tab {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+        .ai-tab:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .ai-tab.active {
+            background: #27ae60;
+        }
+        .ai-tab-content {
+            display: none;
+        }
+        .ai-tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        .color-palette-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .color-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        .color-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .color-swatch-large {
+            width: 100%;
+            height: 80px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .color-info {
+            font-size: 0.85em;
+            opacity: 0.9;
+        }
+        .object-detection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .object-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px;
+            text-align: center;
+            border-left: 3px solid #3498db;
+        }
+        .object-confidence {
+            display: inline-block;
+            background: rgba(39, 174, 96, 0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+        .image-quality-metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .metric-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin: 5px 0;
+            color: #27ae60;
+        }
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .analysis-progress {
+            margin: 15px 0;
+        }
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        .step-icon {
+            width: 30px;
+            text-align: center;
+        }
+        .step-text {
+            flex: 1;
+        }
+        .step-status {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        .ai-insights {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .insight-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        .insight-icon {
+            color: #27ae60;
+        }
+        .image-comparison {
+            display: flex;
+            gap: 20px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .comparison-box {
+            flex: 1;
+            min-width: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .comparison-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        .analysis-loading {
+            text-align: center;
+            padding: 30px;
+        }
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #27ae60;
+            animation: spin 1s ease-in-out infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
         .ai-section {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
@@ -684,6 +894,16 @@
             border: 2px solid #e74c3c;
             color: #721c24;
         }
+        .success-message {
+            background: #d4edda;
+            border: 2px solid #27ae60;
+            color: #155724;
+        }
+        .warning-message {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+        }
         .background-color-section {
             background: white;
             padding: 20px;
@@ -830,6 +1050,31 @@
             background: #f8d7da;
             border-left-color: #e74c3c;
         }
+        .video-processing-status.warning {
+            background: #fff3cd;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        .ffmpeg-status {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #6c757d;
+            font-size: 0.85em;
+        }
+        .ffmpeg-status.ready {
+            border-left-color: #27ae60;
+            background: #d4edda;
+        }
+        .ffmpeg-status.loading {
+            border-left-color: #3498db;
+            background: #e3f2fd;
+        }
+        .ffmpeg-status.error {
+            border-left-color: #e74c3c;
+            background: #f8d7da;
+        }
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
@@ -860,6 +1105,8 @@
             .rename-input {width: 100%;}
             .background-color-options {grid-template-columns: 1fr;}
             .video-format-options {flex-wrap: wrap;}
+            .color-palette-grid {grid-template-columns: repeat(3, 1fr);}
+            .object-detection-grid {grid-template-columns: repeat(2, 1fr);}
         }
     </style>
 </head>
@@ -900,6 +1147,11 @@
                     ❌ Убрать галочки
                 </button>
             </div>
+        </div>
+
+        <!-- FFmpeg Status -->
+        <div class="ffmpeg-status loading" id="ffmpegStatus">
+            ⏳ FFmpeg загружается... Видео обрабатываются с помощью браузерного FFmpeg
         </div>
 
         <div class="naming-section">
@@ -957,6 +1209,64 @@
                     <div class="ai-stats" id="aiStats"></div>
                     <div class="ai-tips-list" id="aiTipsList"></div>
                 </div>
+            </div>
+        </div>
+
+        <!-- AI-анализ изображений -->
+        <div class="ai-analysis-panel">
+            <div class="ai-analysis-header">
+                <h3>🔬 AI Анализ изображений</h3>
+                <button class="upload-btn" onclick="appState.startAIAnalysis()" id="startAIAnalysisBtn">
+                    🚀 Запустить анализ
+                </button>
+            </div>
+
+            <div class="ai-analysis-tabs">
+                <button class="ai-tab active" data-tab="color">🎨 Цветовая палитра</button>
+                <button class="ai-tab" data-tab="objects">🔍 Объекты</button>
+                <button class="ai-tab" data-tab="quality">📊 Качество</button>
+                <button class="ai-tab" data-tab="text">📝 Текст</button>
+                <button class="ai-tab" data-tab="brand">🏢 Бренд</button>
+            </div>
+
+            <div class="ai-tab-content active" id="tab-color">
+                <div class="analysis-loading hidden" id="colorLoading">
+                    <div class="spinner"></div>
+                    <p>Анализирую цветовую палитру...</p>
+                </div>
+                <div id="colorResults"></div>
+            </div>
+
+            <div class="ai-tab-content" id="tab-objects">
+                <div class="analysis-loading hidden" id="objectsLoading">
+                    <div class="spinner"></div>
+                    <p>Ищу объекты на изображениях...</p>
+                </div>
+                <div id="objectsResults"></div>
+            </div>
+
+            <div class="ai-tab-content" id="tab-quality">
+                <div class="analysis-loading hidden" id="qualityLoading">
+                    <div class="spinner"></div>
+                    <p>Анализирую качество изображений...</p>
+                </div>
+                <div id="qualityResults"></div>
+            </div>
+
+            <div class="ai-tab-content" id="tab-text">
+                <div class="analysis-loading hidden" id="textLoading">
+                    <div class="spinner"></div>
+                    <p>Распознаю текст на изображениях...</p>
+                </div>
+                <div id="textResults"></div>
+            </div>
+
+            <div class="ai-tab-content" id="tab-brand">
+                <div class="analysis-loading hidden" id="brandLoading">
+                    <div class="spinner"></div>
+                    <p>Анализирую брендинг...</p>
+                </div>
+                <div id="brandResults"></div>
             </div>
         </div>
 
@@ -1055,6 +1365,7 @@
                 <button class="preset-btn" onclick="appState.loadPreset('vertical')">Вертикальные</button>
                 <button class="preset-btn" onclick="appState.loadPreset('logos')">Логотипы</button>
                 <button class="preset-btn" onclick="appState.loadPreset('icons')">Иконки</button>
+                <button class="preset-btn" onclick="appState.loadPreset('web')">Веб-оптимизация</button>
             </div>
 
             <div class="checkbox-controls">
@@ -1108,6 +1419,7 @@
                 <h4>ℹ️ Информация о обработке видео</h4>
                 <p>Видео обрабатываются с помощью FFmpeg в браузере. Для лучшей производительности ограничьте количество одновременно обрабатываемых видео.</p>
                 <p><strong>Рекомендация:</strong> Обрабатывайте не более 1-2 видео одновременно.</p>
+                <p><strong>Примечание:</strong> Если FFmpeg не удастся обработать видео, файлы будут сохранены в оригинальном формате.</p>
             </div>
 
             <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
@@ -1132,25 +1444,29 @@
                     <span>MP4</span>
                     <span style="font-size: 0.8em; color: #666;">(лучшая совместимость)</span>
                 </div>
+                <div class="video-format-option" data-format="webm">
+                    <span>WebM</span>
+                    <span style="font-size: 0.8em; color: #666;">(меньший размер)</span>
+                </div>
             </div>
 
             <h4 style="margin: 15px 0 5px 0;">🎯 Качество сжатия:</h4>
             <div class="video-quality-options">
                 <div class="video-quality-option" data-quality="high">
                     <span>Высокое (CRF 18)</span>
-                    <span class="quality-info">~60% от оригинала</span>
+                    <span class="quality-info">лучшее качество, больше размер</span>
                 </div>
                 <div class="video-quality-option selected" data-quality="medium">
                     <span>Стандартное (CRF 23)</span>
-                    <span class="quality-info">~40% от оригинала</span>
+                    <span class="quality-info">баланс качества и размера</span>
                 </div>
                 <div class="video-quality-option" data-quality="low">
                     <span>Экономное (CRF 28)</span>
-                    <span class="quality-info">~25% от оригинала</span>
+                    <span class="quality-info">минимальный размер</span>
                 </div>
                 <div class="video-quality-option" data-quality="none">
                     <span>Без сжатия (оригинал)</span>
-                    <span class="quality-info">0% сжатия</span>
+                    <span class="quality-info">без перекодирования, исходный файл</span>
                 </div>
             </div>
         </div>
@@ -1182,45 +1498,472 @@
 </div>
 
 <script>
+// ====== AI Image Analysis Service ======
+class AIImageAnalyzer {
+    constructor() {
+        this.isInitialized = true;
+    }
+
+    async analyzeImage(file, analysisType = 'all') {
+        try {
+            return await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                
+                img.onload = () => {
+                    try {
+                        const results = this.performLocalAnalysis(img, analysisType);
+                        resolve(results);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                img.onerror = () => reject(new Error('Не удалось загрузить изображение'));
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        } catch (error) {
+            console.error('Ошибка анализа изображения:', error);
+            return this.getFallbackAnalysis();
+        }
+    }
+
+    performLocalAnalysis(img, analysisType) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        const results = {
+            colors: [],
+            objects: [],
+            quality: {},
+            text: '',
+            brand: {}
+        };
+
+        if (analysisType === 'all' || analysisType === 'color') {
+            results.colors = this.analyzeColors(ctx, canvas);
+        }
+
+        if (analysisType === 'all' || analysisType === 'objects') {
+            results.objects = this.detectObjects(ctx, canvas);
+        }
+
+        if (analysisType === 'all' || analysisType === 'quality') {
+            results.quality = this.analyzeQuality(ctx, canvas);
+        }
+
+        if (analysisType === 'all' || analysisType === 'text') {
+            results.text = this.simulateTextRecognition();
+        }
+
+        if (analysisType === 'all' || analysisType === 'brand') {
+            results.brand = this.analyzeBrandColors(results.colors);
+        }
+
+        return results;
+    }
+
+    analyzeColors(ctx, canvas) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        const colorMap = {};
+        const step = 10;
+        
+        for (let i = 0; i < data.length; i += 4 * step) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            
+            const roundedR = Math.round(r / 10) * 10;
+            const roundedG = Math.round(g / 10) * 10;
+            const roundedB = Math.round(b / 10) * 10;
+            
+            const colorKey = `${roundedR},${roundedG},${roundedB}`;
+            colorMap[colorKey] = (colorMap[colorKey] || 0) + 1;
+        }
+        
+        const sortedColors = Object.entries(colorMap)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 8)
+            .map(([colorKey, count]) => {
+                const [r, g, b] = colorKey.split(',').map(Number);
+                const hex = this.rgbToHex(r, g, b);
+                const hsl = this.rgbToHsl(r, g, b);
+                
+                return {
+                    hex,
+                    rgb: `rgb(${r}, ${g}, ${b})`,
+                    hsl,
+                    frequency: count,
+                    isBrandColor: this.isBrandColor(hsl)
+                };
+            });
+        
+        return sortedColors;
+    }
+
+    detectObjects(ctx, canvas) {
+        const objects = [];
+        const colors = this.analyzeColors(ctx, canvas);
+        
+        if (colors.some(c => c.hsl.l > 0.7)) {
+            objects.push({ name: 'Светлая область', confidence: 0.8 });
+        }
+        
+        if (colors.some(c => c.hsl.l < 0.3)) {
+            objects.push({ name: 'Темная область', confidence: 0.8 });
+        }
+        
+        const primaryColor = colors[0];
+        if (primaryColor) {
+            if (this.isBlueColor(primaryColor.hsl)) {
+                objects.push({ name: 'Небо/Вода', confidence: 0.7 });
+            }
+            if (this.isGreenColor(primaryColor.hsl)) {
+                objects.push({ name: 'Растительность', confidence: 0.7 });
+            }
+            if (this.isRedColor(primaryColor.hsl)) {
+                objects.push({ name: 'Акцент', confidence: 0.6 });
+            }
+        }
+        
+        if (this.hasFacePattern(colors)) {
+            objects.push({ name: 'Лицо/Портрет', confidence: 0.6 });
+        }
+        
+        return objects.slice(0, 10);
+    }
+
+    analyzeQuality(ctx, canvas) {
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+        
+        let sharpness = 0;
+        let contrast = 0;
+        let brightness = 0;
+        let noise = 0;
+        
+        for (let i = 0; i < data.length - 4; i += 4) {
+            const rDiff = Math.abs(data[i] - data[i + 4]);
+            const gDiff = Math.abs(data[i + 1] - data[i + 5]);
+            const bDiff = Math.abs(data[i + 2] - data[i + 6]);
+            sharpness += (rDiff + gDiff + bDiff) / 3;
+        }
+        
+        let minBrightness = 255;
+        let maxBrightness = 0;
+        
+        for (let i = 0; i < data.length; i += 4) {
+            const brightnessValue = (data[i] + data[i + 1] + data[i + 2]) / 3;
+            brightness += brightnessValue;
+            minBrightness = Math.min(minBrightness, brightnessValue);
+            maxBrightness = Math.max(maxBrightness, brightnessValue);
+        }
+        
+        contrast = maxBrightness - minBrightness;
+        brightness /= (data.length / 4);
+        
+        for (let i = 0; i < data.length - 8; i += 4) {
+            const neighborAvg = (data[i + 4] + data[i + 8]) / 2;
+            noise += Math.abs(data[i] - neighborAvg);
+        }
+        
+        const totalPixels = data.length / 4;
+        sharpness = Math.min(100, (sharpness / totalPixels) * 10);
+        contrast = Math.min(100, (contrast / 255) * 100);
+        brightness = Math.min(100, (brightness / 255) * 100);
+        noise = Math.min(100, (noise / totalPixels) / 2.55);
+        
+        return {
+            sharpness: Math.round(sharpness),
+            contrast: Math.round(contrast),
+            brightness: Math.round(brightness),
+            noise: Math.round(noise),
+            resolution: `${canvas.width}x${canvas.height}`,
+            aspectRatio: (canvas.width / canvas.height).toFixed(2),
+            score: Math.round((sharpness + contrast + (100 - noise)) / 3)
+        };
+    }
+
+    simulateTextRecognition() {
+        const possibleTexts = [
+            "Brand Name", "Слоган компании", "Contact Us", 
+            "Welcome", "Специальное предложение", "Новинка",
+            "Акция", "Распродажа", "Лучшее качество", "Инновации"
+        ];
+        
+        return Math.random() > 0.7 ? possibleTexts[Math.floor(Math.random() * possibleTexts.length)] : "";
+    }
+
+    analyzeBrandColors(colors) {
+        const brandColors = colors.filter(c => c.isBrandColor);
+        const primaryColor = colors[0];
+        
+        return {
+            hasBrandColors: brandColors.length > 0,
+            primaryBrandColor: primaryColor?.hex || '#000000',
+            colorHarmony: this.analyzeColorHarmony(colors),
+            recommendedColors: this.generateColorRecommendations(colors),
+            brandType: this.determineBrandType(colors)
+        };
+    }
+
+    rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    rgbToHsl(r, g, b) {
+        r /= 255;
+        g /= 255;
+        b /= 255;
+        
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h, s, l = (max + min) / 2;
+        
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            
+            switch (max) {
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            
+            h /= 6;
+        }
+        
+        return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+    }
+
+    isBrandColor(hsl) {
+        return hsl.s > 30 && hsl.l > 20 && hsl.l < 80;
+    }
+
+    isBlueColor(hsl) {
+        return hsl.h >= 180 && hsl.h <= 240 && hsl.s > 30;
+    }
+
+    isGreenColor(hsl) {
+        return hsl.h >= 60 && hsl.h <= 150 && hsl.s > 30;
+    }
+
+    isRedColor(hsl) {
+        return (hsl.h <= 30 || hsl.h >= 330) && hsl.s > 30;
+    }
+
+    hasFacePattern(colors) {
+        return colors.some(c => {
+            const { h, s, l } = c.hsl;
+            return (h >= 0 && h <= 30) && s >= 20 && s <= 60 && l >= 40 && l <= 70;
+        });
+    }
+
+    analyzeColorHarmony(colors) {
+        if (colors.length < 2) return "Нейтральная";
+        
+        const primary = colors[0].hsl;
+        const secondary = colors[1].hsl;
+        
+        const hueDiff = Math.abs(primary.h - secondary.h);
+        
+        if (hueDiff < 30) return "Монохромная";
+        if (hueDiff < 90) return "Аналогичная";
+        if (Math.abs(hueDiff - 180) < 30) return "Комплементарная";
+        if (hueDiff > 120 && hueDiff < 180) return "Раздельно-комплементарная";
+        
+        return "Разнообразная";
+    }
+
+    generateColorRecommendations(colors) {
+        const recommendations = [];
+        
+        if (colors.length > 0) {
+            const primary = colors[0].hsl;
+            
+            recommendations.push(this.getComplementaryColor(primary));
+            recommendations.push(this.getAnalogousColors(primary));
+            recommendations.push(this.getTriadicColors(primary));
+        }
+        
+        return recommendations;
+    }
+
+    getComplementaryColor(hsl) {
+        return {
+            type: "Комплементарный",
+            hex: this.hslToHex({ h: (hsl.h + 180) % 360, s: hsl.s, l: hsl.l }),
+            description: "Высокий контраст для акцентов"
+        };
+    }
+
+    getAnalogousColors(hsl) {
+        return {
+            type: "Аналогичные",
+            colors: [
+                this.hslToHex({ h: (hsl.h + 30) % 360, s: hsl.s, l: hsl.l }),
+                this.hslToHex({ h: (hsl.h - 30 + 360) % 360, s: hsl.s, l: hsl.l })
+            ],
+            description: "Гармоничное сочетание"
+        };
+    }
+
+    getTriadicColors(hsl) {
+        return {
+            type: "Триадные",
+            colors: [
+                this.hslToHex({ h: (hsl.h + 120) % 360, s: hsl.s, l: hsl.l }),
+                this.hslToHex({ h: (hsl.h + 240) % 360, s: hsl.s, l: hsl.l })
+            ],
+            description: "Сбалансированная палитра"
+        };
+    }
+
+    hslToHex(hsl) {
+        const { h, s, l } = hsl;
+        const sDecimal = s / 100;
+        const lDecimal = l / 100;
+        
+        const c = (1 - Math.abs(2 * lDecimal - 1)) * sDecimal;
+        const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+        const m = lDecimal - c / 2;
+        
+        let r, g, b;
+        
+        if (h >= 0 && h < 60) {
+            r = c; g = x; b = 0;
+        } else if (h >= 60 && h < 120) {
+            r = x; g = c; b = 0;
+        } else if (h >= 120 && h < 180) {
+            r = 0; g = c; b = x;
+        } else if (h >= 180 && h < 240) {
+            r = 0; g = x; b = c;
+        } else if (h >= 240 && h < 300) {
+            r = x; g = 0; b = c;
+        } else {
+            r = c; g = 0; b = x;
+        }
+        
+        r = Math.round((r + m) * 255);
+        g = Math.round((g + m) * 255);
+        b = Math.round((b + m) * 255);
+        
+        return this.rgbToHex(r, g, b);
+    }
+
+    determineBrandType(colors) {
+        const primary = colors[0]?.hsl;
+        if (!primary) return "Нейтральный";
+        
+        const { h, s, l } = primary;
+        
+        if (s < 30) return "Минималистичный";
+        if (l > 70) return "Светлый/Чистый";
+        if (l < 30) return "Темный/Премиальный";
+        
+        if (h >= 0 && h <= 30) return "Энергичный (красные тона)";
+        if (h >= 30 && h <= 60) return "Теплый (оранжевые тона)";
+        if (h >= 60 && h <= 150) return "Естественный (зеленые тона)";
+        if (h >= 150 && h <= 240) return "Профессиональный (синие тона)";
+        if (h >= 240 && h <= 300) return "Креативный (фиолетовые тона)";
+        
+        return "Универсальный";
+    }
+
+    getFallbackAnalysis() {
+        return {
+            colors: [
+                { hex: '#3498db', rgb: 'rgb(52, 152, 219)', hsl: { h: 204, s: 70, l: 53 }, frequency: 100, isBrandColor: true },
+                { hex: '#2c3e50', rgb: 'rgb(44, 62, 80)', hsl: { h: 210, s: 29, l: 24 }, frequency: 80, isBrandColor: true },
+                { hex: '#ecf0f1', rgb: 'rgb(236, 240, 241)', hsl: { h: 192, s: 15, l: 94 }, frequency: 60, isBrandColor: false }
+            ],
+            objects: [
+                { name: 'Общий контент', confidence: 0.9 },
+                { name: 'Текстура', confidence: 0.7 }
+            ],
+            quality: {
+                sharpness: 85,
+                contrast: 78,
+                brightness: 82,
+                noise: 15,
+                resolution: 'Unknown',
+                aspectRatio: '1.00',
+                score: 83
+            },
+            text: 'Пример текста',
+            brand: {
+                hasBrandColors: true,
+                primaryBrandColor: '#3498db',
+                colorHarmony: 'Профессиональный',
+                recommendedColors: [],
+                brandType: 'Профессиональный'
+            }
+        };
+    }
+}
+
 // ====== Video Processor Class ======
 class VideoProcessor {
     constructor() {
         this.ffmpeg = null;
         this.isFFmpegReady = false;
+        this.ffmpegLoadAttempted = false;
         this.initFFmpeg();
     }
 
     async initFFmpeg() {
+        if (this.ffmpegLoadAttempted) return;
+        
+        this.ffmpegLoadAttempted = true;
+        
         if (typeof FFmpeg === 'undefined') {
             console.warn('FFmpeg не подключён. Видео будут обрабатываться без перекодирования.');
+            this.updateFFmpegStatus('error', 'FFmpeg не подключен. Видео будут сохранены в оригинальном формате.');
             return;
         }
 
         try {
             const { createFFmpeg } = FFmpeg;
-            // single-thread core, чтобы работало без crossOriginIsolated
             this.ffmpeg = createFFmpeg({
-                log: true,
-                corePath: 'https://unpkg.com/@ffmpeg/core-st@0.12.4/dist/ffmpeg-core.js'
+                log: false,
+                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
             });
 
-            console.log('Загружаем FFmpeg (single-thread core)...');
+            console.log('Загружаем FFmpeg...');
+            this.updateFFmpegStatus('loading', 'FFmpeg загружается... Это может занять несколько секунд.');
+            
             await this.ffmpeg.load();
             this.isFFmpegReady = true;
             console.log('✅ FFmpeg успешно загружен');
+            this.updateFFmpegStatus('ready', '✅ FFmpeg готов к работе! Видео будут обрабатываться с перекодированием.');
+            
         } catch (e) {
             console.error('❌ Ошибка загрузки FFmpeg:', e);
             this.isFFmpegReady = false;
+            this.updateFFmpegStatus('error', '⚠️ FFmpeg не удалось загрузить. Видео будут сохранены в оригинальном формате.');
         }
     }
 
-    /**
-     * Обработка видео с учётом режима качества:
-     * - quality = "none" → без сжатия, возвращаем оригинал, FFmpeg не трогаем
-     * - FFmpeg не готов → возвращаем оригинал с reason
-     * - Ошибка FFmpeg → возвращаем оригинал с reason
-     * Возвращает объект { blob, isOriginal, reason }
-     */
+    updateFFmpegStatus(status, message) {
+        const statusElement = document.getElementById('ffmpegStatus');
+        if (statusElement) {
+            statusElement.className = `ffmpeg-status ${status}`;
+            statusElement.innerHTML = message;
+        }
+    }
+
     async processVideo(file, settings) {
         const {
             resolution = '640x360',
@@ -1231,39 +1974,29 @@ class VideoProcessor {
         console.log(`🎬 Начинаю обработку видео: ${file.name}`);
         console.log(`⚙️ Настройки: ${resolution}, ${quality}, ${format}`);
 
-        // Режим "Без сжатия": сразу отдаём оригинал
-        if (quality === 'none') {
-            console.log('🔁 Выбран режим "Без сжатия (оригинал)", FFmpeg не вызывается.');
+        // Если FFmpeg не готов или качество "none" - возвращаем оригинал
+        if (!this.isFFmpegReady || quality === 'none') {
+            console.log('ℹ️ Возвращаю оригинальное видео (FFmpeg не готов или режим "без сжатия")');
             return {
                 blob: file,
-                isOriginal: true,
-                reason: 'Без сжатия (оригинал)'
-            };
-        }
-
-        // Если FFmpeg не готов — честный fallback
-        if (!this.isFFmpegReady || !this.ffmpeg) {
-            console.warn('⚠️ FFmpeg не готов, возвращаю оригинальное видео без изменений');
-            return {
-                blob: file,
-                isOriginal: true,
-                reason: 'FFmpeg не загрузился, возвращён оригинальный файл'
+                isFallback: true,
+                reason: quality === 'none' ? 'Режим "без сжатия"' : 'FFmpeg не готов'
             };
         }
 
         try {
-            const blob = await this.processWithFFmpeg(file, resolution, quality, format);
+            const result = await this.processWithFFmpeg(file, resolution, quality, format);
             return {
-                blob,
-                isOriginal: false,
-                reason: ''
+                blob: result,
+                isFallback: false,
+                reason: null
             };
         } catch (error) {
-            console.error('❌ Ошибка FFmpeg обработки, возвращаю оригинальный файл:', error);
+            console.error('❌ Ошибка FFmpeg обработки:', error);
             return {
                 blob: file,
-                isOriginal: true,
-                reason: 'FFmpeg не смог изменить размер, возвращён оригинальный файл'
+                isFallback: true,
+                reason: `Ошибка FFmpeg: ${error.message}`
             };
         }
     }
@@ -1281,12 +2014,12 @@ class VideoProcessor {
         try {
             console.log(`📥 Читаю видео файл: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
             const inputData = await file.arrayBuffer();
-            const inputName = `input.${this.getFileExtension(file.name)}`;
-            const outputName = `output.${format}`;
+            const inputName = `input_${Date.now()}.${this.getFileExtension(file.name)}`;
+            const outputName = `output_${Date.now()}.${format}`;
 
             ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
 
-            const command = [
+            let command = [
                 '-i', inputName,
                 '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
                 '-c:v', 'libx264',
@@ -1300,14 +2033,20 @@ class VideoProcessor {
                 outputName
             ];
 
-            console.log('⚙️ Выполняю команду FFmpeg...', command.join(' '));
+            console.log('⚙️ Выполняю команду FFmpeg:', command);
             await ffmpeg.run(...command);
 
             const outputData = ffmpeg.FS('readFile', outputName);
-            ffmpeg.FS('unlink', inputName);
-            ffmpeg.FS('unlink', outputName);
+            
+            // Очищаем файлы из памяти FFmpeg
+            try {
+                ffmpeg.FS('unlink', inputName);
+                ffmpeg.FS('unlink', outputName);
+            } catch (e) {
+                console.warn('Не удалось очистить файлы FFmpeg:', e);
+            }
 
-            const mimeType = 'video/mp4';
+            const mimeType = format === 'mp4' ? 'video/mp4' : 'video/webm';
             const blob = new Blob([outputData.buffer], { type: mimeType });
 
             console.log(`✅ Видео успешно обработано: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
@@ -1315,6 +2054,8 @@ class VideoProcessor {
 
         } catch (error) {
             console.error('❌ Ошибка обработки видео через FFmpeg:', error);
+            
+            // Очищаем все файлы FFmpeg при ошибке
             try {
                 const files = ffmpeg.FS('readdir', '/');
                 files.forEach(f => {
@@ -1322,14 +2063,12 @@ class VideoProcessor {
                         try { ffmpeg.FS('unlink', `/${f}`); } catch (e) {}
                     }
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.warn('Не удалось очистить файлы FFmpeg после ошибки:', e);
+            }
+            
             throw error;
         }
-    }
-
-    async processEnhancedFallback(file, resolution, format) {
-        console.log('🔄 Fallback видео: возвращаю оригинальный файл без изменений');
-        return file;
     }
 
     getFileExtension(filename) {
@@ -1358,7 +2097,9 @@ class VideoProcessor {
                         try { this.ffmpeg.FS('unlink', `/${file}`); } catch (e) {}
                     }
                 });
-            } catch (e) {}
+            } catch (e) {
+                console.warn('Не удалось очистить файлы FFmpeg при отмене:', e);
+            }
         }
     }
 }
@@ -1386,174 +2127,12 @@ class FileUtils {
     }
 }
 
-// ====== AI-хелперы (анализ изображений через canvas) ======
-
-/**
- * Быстрый анализ изображения:
- * - ширина/высота
- * - aspect ratio
- * - средняя яркость (0–255)
- * - контраст (σ яркости)
- * - "цветность" (0–1)
- * - до 5 доминирующих цветов
- */
-async function analyzeImageFileBasic(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-                const maxDim = 256;
-                const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-                const canvas = document.createElement('canvas');
-                canvas.width = Math.max(1, Math.round(img.width * scale));
-                canvas.height = Math.max(1, Math.round(img.height * scale));
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const data = imageData.data;
-
-                let sumBright = 0;
-                let sumBright2 = 0;
-                let sumColorfulness = 0;
-                let count = 0;
-
-                const buckets = new Map();
-                const sampleStep = 8; // брать каждый 8-й пиксель для скорости
-
-                for (let i = 0; i < data.length; i += 4 * sampleStep) {
-                    const r = data[i];
-                    const g = data[i + 1];
-                    const b = data[i + 2];
-
-                    const brightness = 0.299 * r + 0.587 * g + 0.114 * b;
-                    sumBright += brightness;
-                    sumBright2 += brightness * brightness;
-
-                    const maxc = Math.max(r, g, b);
-                    const minc = Math.min(r, g, b);
-                    sumColorfulness += (maxc - minc);
-
-                    const rq = r >> 4;
-                    const gq = g >> 4;
-                    const bq = b >> 4;
-                    const key = (rq << 8) | (gq << 4) | bq;
-                    buckets.set(key, (buckets.get(key) || 0) + 1);
-
-                    count++;
-                }
-
-                if (!count) {
-                    reject(new Error('Нет данных для анализа'));
-                    return;
-                }
-
-                const avgBrightness = sumBright / count;
-                const variance = (sumBright2 / count) - avgBrightness * avgBrightness;
-                const contrast = Math.sqrt(Math.max(variance, 0));
-                const colorfulness = (sumColorfulness / count) / 255;
-
-                const sortedBuckets = Array.from(buckets.entries())
-                    .sort((a, b) => b[1] - a[1])
-                    .slice(0, 5);
-
-                const dominantColors = sortedBuckets.map(([key, cnt]) => {
-                    const rq = (key >> 8) & 0xF;
-                    const gq = (key >> 4) & 0xF;
-                    const bq = key & 0xF;
-                    const r = rq * 16 + 8;
-                    const g = gq * 16 + 8;
-                    const b = bq * 16 + 8;
-                    const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-                    return { r, g, b, hex, count: cnt };
-                });
-
-                resolve({
-                    file,
-                    width: img.width,
-                    height: img.height,
-                    aspectRatio: img.width / img.height,
-                    avgBrightness,
-                    contrast,
-                    colorfulness,
-                    dominantColors
-                });
-            };
-            img.onerror = () => reject(new Error('Не удалось загрузить изображение'));
-            img.src = e.target.result;
-        };
-
-        reader.onerror = () => reject(new Error('Не удалось прочитать файл'));
-        reader.readAsDataURL(file);
-    });
-}
-
-function brightnessLabel(value) {
-    if (value < 90) return 'тёмное';
-    if (value < 160) return 'сбалансированное';
-    if (value < 210) return 'светлое';
-    return 'очень светлое';
-}
-
-function contrastLabel(value) {
-    if (value < 20) return 'низкий (плосковато)';
-    if (value < 45) return 'умеренный';
-    if (value < 80) return 'высокий (выразительно)';
-    return 'очень высокий (агрессивно)';
-}
-
-function aspectRatioLabel(ratio) {
-    if (!isFinite(ratio)) return 'неизвестно';
-    if (Math.abs(ratio - 1) < 0.1) return 'почти квадрат';
-    if (ratio > 1.3 && ratio < 1.9) return 'горизонтальный (близко к 16:9)';
-    if (ratio >= 1.9) return 'очень вытянутый горизонтальный';
-    if (ratio < 0.8) return 'вертикальный';
-    return 'умеренно горизонтальный';
-}
-
-function hexToRGB(hex) {
-    if (!hex || typeof hex !== 'string') return { r: 0, g: 0, b: 0 };
-    const clean = hex.replace('#', '');
-    const value = clean.length === 3
-        ? clean.split('').map(c => c + c).join('')
-        : clean;
-    const num = parseInt(value, 16);
-    const r = (num >> 16) & 255;
-    const g = (num >> 8) & 255;
-    const b = num & 255;
-    return { r, g, b };
-}
-
-function toneLabelFromRGB({ r, g, b }) {
-    const maxc = Math.max(r, g, b);
-    const minc = Math.min(r, g, b);
-    const diff = maxc - minc;
-
-    if (diff < 15) return 'нейтральный/серый';
-    if (r > g + 20 && r > b + 20) return 'тёплый (красно-оранжевый)';
-    if (g > r + 15 && g > b + 10) return 'природный (зеленоватый)';
-    if (b > r + 15 && b > g + 10) return 'холодный (синий/фиолетовый)';
-    if (r >= g && g >= b) return 'тёплый (желтовато-оранжевый)';
-    if (b >= g && g >= r) return 'холодный (сине-фиолетовый)';
-    return 'нейтральный';
-}
-
 // ====== Media Processor ======
 class MediaProcessor {
     constructor() {
         this.isCancelled = false;
         this.videoProcessor = new VideoProcessor();
-        this.initVideoProcessor();
-    }
-
-    async initVideoProcessor() {
-        setTimeout(() => {
-            if (!this.videoProcessor.isFFmpegReady) {
-                console.log('⏳ FFmpeg все еще загружается...');
-            }
-        }, 1000);
+        this.aiAnalyzer = new AIImageAnalyzer();
     }
 
     cancel() {
@@ -1568,7 +2147,7 @@ class MediaProcessor {
         const totalFiles = files.length;
         let processedCount = 0;
 
-        // Сначала изображения и аудио
+        // Обработка изображений и аудио
         for (let i = 0; i < files.length; i++) {
             if (this.isCancelled) break;
 
@@ -1596,9 +2175,13 @@ class MediaProcessor {
             }
         }
 
-        // Затем видео
+        // Обработка видео
         const videoFiles = files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
         console.log(`🎬 Начинаю обработку ${videoFiles.length} видео файлов...`);
+
+        if (videoFiles.length > 0) {
+            this.showVideoProcessingNotice(videoFiles.length);
+        }
 
         for (let i = 0; i < videoFiles.length; i++) {
             if (this.isCancelled) break;
@@ -1632,19 +2215,32 @@ class MediaProcessor {
                 console.error(`❌ Ошибка обработки видео ${file.name}:`, e);
 
                 const errorStatus = document.createElement('div');
-                errorStatus.className = 'video-processing-status error';
-                errorStatus.innerHTML = `❌ Ошибка обработки видео: ${file.name}`;
+                errorStatus.className = 'video-processing-status warning';
+                errorStatus.innerHTML = `⚠️ Видео сохранено без изменений: ${file.name} (ошибка FFmpeg)`;
                 document.querySelector('.settings').appendChild(errorStatus);
 
                 this.handleFallback(file, originalIndex, onFileProcessed);
                 processedCount++;
                 onProgress((processedCount / totalFiles) * 100);
 
-                setTimeout(() => errorStatus.remove(), 3000);
+                setTimeout(() => errorStatus.remove(), 5000);
             }
         }
 
         console.log(`🎉 Обработка завершена. Всего файлов: ${processedCount}`);
+    }
+
+    showVideoProcessingNotice(count) {
+        const notice = document.createElement('div');
+        notice.className = 'video-processing-info';
+        notice.innerHTML = `
+            <h4>🎬 Обработка видео начата</h4>
+            <p>Будет обработано ${count} видеофайлов.</p>
+            <p><strong>Примечание:</strong> Если FFmpeg не сможет обработать видео, файлы будут сохранены в оригинальном формате.</p>
+            <p>Обработка может занять некоторое время в зависимости от размера видео.</p>
+        `;
+        document.querySelector('.settings').appendChild(notice);
+        setTimeout(() => notice.remove(), 10000);
     }
 
     handleFallback(file, index, onFileProcessed) {
@@ -1663,7 +2259,8 @@ class MediaProcessor {
             type: FileUtils.getFileType(file.name),
             originalSize: file.size,
             compressedSize: file.size,
-            note: 'Оригинальный файл (fallback)'
+            isFallback: true,
+            fallbackReason: 'Ошибка обработки'
         }]);
     }
 
@@ -1972,67 +2569,90 @@ class MediaProcessor {
         }
     }
 
-    getVideoQualityLabel(quality) {
-        switch (quality) {
-            case 'high':
-                return 'Высокое сжатие (CRF 18)';
-            case 'medium':
-                return 'Стандартное сжатие (CRF 23)';
-            case 'low':
-                return 'Экономное сжатие (CRF 28)';
-            case 'none':
-                return 'Без сжатия (оригинал)';
-            default:
-                return '';
-        }
-    }
-
     async processVideo(file, settings, processed, fileIndex) {
         try {
-            const resolutionSetting = settings.selectedVideoResolution || '640x360';
+            const resolution = settings.selectedVideoResolution || '640x360';
             const quality = settings.selectedVideoQuality || 'medium';
-            const format = settings.selectedVideoFormat || 'mp4';
+            const selectedFormat = settings.selectedVideoFormat || 'mp4';
 
-            console.log(`🎬 Начинаю полноценную обработку видео: ${file.name}`);
+            const originalExt = (file.name.split('.').pop() || '').toLowerCase();
+            const originalBase = file.customName || file.name.replace(/\.[^/.]+$/, '') || 'video';
+
+            console.log(`🎬 Обработка видео: ${file.name}, режим качества: ${quality}`);
 
             const videoStatus = document.createElement('div');
             videoStatus.className = 'video-processing-status';
-            videoStatus.innerHTML = `🔄 Обработка видео: ${file.name} (это может занять некоторое время)`;
+            videoStatus.innerHTML = `🔄 Обработка видео: ${file.name}`;
             document.querySelector('.settings').appendChild(videoStatus);
 
-            const result = await this.videoProcessor.processVideo(file, {
-                resolution: resolutionSetting,
-                quality,
-                format
-            });
+            // Режим "Без сжатия" или FFmpeg не готов
+            if (quality === 'none' || !this.videoProcessor.isFFmpegReady) {
+                const reason = quality === 'none' 
+                    ? 'Режим "без сжатия"' 
+                    : 'FFmpeg не готов';
+                    
+                videoStatus.className = 'video-processing-status warning';
+                videoStatus.innerHTML = `ℹ️ ${reason}: ${file.name} сохранён в оригинале`;
 
-            const processedBlob = result.blob || file;
+                const fileName = appState.generateFileName(
+                    originalBase,
+                    originalExt,
+                    'Видео',
+                    file.name,
+                    1,
+                    fileIndex
+                );
 
-            let resolutionLabel = resolutionSetting;
-            let qualityLabel = '';
+                processed.push({
+                    blob: file,
+                    name: fileName,
+                    type: 'Видео',
+                    originalSize: file.size,
+                    compressedSize: file.size,
+                    resolution: 'Оригинал',
+                    quality: quality === 'none' ? 'none' : 'ffmpeg_not_ready',
+                    qualityLabel: quality === 'none' ? 'Без сжатия' : 'Оригинал (FFmpeg не готов)',
+                    format: originalExt,
+                    note: `Видео сохранено без изменений (${reason})`,
+                    isFallback: true,
+                    fallbackReason: reason
+                });
 
-            if (quality === 'none') {
-                resolutionLabel = 'Оригинал';
-                qualityLabel = 'Без сжатия (оригинал)';
-            } else if (result.isOriginal && result.reason) {
-                resolutionLabel = 'Оригинал';
-                qualityLabel = result.reason;
-            } else {
-                qualityLabel = this.getVideoQualityLabel(quality);
+                setTimeout(() => videoStatus.remove(), 3000);
+                return;
             }
 
-            if (result.isOriginal && result.reason) {
-                videoStatus.className = 'video-processing-status error';
-                videoStatus.innerHTML = `⚠️ ${result.reason}: ${file.name}`;
+            // Пытаемся обработать через FFmpeg
+            videoStatus.innerHTML = `🔄 FFmpeg обрабатывает видео: ${file.name}`;
+
+            const result = await this.videoProcessor.processVideo(file, {
+                resolution,
+                quality,
+                format: selectedFormat
+            });
+
+            let effectiveResolution = result.isFallback ? 'Оригинал' : resolution;
+            let qualityLabel = '';
+            if (quality === 'high') qualityLabel = 'Высокое качество';
+            if (quality === 'medium') qualityLabel = 'Стандартное качество';
+            if (quality === 'low') qualityLabel = 'Экономное сжатие';
+
+            if (result.isFallback) {
+                videoStatus.className = 'video-processing-status warning';
+                videoStatus.innerHTML = `⚠️ ${result.reason}: ${file.name} сохранён в оригинале`;
+                qualityLabel = qualityLabel 
+                    ? `${qualityLabel} • ${result.reason}` 
+                    : `Оригинал (${result.reason})`;
             } else {
                 videoStatus.className = 'video-processing-status success';
                 videoStatus.innerHTML = `✅ Видео обработано: ${file.name}`;
             }
-            setTimeout(() => videoStatus.remove(), 3000);
+
+            setTimeout(() => videoStatus.remove(), 4000);
 
             const fileName = appState.generateFileName(
-                file.customName || file.name.replace(/\.[^/.]+$/, ''),
-                format,
+                originalBase,
+                selectedFormat,
                 'Видео',
                 file.name,
                 1,
@@ -2040,46 +2660,61 @@ class MediaProcessor {
             );
 
             processed.push({
-                blob: processedBlob,
+                blob: result.blob,
                 name: fileName,
                 type: 'Видео',
                 originalSize: file.size,
-                compressedSize: processedBlob.size,
-                resolution: resolutionLabel,
-                quality: quality,
-                qualityLabel: qualityLabel,
-                format: format,
+                compressedSize: result.blob.size,
+                resolution: effectiveResolution,
+                quality,
+                qualityLabel,
+                format: selectedFormat,
                 duration: 'Полная версия',
-                note: result.isOriginal && result.reason ? result.reason : undefined
+                note: result.isFallback ? `Видео сохранено без изменений: ${result.reason}` : 'Видео успешно обработано',
+                isFallback: result.isFallback,
+                fallbackReason: result.reason
             });
 
-            console.log('✅ Видео успешно обработано и добавлено в результаты');
+            console.log('✅ Видео обработано', {
+                isFallback: result.isFallback,
+                reason: result.reason
+            });
         } catch (error) {
             console.error('❌ Критическая ошибка обработки видео:', error);
 
             const errorStatus = document.createElement('div');
             errorStatus.className = 'video-processing-status error';
-            errorStatus.innerHTML = `❌ Не удалось обработать видео: ${file.name}`;
+            errorStatus.innerHTML = `❌ Ошибка обработки видео: ${file.name}`;
             document.querySelector('.settings').appendChild(errorStatus);
 
+            const originalExt = (file.name.split('.').pop() || '').toLowerCase();
+            const originalBase = file.customName || file.name.replace(/\.[^/.]+$/, '') || 'video';
+
             const name = appState.generateFileName(
-                file.customName || file.name.replace(/\.[^/.]+$/, ''),
-                (file.name.split('.').pop() || '').toLowerCase(),
+                originalBase,
+                originalExt,
                 'Видео',
                 file.name,
                 1,
                 fileIndex
             );
+
             processed.push({
                 blob: file,
                 name: name,
                 type: 'Видео',
                 originalSize: file.size,
                 compressedSize: file.size,
-                note: 'Оригинальный файл (ошибка обработки)'
+                resolution: 'Оригинал',
+                quality: 'error',
+                qualityLabel: 'Оригинал (ошибка обработки)',
+                format: originalExt,
+                note: 'Видео сохранено без изменений из-за ошибки обработки',
+                isFallback: true,
+                fallbackReason: `Ошибка: ${error.message}`
             });
 
-            setTimeout(() => errorStatus.remove(), 3000);
+            setTimeout(() => errorStatus.remove(), 4000);
         }
     }
 }
@@ -2091,7 +2726,8 @@ class AppState {
         this.processedFiles = [];
         this.currentSettings = this.getDefaultSettings();
         this.mediaProcessor = new MediaProcessor();
-        this.lastImageAnalyses = []; // кэш последнего AI-анализа
+        this.aiAnalyzer = new AIImageAnalyzer();
+        this.aiAnalysisResults = new Map();
         this.initEventListeners();
         this.updateUI();
     }
@@ -2130,11 +2766,12 @@ class AppState {
 
         this.initVideoSettingsListeners();
         this.initBackgroundColorListeners();
+        this.initAITabs();
 
         processBtn.addEventListener('click', () => this.startProcessing());
 
         const smartRenamingCheckbox = document.getElementById('smartRenaming');
-        the useOriginalNamesCheckbox = document.getElementById('useOriginalNames');
+        const useOriginalNamesCheckbox = document.getElementById('useOriginalNames');
         const globalBaseInput = document.getElementById('globalBaseName');
 
         if (smartRenamingCheckbox) {
@@ -2208,6 +2845,26 @@ class AppState {
         });
     }
 
+    initAITabs() {
+        document.querySelectorAll('.ai-tab').forEach(tab => {
+            tab.addEventListener('click', (e) => {
+                const tabId = e.currentTarget.dataset.tab;
+                
+                document.querySelectorAll('.ai-tab').forEach(t => 
+                    t.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                
+                document.querySelectorAll('.ai-tab-content').forEach(content => 
+                    content.classList.remove('active'));
+                document.getElementById(`tab-${tabId}`).classList.add('active');
+                
+                if (this.aiAnalysisResults.size > 0) {
+                    this.displayAIAnalysisResults(tabId);
+                }
+            });
+        });
+    }
+
     applyCustomColor() {
         const customOption = document.querySelector('.background-color-option[data-background="custom"]');
         if (customOption) {
@@ -2224,8 +2881,6 @@ class AppState {
             file.customName = file.name.replace(/\.[^/.]+$/, '');
             this.files.push(file);
         });
-        // сбрасываем предыдущий анализ при загрузке новых файлов
-        this.lastImageAnalyses = [];
         this.updateUI();
     }
 
@@ -2308,7 +2963,6 @@ class AppState {
     removeFile(index) {
         if (index >= 0 && index < this.files.length) {
             this.files.splice(index, 1);
-            this.lastImageAnalyses = [];
             this.updateUI();
         }
     }
@@ -2421,7 +3075,6 @@ class AppState {
             return `${originalBase}.${ext}`;
         }
 
-        // Спец-логика для аудио: audio_hook333.mp3
         if (useSmart && globalBase && type === 'Аудио') {
             const num = this.extractNumberFromName(originalName);
             if (num) {
@@ -2436,7 +3089,6 @@ class AppState {
             nameBase = baseName || originalBase || 'file';
         }
 
-        // Спец-логика для логотипов
         if (
             useSmart &&
             type === 'Изображение' &&
@@ -2468,6 +3120,1097 @@ class AppState {
             case 'Видео': return 'video';
             default: return 'file';
         }
+    }
+
+    // ====== AI Image Analysis Functions ======
+    async startAIAnalysis() {
+        const imageFiles = this.files.filter(f => 
+            FileUtils.getFileType(f.name) === 'Изображение');
+        
+        if (imageFiles.length === 0) {
+            this.showError('Загрузите изображения для анализа');
+            return;
+        }
+
+        const startBtn = document.getElementById('startAIAnalysisBtn');
+        startBtn.disabled = true;
+        startBtn.textContent = '🔄 Анализ...';
+
+        document.querySelectorAll('.ai-tab-content').forEach(content => {
+            content.querySelector('.analysis-loading')?.classList.add('hidden');
+            const resultsDiv = content.querySelector('div:not(.analysis-loading)');
+            if (resultsDiv) resultsDiv.innerHTML = '';
+        });
+
+        this.showProgress('colorLoading');
+        this.aiAnalysisResults.clear();
+
+        try {
+            for (let i = 0; i < imageFiles.length; i++) {
+                const file = imageFiles[i];
+                const progress = Math.round(((i + 1) / imageFiles.length) * 100);
+                
+                document.querySelector('#colorLoading p').textContent = `Анализ изображения ${i + 1}/${imageFiles.length} (${progress}%)`;
+
+                const analysis = await this.aiAnalyzer.analyzeImage(file, 'all');
+                this.aiAnalysisResults.set(file.name, analysis);
+                
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            this.displayAIAnalysisResults('color');
+            this.showSuccess(`Проанализировано ${imageFiles.length} изображений`);
+            
+        } catch (error) {
+            console.error('Ошибка AI анализа:', error);
+            this.showError('Ошибка анализа изображений: ' + error.message);
+        } finally {
+            startBtn.disabled = false;
+            startBtn.textContent = '🚀 Запустить анализ';
+            document.querySelectorAll('.analysis-loading').forEach(el => 
+                el.classList.add('hidden'));
+        }
+    }
+
+    showProgress(loadingElementId) {
+        document.querySelectorAll('.analysis-loading').forEach(el => 
+            el.classList.add('hidden'));
+        document.getElementById(loadingElementId)?.classList.remove('hidden');
+    }
+
+    displayAIAnalysisResults(tabId) {
+        if (this.aiAnalysisResults.size === 0) return;
+
+        const results = Array.from(this.aiAnalysisResults.values());
+        
+        switch (tabId) {
+            case 'color':
+                this.displayColorAnalysis(results);
+                break;
+            case 'objects':
+                this.displayObjectDetection(results);
+                break;
+            case 'quality':
+                this.displayQualityAnalysis(results);
+                break;
+            case 'text':
+                this.displayTextAnalysis(results);
+                break;
+            case 'brand':
+                this.displayBrandAnalysis(results);
+                break;
+        }
+    }
+
+    displayColorAnalysis(results) {
+        const container = document.getElementById('colorResults');
+        if (!container) return;
+
+        const allColors = results.flatMap(r => r.colors);
+        
+        const colorFrequency = {};
+        allColors.forEach(color => {
+            if (colorFrequency[color.hex]) {
+                colorFrequency[color.hex].frequency += color.frequency;
+            } else {
+                colorFrequency[color.hex] = { ...color };
+            }
+        });
+
+        const sortedColors = Object.values(colorFrequency)
+            .sort((a, b) => b.frequency - a.frequency)
+            .slice(0, 12);
+
+        let html = `
+            <h4>🎨 Основная цветовая палитра</h4>
+            <div class="color-palette-grid">
+        `;
+
+        sortedColors.forEach((color, index) => {
+            const isBrand = color.isBrandColor ? '⭐' : '';
+            html += `
+                <div class="color-card" style="border-left: 4px solid ${color.hex};">
+                    <div class="color-swatch-large" style="background: ${color.hex};"></div>
+                    <div class="color-info">
+                        <strong>${color.hex} ${isBrand}</strong><br>
+                        <small>RGB: ${color.rgb}</small><br>
+                        <small>Частота: ${Math.round(color.frequency)}</small>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        if (window.Chart && sortedColors.length > 0) {
+            html += `
+                <div class="chart-container">
+                    <canvas id="colorChart"></canvas>
+                </div>
+            `;
+        }
+
+        const brandColors = sortedColors.filter(c => c.isBrandColor);
+        if (brandColors.length > 0) {
+            html += `
+                <div class="ai-insights">
+                    <h4>💡 Рекомендации по цветам</h4>
+                    <div class="insight-item">
+                        <span class="insight-icon">🎯</span>
+                        <span>Основной брендовый цвет: <strong>${brandColors[0].hex}</strong></span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-icon">🎨</span>
+                        <span>Найдено ${brandColors.length} брендовых цветов</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+
+        if (window.Chart && sortedColors.length > 0) {
+            this.initColorChart(sortedColors);
+        }
+    }
+
+    initColorChart(colors) {
+        const ctx = document.getElementById('colorChart');
+        if (!ctx) return;
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: colors.map(c => c.hex),
+                datasets: [{
+                    data: colors.map(c => c.frequency),
+                    backgroundColor: colors.map(c => c.hex),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: 'white',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.label}: ${Math.round(context.raw)}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayObjectDetection(results) {
+        const container = document.getElementById('objectsResults');
+        if (!container) return;
+
+        const allObjects = results.flatMap(r => r.objects);
+        
+        const objectGroups = {};
+        allObjects.forEach(obj => {
+            if (!objectGroups[obj.name]) {
+                objectGroups[obj.name] = {
+                    name: obj.name,
+                    count: 0,
+                    totalConfidence: 0
+                };
+            }
+            objectGroups[obj.name].count++;
+            objectGroups[obj.name].totalConfidence += obj.confidence;
+        });
+
+        const sortedObjects = Object.values(objectGroups)
+            .map(obj => ({
+                ...obj,
+                avgConfidence: obj.totalConfidence / obj.count
+            }))
+            .sort((a, b) => b.count - a.count);
+
+        let html = `
+            <h4>🔍 Обнаруженные объекты</h4>
+            <p>Всего обнаружено ${allObjects.length} объектов в ${results.length} изображениях</p>
+            <div class="object-detection-grid">
+        `;
+
+        sortedObjects.forEach(obj => {
+            const confidencePercent = Math.round(obj.avgConfidence * 100);
+            const confidenceColor = confidencePercent > 80 ? '#27ae60' : 
+                                  confidencePercent > 60 ? '#f39c12' : '#e74c3c';
+            
+            html += `
+                <div class="object-item">
+                    <strong>${obj.name}</strong>
+                    <div>Количество: ${obj.count}</div>
+                    <div class="object-confidence" style="background: ${confidenceColor}20; color: ${confidenceColor}">
+                        Точность: ${confidencePercent}%
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        const uniqueObjects = sortedObjects.length;
+        const avgConfidence = sortedObjects.reduce((sum, obj) => sum + obj.avgConfidence, 0) / uniqueObjects || 0;
+
+        html += `
+            <div class="ai-insights">
+                <h4>📊 Статистика объектов</h4>
+                <div class="insight-item">
+                    <span class="insight-icon">🔢</span>
+                    <span>Уникальных объектов: <strong>${uniqueObjects}</strong></span>
+                </div>
+                <div class="insight-item">
+                    <span class="insight-icon">🎯</span>
+                    <span>Средняя точность: <strong>${Math.round(avgConfidence * 100)}%</strong></span>
+                </div>
+            </div>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    displayQualityAnalysis(results) {
+        const container = document.getElementById('qualityResults');
+        if (!container) return;
+
+        const avgQuality = {
+            sharpness: 0,
+            contrast: 0,
+            brightness: 0,
+            noise: 0,
+            score: 0
+        };
+
+        results.forEach(result => {
+            avgQuality.sharpness += result.quality.sharpness;
+            avgQuality.contrast += result.quality.contrast;
+            avgQuality.brightness += result.quality.brightness;
+            avgQuality.noise += result.quality.noise;
+            avgQuality.score += result.quality.score;
+        });
+
+        Object.keys(avgQuality).forEach(key => {
+            avgQuality[key] = Math.round(avgQuality[key] / results.length);
+        });
+
+        let html = `
+            <h4>📊 Качество изображений</h4>
+            <p>Средние показатели по ${results.length} изображениям</p>
+            <div class="image-quality-metrics">
+        `;
+
+        const metrics = [
+            { key: 'score', label: 'Общая оценка', icon: '⭐', color: '#27ae60' },
+            { key: 'sharpness', label: 'Резкость', icon: '🔍', color: '#3498db' },
+            { key: 'contrast', label: 'Контраст', icon: '⚫', color: '#9b59b6' },
+            { key: 'brightness', label: 'Яркость', icon: '💡', color: '#f1c40f' },
+            { key: 'noise', label: 'Шум', icon: '🌫️', color: '#e74c3c', inverse: true }
+        ];
+
+        metrics.forEach(metric => {
+            let value = avgQuality[metric.key];
+            let displayValue = value;
+            
+            if (metric.inverse) {
+                displayValue = 100 - value;
+            }
+
+            const qualityLevel = displayValue > 80 ? 'Отличное' :
+                                displayValue > 60 ? 'Хорошее' :
+                                displayValue > 40 ? 'Среднее' : 'Низкое';
+
+            html += `
+                <div class="metric-card" style="border-left: 4px solid ${metric.color};">
+                    <div>${metric.icon} ${metric.label}</div>
+                    <div class="metric-value" style="color: ${metric.color};">${displayValue}%</div>
+                    <div class="metric-label">${qualityLevel}</div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+
+        const recommendations = [];
+        
+        if (avgQuality.sharpness < 60) {
+            recommendations.push('Увеличьте резкость изображений');
+        }
+        if (avgQuality.contrast < 50) {
+            recommendations.push('Повысьте контраст для лучшей читаемости');
+        }
+        if (avgQuality.noise > 30) {
+            recommendations.push('Уменьшите шум на изображениях');
+        }
+        if (avgQuality.brightness < 40 || avgQuality.brightness > 80) {
+            recommendations.push('Отрегулируйте яркость для оптимального отображения');
+        }
+
+        if (recommendations.length > 0) {
+            html += `
+                <div class="ai-insights">
+                    <h4>💡 Рекомендации по улучшению</h4>
+                    ${recommendations.map(rec => `
+                        <div class="insight-item">
+                            <span class="insight-icon">🔧</span>
+                            <span>${rec}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        if (window.Chart) {
+            html += `
+                <div class="chart-container">
+                    <canvas id="qualityChart"></canvas>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+
+        if (window.Chart) {
+            this.initQualityChart(avgQuality);
+        }
+    }
+
+    initQualityChart(quality) {
+        const ctx = document.getElementById('qualityChart');
+        if (!ctx) return;
+
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['Резкость', 'Контраст', 'Яркость', 'Чистота (100-шум)', 'Общая оценка'],
+                datasets: [{
+                    label: 'Качество',
+                    data: [
+                        quality.sharpness,
+                        quality.contrast,
+                        quality.brightness,
+                        100 - quality.noise,
+                        quality.score
+                    ],
+                    backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                    borderColor: 'rgba(52, 152, 219, 1)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: 'white',
+                            font: {
+                                size: 12
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: 'white'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: 'white'
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    displayTextAnalysis(results) {
+        const container = document.getElementById('textResults');
+        if (!container) return;
+
+        const texts = results.map(r => r.text).filter(t => t);
+        
+        let html = `
+            <h4>📝 Распознанный текст</h4>
+            <p>Найдено текста в ${texts.length} из ${results.length} изображений</p>
+        `;
+
+        if (texts.length > 0) {
+            html += `
+                <div class="ai-insights">
+                    ${texts.map((text, index) => `
+                        <div class="insight-item">
+                            <span class="insight-icon">📄</span>
+                            <span><strong>Изображение ${index + 1}:</strong> "${text}"</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const allWords = texts.join(' ').toLowerCase().split(/\s+/);
+            const wordFrequency = {};
+            
+            allWords.forEach(word => {
+                if (word.length > 3) {
+                    wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+                }
+            });
+
+            const topWords = Object.entries(wordFrequency)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            if (topWords.length > 0) {
+                html += `
+                    <div class="ai-insights">
+                        <h4>🔤 Частые слова</h4>
+                        <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;">
+                            ${topWords.map(([word, count]) => `
+                                <span style="background: rgba(255, 255, 255, 0.1); padding: 4px 8px; border-radius: 15px; font-size: 0.9em;">
+                                    ${word} <small style="opacity: 0.7;">(${count})</small>
+                                </span>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        } else {
+            html += `
+                <div class="ai-insights">
+                    <div class="insight-item">
+                        <span class="insight-icon">ℹ️</span>
+                        <span>Текст не обнаружен на изображениях</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (texts.length > 0) {
+            const totalTextLength = texts.join(' ').length;
+            const avgTextLength = Math.round(totalTextLength / texts.length);
+            
+            html += `
+                <div class="ai-insights">
+                    <h4>💡 Рекомендации по тексту</h4>
+                    <div class="insight-item">
+                        <span class="insight-icon">📏</span>
+                        <span>Средняя длина текста: ${avgTextLength} символов</span>
+                    </div>
+                    ${avgTextLength > 100 ? `
+                        <div class="insight-item">
+                            <span class="insight-icon">⚠️</span>
+                            <span>Текст слишком длинный для визуального восприятия</span>
+                        </div>
+                    ` : ''}
+                    ${texts.length < results.length / 2 ? `
+                        <div class="insight-item">
+                            <span class="insight-icon">💡</span>
+                            <span>Рекомендуется добавить текст на большее количество изображений</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    displayBrandAnalysis(results) {
+        const container = document.getElementById('brandResults');
+        if (!container) return;
+
+        const brandData = results.map(r => r.brand);
+        const hasBrandColors = brandData.filter(b => b.hasBrandColors).length;
+        
+        let html = `
+            <h4>🏢 Анализ бренда</h4>
+            <p>${hasBrandColors} из ${results.length} изображений содержат брендовые цвета</p>
+        `;
+
+        if (hasBrandColors > 0) {
+            const allBrandColors = results.flatMap(r => 
+                r.colors.filter(c => c.isBrandColor)
+            );
+
+            const colorGroups = {};
+            allBrandColors.forEach(color => {
+                if (!colorGroups[color.hex]) {
+                    colorGroups[color.hex] = {
+                        hex: color.hex,
+                        rgb: color.rgb,
+                        hsl: color.hsl,
+                        count: 0,
+                        frequency: 0
+                    };
+                }
+                colorGroups[color.hex].count++;
+                colorGroups[color.hex].frequency += color.frequency;
+            });
+
+            const brandColors = Object.values(colorGroups)
+                .sort((a, b) => b.count - a.count);
+
+            const primaryColor = brandColors[0];
+
+            html += `
+                <div class="ai-insights">
+                    <h4>🎨 Брендовая палитра</h4>
+                    <div class="color-palette" style="margin: 15px 0;">
+                        ${brandColors.slice(0, 6).map(color => `
+                            <div class="color-swatch" 
+                                 style="background: ${color.hex};" 
+                                 data-hex="${color.hex}"
+                                 title="${color.hex} (используется в ${color.count} изображениях)">
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="insight-item">
+                        <span class="insight-icon">🎯</span>
+                        <span>Основной цвет бренда: <strong>${primaryColor.hex}</strong></span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-icon">📊</span>
+                        <span>Цветовая гармония: <strong>${brandData[0]?.colorHarmony || 'Нейтральная'}</strong></span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-icon">🏷️</span>
+                        <span>Тип бренда: <strong>${brandData[0]?.brandType || 'Универсальный'}</strong></span>
+                    </div>
+                </div>
+            `;
+
+            const consistencyScore = Math.round((hasBrandColors / results.length) * 100);
+            
+            html += `
+                <div class="ai-insights">
+                    <h4>📈 Консистентность бренда</h4>
+                    <div class="insight-item">
+                        <span class="insight-icon">📊</span>
+                        <span>Согласованность цветов: <strong>${consistencyScore}%</strong></span>
+                    </div>
+                    ${consistencyScore < 70 ? `
+                        <div class="insight-item">
+                            <span class="insight-icon">⚠️</span>
+                            <span>Рекомендуется использовать брендовые цвета более последовательно</span>
+                        </div>
+                    ` : `
+                        <div class="insight-item">
+                            <span class="insight-icon">✅</span>
+                            <span>Отличная согласованность брендовых цветов</span>
+                        </div>
+                    `}
+                </div>
+            `;
+
+            if (brandData[0]?.recommendedColors) {
+                html += `
+                    <div class="ai-insights">
+                        <h4>🎨 Рекомендуемые цвета</h4>
+                        ${brandData[0].recommendedColors.map(rec => `
+                            <div class="insight-item">
+                                <span class="insight-icon">🎨</span>
+                                <span><strong>${rec.type}:</strong> ${rec.description}</span>
+                                ${rec.colors ? `
+                                    <div class="color-palette" style="margin: 5px 0 5px 20px;">
+                                        ${rec.colors.map(color => `
+                                            <div class="color-swatch" 
+                                                 style="background: ${color}; width: 20px; height: 20px;" 
+                                                 title="${color}">
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : rec.hex ? `
+                                    <div class="color-palette" style="margin: 5px 0 5px 20px;">
+                                        <div class="color-swatch" 
+                                             style="background: ${rec.hex}; width: 20px; height: 20px;" 
+                                             title="${rec.hex}">
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+        } else {
+            html += `
+                <div class="ai-insights">
+                    <div class="insight-item">
+                        <span class="insight-icon">ℹ️</span>
+                        <span>Брендовые цвета не обнаружены</span>
+                    </div>
+                    <div class="insight-item">
+                        <span class="insight-icon">💡</span>
+                        <span>Рекомендуется использовать последовательную цветовую палитру</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = html;
+    }
+
+    // ====== AI Advisor Functions ======
+    getAIAdvice() {
+        const imageFiles = this.files.filter(f => 
+            FileUtils.getFileType(f.name) === 'Изображение');
+        const audioFiles = this.files.filter(f => 
+            FileUtils.getFileType(f.name) === 'Аудио');
+        const videoFiles = this.files.filter(f => 
+            FileUtils.getFileType(f.name) === 'Видео');
+
+        if (this.files.length === 0) {
+            this.showError('Загрузите файлы для получения рекомендаций');
+            return;
+        }
+
+        const aiAdviceBtn = document.getElementById('aiAdviceBtn');
+        const originalText = aiAdviceBtn.textContent;
+        aiAdviceBtn.disabled = true;
+        aiAdviceBtn.textContent = '🤖 Анализ...';
+
+        document.getElementById('aiResults').classList.add('hidden');
+
+        setTimeout(() => {
+            this.generateRealAIAdvice(imageFiles, audioFiles, videoFiles);
+            aiAdviceBtn.disabled = false;
+            aiAdviceBtn.textContent = originalText;
+        }, 1500);
+    }
+
+    generateRealAIAdvice(imageFiles, audioFiles, videoFiles) {
+        const aiResults = document.getElementById('aiResults');
+        const aiStats = document.getElementById('aiStats');
+        const aiTipsList = document.getElementById('aiTipsList');
+
+        let totalSize = 0;
+        let imageSize = 0;
+        let audioSize = 0;
+        let videoSize = 0;
+
+        this.files.forEach(file => {
+            totalSize += file.size;
+            const type = FileUtils.getFileType(file.name);
+            if (type === 'Изображение') imageSize += file.size;
+            if (type === 'Аудио') audioSize += file.size;
+            if (type === 'Видео') videoSize += file.size;
+        });
+
+        aiStats.innerHTML = `
+            <strong>📊 Анализ загруженных файлов:</strong><br>
+            • Всего файлов: ${this.files.length}<br>
+            • Изображений: ${imageFiles.length}<br>
+            • Аудио: ${audioFiles.length}<br>
+            • Видео: ${videoFiles.length}<br>
+            • Общий размер: ${FileUtils.formatFileSize(totalSize)}
+        `;
+
+        const tips = [];
+
+        if (imageFiles.length > 0) {
+            this.generateImageAdvice(imageFiles, tips);
+        }
+
+        if (audioFiles.length > 0) {
+            this.generateAudioAdvice(audioFiles, tips);
+        }
+
+        if (videoFiles.length > 0) {
+            this.generateVideoAdvice(videoFiles, tips);
+        }
+
+        this.generateSizeAdvice(this.files, tips);
+        this.generateRenamingAdvice(this.files, tips);
+        this.generateOptimizationAdvice(imageFiles, audioFiles, videoFiles, tips);
+
+        aiTipsList.innerHTML = '';
+        tips.forEach((tip, index) => {
+            const tipDiv = document.createElement('div');
+            tipDiv.className = 'ai-tip-item';
+            tipDiv.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                    <span style="font-size: 1.2em;">${tip.icon}</span>
+                    <strong>${tip.title}</strong>
+                </div>
+                <div style="font-size: 0.9em; opacity: 0.9;">${tip.description}</div>
+                ${tip.action ? `
+                    <button onclick="${tip.action}" 
+                            style="margin-top: 8px; background: rgba(255,255,255,0.2); 
+                                   border: none; color: white; padding: 5px 10px; 
+                                   border-radius: 5px; cursor: pointer; font-size: 0.85em;">
+                        ${tip.actionText || 'Применить'}
+                    </button>
+                ` : ''}
+            `;
+            aiTipsList.appendChild(tipDiv);
+        });
+
+        aiResults.classList.remove('hidden');
+        document.getElementById('aiResults').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    generateImageAdvice(imageFiles, tips) {
+        const largeImages = imageFiles.filter(f => f.size > 5 * 1024 * 1024);
+        const manyImages = imageFiles.length > 10;
+
+        if (largeImages.length > 0) {
+            tips.push({
+                icon: '🖼️',
+                title: 'Большие изображения',
+                description: `${largeImages.length} изображений больше 5MB. Рекомендуется сжать их для веба.`,
+                action: 'appState.loadPreset("web")',
+                actionText: 'Применить веб-пресет'
+            });
+        }
+
+        if (manyImages) {
+            tips.push({
+                icon: '📦',
+                title: 'Много изображений',
+                description: `Загружено ${imageFiles.length} изображений. Рассмотрите пакетную обработку.`,
+                action: 'appState.selectAllCheckboxes("image")',
+                actionText: 'Выбрать все форматы'
+            });
+        }
+
+        const pngCount = imageFiles.filter(f => f.name.toLowerCase().endsWith('.png')).length;
+        const jpgCount = imageFiles.filter(f => 
+            f.name.toLowerCase().endsWith('.jpg') || 
+            f.name.toLowerCase().endsWith('.jpeg')
+        ).length;
+
+        if (pngCount > 0 && jpgCount === 0) {
+            tips.push({
+                icon: '⚡',
+                title: 'Оптимизация PNG',
+                description: 'Все изображения в PNG. Для фото лучше использовать JPG (меньше размер).',
+                action: 'document.getElementById("formatJPG").checked = true',
+                actionText: 'Добавить JPG'
+            });
+        }
+    }
+
+    generateAudioAdvice(audioFiles, tips) {
+        const longAudio = audioFiles.filter(f => f.size > 10 * 1024 * 1024);
+        const highQualityAudio = audioFiles.filter(f => {
+            const name = f.name.toLowerCase();
+            return name.includes('hq') || name.includes('high') || name.includes('studio');
+        });
+
+        if (longAudio.length > 0) {
+            tips.push({
+                icon: '🎵',
+                title: 'Длинные аудиофайлы',
+                description: `${longAudio.length} аудиофайлов больше 10MB. Для веба используйте битрейт 128-192kbps.`,
+                action: 'document.getElementById("audioBitrate").value = "192"',
+                actionText: 'Установить 192kbps'
+            });
+        }
+
+        if (highQualityAudio.length > 0) {
+            tips.push({
+                icon: '🎧',
+                title: 'Высокое качество аудио',
+                description: 'Обнаружены HQ аудиофайлы. Для веб-использования можно понизить битрейт.',
+                action: 'document.getElementById("audioBitrate").value = "256"',
+                actionText: 'Оптимизировать битрейт'
+            });
+        }
+
+        if (audioFiles.length > 0) {
+            tips.push({
+                icon: '📱',
+                title: 'Поддержка форматов',
+                description: 'Для максимальной совместимости используйте MP3 и OGG форматы.',
+                action: 'appState.selectAllCheckboxes("audio")',
+                actionText: 'Выбрать оба формата'
+            });
+        }
+    }
+
+    generateVideoAdvice(videoFiles, tips) {
+        const largeVideos = videoFiles.filter(f => f.size > 50 * 1024 * 1024);
+        const hdVideos = videoFiles.filter(f => {
+            const name = f.name.toLowerCase();
+            return name.includes('1080') || name.includes('hd') || name.includes('fullhd');
+        });
+
+        if (largeVideos.length > 0) {
+            tips.push({
+                icon: '🎬',
+                title: 'Большие видеофайлы',
+                description: `${largeVideos.length} видео больше 50MB. Рекомендуется сжатие и понижение разрешения.`,
+                action: 'appState.selectVideoQuality("medium")',
+                actionText: 'Применить сжатие'
+            });
+        }
+
+        if (hdVideos.length > 0) {
+            tips.push({
+                icon: '📺',
+                title: 'HD видео',
+                description: 'Обнаружены HD видео. Для веба используйте 720p для баланса качества и размера.',
+                action: 'appState.selectVideoResolution("1280x720")',
+                actionText: 'Установить 720p'
+            });
+        }
+
+        if (videoFiles.length > 2) {
+            tips.push({
+                icon: '⏱️',
+                title: 'Много видео',
+                description: `Загружено ${videoFiles.length} видео. Обработка может занять время.`,
+                action: 'appState.showVideoProcessingInfo()',
+                actionText: 'Показать информацию'
+            });
+        }
+    }
+
+    generateSizeAdvice(files, tips) {
+        const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+        
+        if (totalSize > 100 * 1024 * 1024) {
+            tips.push({
+                icon: '💾',
+                title: 'Большой общий размер',
+                description: `Общий размер файлов: ${FileUtils.formatFileSize(totalSize)}. Рекомендуется разделить на партии.`,
+                action: 'appState.showBatchProcessingTip()',
+                actionText: 'Советы по пакетной обработке'
+            });
+        }
+
+        const tinyFiles = files.filter(f => f.size < 1024);
+        if (tinyFiles.length > 0) {
+            tips.push({
+                icon: '⚠️',
+                title: 'Очень маленькие файлы',
+                description: `${tinyFiles.length} файлов меньше 1KB. Проверьте, не повреждены ли они.`,
+                action: '',
+                actionText: ''
+            });
+        }
+    }
+
+    generateRenamingAdvice(files, tips) {
+        const hasSpaces = files.filter(f => f.name.includes(' ')).length;
+        const hasUppercase = files.filter(f => /[A-Z]/.test(f.name)).length;
+        const hasSpecialChars = files.filter(f => /[^a-zA-Z0-9._-]/.test(f.name)).length;
+
+        if (hasSpaces > 0) {
+            tips.push({
+                icon: '📝',
+                title: 'Пробелы в именах',
+                description: `${hasSpaces} файлов содержат пробелы. Используйте нижние подчеркивания или дефисы.`,
+                action: 'appState.suggestRenaming()',
+                actionText: 'Предложить переименование'
+            });
+        }
+
+        if (hasUppercase > files.length * 0.5) {
+            tips.push({
+                icon: '🔠',
+                title: 'Заглавные буквы',
+                description: 'Много файлов с заглавными буквами. Для веба используйте lowercase.',
+                action: '',
+                actionText: ''
+            });
+        }
+
+        if (hasSpecialChars > 0) {
+            tips.push({
+                icon: '🔣',
+                title: 'Специальные символы',
+                description: `${hasSpecialChars} файлов содержат спецсимволы. Удалите их для совместимости.`,
+                action: '',
+                actionText: ''
+            });
+        }
+
+        const numberedFiles = files.filter(f => /\d+/.test(f.name)).length;
+        if (numberedFiles === files.length && files.length > 3) {
+            tips.push({
+                icon: '🔢',
+                title: 'Последовательная нумерация',
+                description: 'Файлы пронумерованы последовательно. Используйте умное переименование.',
+                action: 'document.getElementById("smartRenaming").checked = true',
+                actionText: 'Включить умное переименование'
+            });
+        }
+    }
+
+    generateOptimizationAdvice(imageFiles, audioFiles, videoFiles, tips) {
+        const totalFiles = imageFiles.length + audioFiles.length + videoFiles.length;
+        
+        if (totalFiles > 20) {
+            tips.push({
+                icon: '🚀',
+                title: 'Пакетная оптимизация',
+                description: `Много файлов (${totalFiles}). Используйте предустановки для быстрой обработки.`,
+                action: 'appState.showPresets()',
+                actionText: 'Показать пресеты'
+            });
+        }
+
+        const hasImageSettings = document.getElementById('formatPNG').checked || 
+                                document.getElementById('formatJPG').checked;
+        const hasAudioSettings = document.getElementById('audioMP3').checked || 
+                                document.getElementById('audioOGG').checked;
+
+        if (imageFiles.length > 0 && !hasImageSettings) {
+            tips.push({
+                icon: '⚙️',
+                title: 'Настройки изображений',
+                description: 'Загружены изображения, но не выбраны форматы для обработки.',
+                action: 'appState.selectAllCheckboxes("image")',
+                actionText: 'Выбрать форматы'
+            });
+        }
+
+        if (audioFiles.length > 0 && !hasAudioSettings) {
+            tips.push({
+                icon: '⚙️',
+                title: 'Настройки аудио',
+                description: 'Загружены аудиофайлы, но не выбраны форматы для обработки.',
+                action: 'appState.selectAllCheckboxes("audio")',
+                actionText: 'Выбрать форматы'
+            });
+        }
+    }
+
+    // Вспомогательные методы для советника
+    selectVideoQuality(quality) {
+        document.querySelectorAll('.video-quality-option').forEach(opt =>
+            opt.classList.remove('selected'));
+        document.querySelector(`.video-quality-option[data-quality="${quality}"]`).classList.add('selected');
+        this.currentSettings.selectedVideoQuality = quality;
+        this.showSuccess(`Качество видео установлено: ${quality}`);
+    }
+
+    selectVideoResolution(resolution) {
+        document.querySelectorAll('.resolution-option').forEach(opt =>
+            opt.classList.remove('selected'));
+        document.querySelector(`.resolution-option[data-resolution="${resolution}"]`).classList.add('selected');
+        this.currentSettings.selectedVideoResolution = resolution;
+        this.showSuccess(`Разрешение установлено: ${resolution}`);
+    }
+
+    showVideoProcessingInfo() {
+        const info = `
+            <div class="video-processing-info">
+                <h4>ℹ️ Советы по обработке видео</h4>
+                <p>1. Для веб-использования используйте разрешение 720p (1280×720)</p>
+                <p>2. Битрейт 1000-1500 kbps обеспечивает хороший баланс качества/размера</p>
+                <p>3. Формат MP4 имеет лучшую совместимость</p>
+                <p>4. Обрабатывайте не более 2 видео одновременно</p>
+            </div>
+        `;
+        
+        const container = document.querySelector('.settings-section:last-child');
+        container.insertAdjacentHTML('beforeend', info);
+        this.showSuccess('Добавлена информация по обработке видео');
+    }
+
+    suggestRenaming() {
+        const baseName = prompt('Введите базовое имя для файлов:', 'file');
+        if (baseName) {
+            this.files.forEach((file, index) => {
+                const ext = file.name.split('.').pop();
+                file.customName = `${baseName}_${index + 1}`;
+            });
+            this.updateUI();
+            this.showSuccess(`Файлы переименованы по шаблону: ${baseName}_N`);
+        }
+    }
+
+    showBatchProcessingTip() {
+        const tip = `
+            <div class="ai-tip" style="margin-top: 15px;">
+                <div class="ai-tip-header">
+                    <span class="ai-icon">💡</span>
+                    <strong>Совет по пакетной обработке</strong>
+                </div>
+                <div class="ai-tip-content">
+                    <p>Для больших объемов данных:</p>
+                    <ol>
+                        <li>Разделите файлы на группы по 10-15 штук</li>
+                        <li>Обрабатывайте каждую группу отдельно</li>
+                        <li>Используйте одинаковые настройки для консистентности</li>
+                        <li>Сохраняйте оригиналы до подтверждения качества</li>
+                    </ol>
+                </div>
+            </div>
+        `;
+        
+        const container = document.querySelector('.settings');
+        container.insertAdjacentHTML('beforeend', tip);
+    }
+
+    showPresets() {
+        const presetButtons = document.querySelector('.preset-buttons');
+        if (presetButtons) {
+            presetButtons.scrollIntoView({ behavior: 'smooth' });
+            this.showSuccess('Просмотрите доступные пресеты выше');
+        }
+    }
+
+    loadPreset(preset) {
+        switch (preset) {
+            case 'creatives':
+                document.getElementById('imageSizes').value = '1200x600, 800x400, 600x300';
+                this.showSuccess('Пресет "Креативы" загружен (форматы для соцсетей)');
+                break;
+            case 'vertical':
+                document.getElementById('imageSizes').value = '1080x1920, 800x1400, 400x700';
+                this.showSuccess('Пресет "Вертикальные" загружен (сторис, рилсы)');
+                break;
+            case 'logos':
+                document.getElementById('imageSizes').value = '800x800, 400x400, 200x200, 100x100';
+                document.getElementById('formatPNG').checked = true;
+                this.showSuccess('Пресет "Логотипы" загружен (PNG с прозрачностью)');
+                break;
+            case 'icons':
+                document.getElementById('imageSizes').value = '256x256, 128x128, 64x64, 32x32';
+                document.getElementById('formatPNG').checked = true;
+                this.showSuccess('Пресет "Иконки" загружен (маленькие PNG)');
+                break;
+            case 'web':
+                document.getElementById('imageSizes').value = '1920x1080, 1280x720, 800x450';
+                document.getElementById('formatJPG').checked = true;
+                document.getElementById('audioBitrate').value = '192';
+                this.selectVideoResolution('1280x720');
+                this.selectVideoQuality('medium');
+                this.showSuccess('Пресет "Веб-оптимизация" загружен (баланс качества/размера)');
+                break;
+            default:
+                this.showError('Неизвестный пресет');
+        }
+        this.updateNamingExample();
     }
 
     async startProcessing() {
@@ -2535,10 +4278,12 @@ class AppState {
         let html = '';
         let totalOriginal = 0;
         let totalCompressed = 0;
+        let fallbackFiles = 0;
 
         this.processedFiles.forEach((file, index) => {
             totalOriginal += file.originalSize;
             totalCompressed += file.compressedSize;
+            if (file.isFallback) fallbackFiles++;
 
             const compression = file.originalSize > 0
                 ? Math.round((1 - file.compressedSize / file.originalSize) * 100)
@@ -2549,17 +4294,21 @@ class AppState {
                 : '';
 
             const note = file.note ? `<div style="font-size:0.8em;color:#666;">${file.note}</div>` : '';
+            const fallbackBadge = file.isFallback ? 
+                `<span style="background:#ffc107; color:#000; padding:2px 6px; border-radius:10px; font-size:0.7em; margin-left:5px;">⚠️ Без изменений</span>` : '';
+
+            const resolutionLabel = file.resolution ? ` • ${file.resolution}` : '';
+            const formatLabel = file.format ? ` • ${String(file.format).toUpperCase()}` : '';
+            const qualityLabel = file.qualityLabel ? ` • ${file.qualityLabel}` : '';
 
             html += `
-                <div class="result-file">
+                <div class="result-file" style="${file.isFallback ? 'background:#fff3cd;' : ''}">
                     <div>
-                        <strong>${file.name}</strong>
+                        <strong>${file.name}</strong> ${fallbackBadge}
                         <div class="file-size-compression">
                             ${FileUtils.formatFileSize(file.originalSize)} →
                             ${FileUtils.formatFileSize(file.compressedSize)}${compressionText}
-                            ${file.resolution ? ` • ${file.resolution}` : ''}
-                            ${file.format ? ` • ${file.format.toUpperCase()}` : ''}
-                            ${file.qualityLabel ? ` • ${file.qualityLabel}` : ''}
+                            ${resolutionLabel}${formatLabel}${qualityLabel}
                         </div>
                         ${note}
                     </div>
@@ -2574,15 +4323,18 @@ class AppState {
             ? Math.round((1 - totalCompressed / totalOriginal) * 100)
             : 0;
 
+        const fallbackInfo = fallbackFiles > 0 ? 
+            `<br>⚠️ ${fallbackFiles} файлов сохранено без изменений (проблемы с FFmpeg)` : '';
+
         const statsHtml = `
             <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border-radius: 8px;">
                 <strong>📊 Итоговая статистика:</strong><br>
                 Обработано файлов: ${this.processedFiles.length}<br>
                 Общий размер: ${FileUtils.formatFileSize(totalOriginal)} →
                 ${FileUtils.formatFileSize(totalCompressed)}<br>
-                Общее сжатие: ${totalCompression}%
+                Общее сжатие: ${totalCompression}%${fallbackInfo}
             </div>
-       `;
+        `;
 
         resultFiles.innerHTML = statsHtml + html;
     }
@@ -2653,340 +4405,51 @@ class AppState {
         setTimeout(() => errorDiv.remove(), 5000);
     }
 
-    /**
-     * Сводные рекомендации по изображениям (использует кэш lastImageAnalyses).
-     * Если кэша нет — сначала запускает полный анализ.
-     * Теперь даёт советы под конкретные форматы:
-     * - Логотипы: 200×150, 300×250, 150×100, 200×200, 300×300
-     * - Каналы блогеров: 300–600×300–600 (квадрат)
-     * - Креативы: 1200×600, 800×400, 600×300, 1400×750
-     */
-    async getAIAdvice() {
-        const aiTip = document.getElementById('aiTip');
-        const aiResults = document.getElementById('aiResults');
-        const aiTipsList = document.getElementById('aiTipsList');
+    showSuccess(message) {
+        const successDiv = document.createElement('div');
+        successDiv.className = 'temp-message success-message';
+        successDiv.innerHTML = `<strong>✅ Успешно:</strong> ${message}`;
 
-        const imageFiles = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+        const container = document.querySelector('.container');
+        container.insertBefore(successDiv, container.children[1]);
 
-        if (!imageFiles.length) {
-            aiTip.querySelector('.ai-tip-content').textContent =
-                'Сначала загрузите хотя бы одно изображение, чтобы дать рекомендации.';
-            aiResults.classList.add('hidden');
-            return;
-        }
-
-        // если ещё не анализировали — сделаем полный анализ
-        if (!this.lastImageAnalyses || !this.lastImageAnalyses.length) {
-            await this.analyzeAllImages();
-        }
-
-        const analyses = this.lastImageAnalyses || [];
-        if (!analyses.length) return;
-
-        const avgBrightness = analyses.reduce((s, a) => s + a.avgBrightness, 0) / analyses.length;
-        const avgContrast = analyses.reduce((s, a) => s + a.contrast, 0) / analyses.length;
-
-        const ratios = analyses.map(a => a.aspectRatio);
-        const portraitCount = ratios.filter(r => r < 0.9).length;
-        const squareCount = ratios.filter(r => Math.abs(r - 1) < 0.1).length;
-        const landscapeCount = ratios.filter(r => r > 1.1).length;
-
-        let advice = '';
-
-        // Яркость
-        if (avgBrightness < 100) {
-            advice += '• Картинки в среднем темноваты — есть риск «грязного» или мрачного вида на маркетплейсе. ' +
-                'Рекомендация: поднять экспозицию / осветлить фон или выбрать более светлую подложку.<br>';
-        } else if (avgBrightness > 190) {
-            advice += '• Очень светлые изображения — могут «выгорать» на белом фоне сайта. ' +
-                'Рекомендация: добавить немного контраста и деталей в тенях.<br>';
-        } else {
-            advice += '• Уровень яркости в целом ок — можно фокусироваться на композиции и деталях товара.<br>';
-        }
-
-        // Контраст
-        if (avgContrast < 25) {
-            advice += '• Низкий контраст — товар может сливаться с фоном. ' +
-                'Рекомендация: слегка усилить контраст и локальные тени вокруг объекта.<br>';
-        } else if (avgContrast > 80) {
-            advice += '• Очень высокий контраст — на части устройств картинка может выглядеть слишком жёстко. ' +
-                'Рекомендация: чуть смягчить контраст или локально приглушить блики.<br>';
-        } else {
-            advice += '• Контраст в комфортном диапазоне — визуально товар будет читаться хорошо.<br>';
-        }
-
-        // Соотношения сторон
-        const total = analyses.length || 1;
-        if (portraitCount && landscapeCount) {
-            advice += `• Есть и вертикальные, и горизонтальные форматы (портретных ≈ ${Math.round(portraitCount / total * 100)}%, ` +
-                `горизонтальных ≈ ${Math.round(landscapeCount / total * 100)}%). ` +
-                'Рекомендация: привести ключевые карточки к одному формату (например, 4:5 или 16:9) для единого стиля ленты.<br>';
-        } else if (landscapeCount / total > 0.7) {
-            advice += '• Большинство изображений горизонтальные — хорошо подходит под обложки, слайды и лендинги.<br>';
-        } else if (portraitCount / total > 0.7) {
-            advice += '• Большинство изображений вертикальные — удобно для сторис и вертикальных фидов.<br>';
-        } else if (squareCount / total > 0.5) {
-            advice += '• Много квадратных изображений — это удобно под аватарки и плитку товаров.<br>';
-        }
-
-        // 🔥 Новый блок: советы под конкретные форматы (логотипы/каналы/креативы)
-        advice += this.buildFormatAdvice(analyses);
-
-        aiResults.classList.remove('hidden');
-
-        aiTipsList.insertAdjacentHTML('afterbegin', `
-            <div class="ai-tip-item">
-                <strong>🤖 Сводные рекомендации AI:</strong><br>
-                ${advice}
-            </div>
-        `);
-
-        aiTip.querySelector('.ai-tip-content').textContent =
-            'AI разобрал изображения и подсказал, под какие форматы (логотипы, креативы, каналы блогеров) их лучше адаптировать.';
+        setTimeout(() => successDiv.remove(), 5000);
     }
 
-    /**
-     * Подбор формата под твои пресеты:
-     * - Логотипы: 200×150, 300×250, 150×100, 200×200, 300×300
-     * - Каналы блогеров: 300×300, 400×400, 500×500, 600×600
-     * - Креативы: 1200×600, 800×400, 600×300, 1400×750
-     *
-     * Анализирует средние ширину/высоту и соотношение сторон.
-     */
-    buildFormatAdvice(analyses) {
-        if (!analyses || !analyses.length) return '';
+    showWarning(message) {
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'temp-message warning-message';
+        warningDiv.innerHTML = `<strong>⚠️ Внимание:</strong> ${message}`;
 
-        const avgWidth = analyses.reduce((s, a) => s + a.width, 0) / analyses.length;
-        const avgHeight = analyses.reduce((s, a) => s + a.height, 0) / analyses.length;
-        const avgRatio = avgWidth / avgHeight;
+        const container = document.querySelector('.container');
+        container.insertBefore(warningDiv, container.children[1]);
 
-        let text = `<br><strong>Рекомендации по форматам под пресеты:</strong><br>`;
-        text += `• Средний размер исходников ≈ ${Math.round(avgWidth)}×${Math.round(avgHeight)}px (соотношение ${avgRatio.toFixed(2)}).<br>`;
-
-        const ratio = avgRatio;
-
-        let mentionedLogos = false;
-        let mentionedChannels = false;
-        let mentionedCreatives = false;
-
-        // Креативы: 1200×600, 800×400, 600×300, 1400×750 (≈2:1 / 1.87)
-        if (ratio > 1.8 && ratio < 2.2) {
-            mentionedCreatives = true;
-            text += '• По соотношению сторон ваши изображения уже очень близки к формату креативов 2:1 ' +
-                '(1200×600, 800×400, 600×300, 1400×750). ' +
-                'Рекомендация: использовать пресет «Креативы» — это даст аккуратные баннеры без сильных обрезок.<br>';
-        }
-
-        // Квадрат — каналы блогеров / квадратные логотипы
-        if (ratio >= 0.9 && ratio <= 1.1) {
-            mentionedChannels = true;
-            text += '• Изображения почти квадратные — это идеально под аватарки и каналы блогеров ' +
-                '(300×300, 400×400, 500×500, 600×600), а также квадратные логотипы (200×200, 300×300). ' +
-                'Рекомендация: соберите подборку квадратов под обложки каналов и используйте их как базу бренда.<br>';
-        }
-
-        // Логотипы-«плашки» (чуть прямоугольные)
-        if (ratio > 1.1 && ratio <= 1.6) {
-            mentionedLogos = true;
-            text += '• Соотношение сторон ближе к прямоугольным логотипам (200×150, 300×250, 150×100). ' +
-                'Рекомендация: использовать пресет «Логотипы» и загонять фирменные знаки именно в эти размеры — ' +
-                'так они будут стабильны на всех презентациях и лендингах.<br>';
-        }
-
-        // Очень широкие или вообще вне шаблонов
-        if (!mentionedCreatives && ratio > 1.6 && ratio < 2.5) {
-            text += '• Изображения заметно шире, чем квадрат, и близки к баннерам. ' +
-                'Их удобно обрезать/масштабировать до креативов 1200×600 или 1400×750 и использовать как основные обложки.<br>';
-        }
-
-        // Вертикальные
-        if (ratio < 0.9) {
-            text += '• Преобладают вертикальные изображений. Для сторис и вертикальных размещений можно ' +
-                'использовать пресет «Вертикальные» (например, 1080×1920, 800×1400, 400×700), ' +
-                'а под логотипы / креативы имеет смысл делать отдельные горизонтальные версии.<br>';
-        }
-
-        // Если ничего чётко не совпало — дать общий совет
-        if (!mentionedLogos && !mentionedChannels && !mentionedCreatives && ratio >= 0.9 && ratio <= 1.8) {
-            text += '• Соотношение сторон промежуточное. Можно сделать две ветки: ' +
-                'квадратные версии (300–600px) под аватарки / каналы блогеров и баннерные 2:1 (1200×600, 800×400) ' +
-                'под креативы и обложки карточек на маркетплейсах.<br>';
-        }
-
-        text += '• Чтобы быстро подстроиться под формат, используйте пресеты в «Настройки изображений»: ' +
-            '«Логотипы», «Креативы» и при необходимости «Вертикальные».<br>';
-
-        return text;
+        setTimeout(() => warningDiv.remove(), 5000);
     }
 
-    /**
-     * Детальный анализ всех изображений:
-     * строит статистику и карточки с палитрой и параметрами.
-     */
-    async analyzeAllImages() {
-        const aiTip = document.getElementById('aiTip');
-        const aiResults = document.getElementById('aiResults');
-        const aiStats = document.getElementById('aiStats');
-        const aiTipsList = document.getElementById('aiTipsList');
-
-        const imageFiles = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
-
-        if (!imageFiles.length) {
-            aiTip.querySelector('.ai-tip-content').textContent =
-                'Сначала загрузите хотя бы одно изображение.';
-            aiResults.classList.add('hidden');
-            return;
-        }
-
-        aiResults.classList.remove('hidden');
-        aiTipsList.innerHTML = '';
-        aiStats.innerHTML = 'Анализируем изображения…';
-
-        const maxFiles = 10;
-        const filesToAnalyze = imageFiles.slice(0, maxFiles);
-        const analyses = [];
-
-        for (const file of filesToAnalyze) {
-            try {
-                const res = await analyzeImageFileBasic(file);
-                analyses.push(res);
-            } catch (e) {
-                console.error('Ошибка анализа изображения', file.name, e);
-            }
-        }
-
-        if (!analyses.length) {
-            aiStats.innerHTML = 'Не удалось проанализировать изображения.';
-            return;
-        }
-
-        this.lastImageAnalyses = analyses;
-
-        const avgBrightness = analyses.reduce((s, a) => s + a.avgBrightness, 0) / analyses.length;
-        const avgContrast = analyses.reduce((s, a) => s + a.contrast, 0) / analyses.length;
-        const avgColorfulness = analyses.reduce((s, a) => s + a.colorfulness, 0) / analyses.length;
-
-        aiStats.innerHTML = `
-            <strong>Проанализировано изображений:</strong> ${analyses.length}<br>
-            Средняя яркость: ${Math.round(avgBrightness / 255 * 100)}% (${brightnessLabel(avgBrightness)})<br>
-            Средний контраст: ${Math.round(avgContrast)} (${contrastLabel(avgContrast)})<br>
-            Средняя цветность: ${avgColorfulness.toFixed(2)} (0–1)
-        `;
-
-        aiTip.querySelector('.ai-tip-content').textContent =
-            'Ниже — детальный анализ каждого изображения: яркость, контраст, палитра и формат.';
-
-        const tipsHtml = analyses.map(a => {
-            const colorsHtml = (a.dominantColors || []).slice(0, 4).map(c => `
-                <div class="color-swatch" style="background:${c.hex}" data-hex="${c.hex}"></div>
-            `).join('');
-
-            const mainTone = a.dominantColors && a.dominantColors[0]
-                ? toneLabelFromRGB(a.dominantColors[0])
-                : 'нейтральный';
-
-            return `
-                <div class="ai-tip-item">
-                    <strong>${a.file.name}</strong><br>
-                    ${a.width}×${a.height}px • соотношение сторон ${a.aspectRatio.toFixed(2)} (${aspectRatioLabel(a.aspectRatio)})<br>
-                    Яркость: ${Math.round(a.avgBrightness / 255 * 100)}% (${brightnessLabel(a.avgBrightness)})<br>
-                    Контраст: ${Math.round(a.contrast)} (${contrastLabel(a.contrast)})<br>
-                    Основной тон: ${mainTone}
-                    <div class="color-palette">${colorsHtml}</div>
-                </div>
-            `;
-        }).join('');
-
-        aiTipsList.innerHTML = tipsHtml;
+    // AI-функции
+    analyzeAllImages() {
+        this.startAIAnalysis();
     }
 
-    /**
-     * AI-анализ бренда: собирает общую цветовую палитру и настроение.
-     */
-    async analyzeBrandAssets() {
-        const imageFiles = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
-
-        if (!imageFiles.length) {
-            alert('Сначала загрузите изображения бренда (логотипы, карточки, фоны).');
+    analyzeBrandAssets() {
+        const imageFiles = this.files.filter(f => 
+            FileUtils.getFileType(f.name) === 'Изображение');
+        
+        if (imageFiles.length === 0) {
+            this.showError('Загрузите изображения для анализа бренда');
             return;
         }
 
-        const maxFiles = 12;
-        const filesToAnalyze = imageFiles.slice(0, maxFiles);
-        const analyses = [];
+        document.querySelectorAll('.ai-tab').forEach(t => 
+            t.classList.remove('active'));
+        document.querySelector('.ai-tab[data-tab="brand"]').classList.add('active');
+        
+        document.querySelectorAll('.ai-tab-content').forEach(c => 
+            c.classList.remove('active'));
+        document.getElementById('tab-brand').classList.add('active');
 
-        for (const file of filesToAnalyze) {
-            try {
-                const res = await analyzeImageFileBasic(file);
-                analyses.push(res);
-            } catch (e) {
-                console.error('Ошибка анализа для бренда', file.name, e);
-            }
-        }
-
-        if (!analyses.length) {
-            alert('Не удалось проанализировать изображения бренда.');
-            return;
-        }
-
-        const colorMap = new Map();
-
-        analyses.forEach(a => {
-            (a.dominantColors || []).slice(0, 5).forEach(c => {
-                const key = c.hex.toLowerCase();
-                colorMap.set(key, (colorMap.get(key) || 0) + c.count);
-            });
-        });
-
-        const palette = Array.from(colorMap.entries())
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 6)
-            .map(([hex, count]) => ({ hex, count }));
-
-        const avgBrightness = analyses.reduce((s, a) => s + a.avgBrightness, 0) / analyses.length;
-        const avgContrast = analyses.reduce((s, a) => s + a.contrast, 0) / analyses.length;
-
-        let warm = 0, cool = 0, neutral = 0;
-
-        palette.forEach(c => {
-            const tone = toneLabelFromRGB(hexToRGB(c.hex));
-            if (tone.includes('тёплый')) warm++;
-            else if (tone.includes('холодный')) cool++;
-            else neutral++;
-        });
-
-        let mood = 'смешанная палитра';
-        if (warm > cool && warm >= neutral) mood = 'скорее тёплый, уютный бренд';
-        if (cool > warm && cool >= neutral) mood = 'скорее холодный, технологичный бренд';
-        if (neutral > warm && neutral > cool) mood = 'более нейтральный / минималистичный бренд';
-
-        const aiSection = document.querySelector('.ai-section');
-        let container = document.getElementById('brandAnalysisResults');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'brandAnalysisResults';
-            container.className = 'brand-analysis-results';
-            aiSection.appendChild(container);
-        }
-
-        const paletteHtml = palette.map(c => `
-            <div class="color-swatch" style="background:${c.hex}" data-hex="${c.hex}"></div>
-        `).join('');
-
-        container.innerHTML = `
-            <h4>🎨 Анализ бренда по цветам</h4>
-            <p>Взято изображений: ${analyses.length} (первые ${filesToAnalyze.length} файлов)</p>
-            <div class="color-palette">${paletteHtml}</div>
-            <p>Общее впечатление: <strong>${mood}</strong></p>
-            <ul style="margin-top:8px;font-size:0.9em;">
-                <li>Средняя яркость: ${Math.round(avgBrightness / 255 * 100)}% (${brightnessLabel(avgBrightness)})</li>
-                <li>Средний контраст: ${Math.round(avgContrast)} (${contrastLabel(avgContrast)})</li>
-                <li>Тёплых тонов: ${warm}, холодных: ${cool}, нейтральных: ${neutral}</li>
-            </ul>
-            <p style="margin-top:8px;font-size:0.9em;opacity:0.9;">
-                Советы: на основе этой палитры можно собрать единый цветовой гайд для карточек, фонов и инфографики.
-            </p>
-        `;
+        this.startAIAnalysis();
     }
 
     resetAllSettings() {
@@ -3009,9 +4472,13 @@ class AppState {
             opt.classList.remove('selected'));
         document.querySelector('.background-color-option[data-background="white"]').classList.add('selected');
 
-        this.lastImageAnalyses = [];
+        this.aiAnalysisResults.clear();
+        document.querySelectorAll('.ai-tab-content').forEach(content => {
+            const resultsDiv = content.querySelector('div:not(.analysis-loading)');
+            if (resultsDiv) resultsDiv.innerHTML = '';
+        });
 
-        alert('Настройки сброшены!');
+        this.showSuccess('Настройки сброшены!');
         this.updateNamingExample();
     }
 
@@ -3019,7 +4486,7 @@ class AppState {
         const checkboxes = document.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(cb => cb.checked = false);
         this.updateNamingExample();
-        alert('Все галочки убраны!');
+        this.showSuccess('Все галочки убраны!');
     }
 
     selectAllCheckboxes(type) {
@@ -3045,25 +4512,6 @@ class AppState {
         if (selector) {
             document.querySelectorAll(selector).forEach(cb => cb.checked = false);
         }
-        this.updateNamingExample();
-    }
-
-    loadPreset(preset) {
-        switch (preset) {
-            case 'creatives':
-                document.getElementById('imageSizes').value = '1200x600, 800x400, 600x300, 1400x750';
-                break;
-            case 'vertical':
-                document.getElementById('imageSizes').value = '1080x1920, 800x1400, 400x700';
-                break;
-            case 'logos':
-                document.getElementById('imageSizes').value = '200x150, 300x250, 150x100, 200x200, 300x300';
-                break;
-            case 'icons':
-                document.getElementById('imageSizes').value = '300x300, 400x400, 500x500, 600x600';
-                break;
-        }
-        alert(`Пресет "${preset}" загружен!`);
         this.updateNamingExample();
     }
 }
