@@ -700,3 +700,2185 @@
         }
         .background-color-option {
             display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .background-color-option:hover {
+            border-color: #3498db;
+            background: #f0f8ff;
+            transform: translateY(-2px);
+        }
+        .background-color-option.selected {
+            border-color: #27ae60;
+            background: #e8f5e8;
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2);
+        }
+        .background-color-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        .background-color-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        .background-color-name {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        .background-color-description {
+            font-size: 0.85em;
+            color: #7f8c8d;
+        }
+        .custom-color-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px dashed #bdc3c7;
+        }
+        .color-input {
+            width: 60px;
+            height: 40px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 2px;
+        }
+        .color-input::-webkit-color-swatch-wrapper {padding: 0;}
+        .color-input::-webkit-color-swatch {
+            border: none;
+            border-radius: 4px;
+        }
+        .color-hex-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+        .transparent-grid {
+            background-image:
+                linear-gradient(45deg, #ccc 25%, transparent 25%),
+                linear-gradient(-45deg, #ccc 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #ccc 75%),
+                linear-gradient(-45deg, transparent 75%, #ccc 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+        .video-processing-info {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #3498db;
+        }
+        .video-processing-info h4 {
+            margin-bottom: 10px;
+            color: #2c3e50;
+        }
+        .video-format-options {
+            display: flex;
+            gap: 15px;
+            margin: 10px 0;
+        }
+        .video-format-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 15px;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .video-format-option:hover {
+            border-color: #3498db;
+            background: #e3f2fd;
+        }
+        .video-format-option.selected {
+            border-color: #27ae60;
+            background: #d4edda;
+        }
+        .video-processing-status {
+            background: #e3f2fd;
+            border-radius: 8px;
+            padding: 10px;
+            margin: 10px 0;
+            border-left: 4px solid #3498db;
+            font-size: 0.9em;
+        }
+        .video-processing-status.success {
+            background: #d4edda;
+            border-left-color: #27ae60;
+        }
+        .video-processing-status.error {
+            background: #f8d7da;
+            border-left-color: #e74c3c;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        @media (max-width: 768px) {
+            .ai-actions {flex-direction: column;}
+            .ai-btn {flex: none;}
+            .analysis-technical {grid-template-columns: 1fr 1fr;}
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .file-rename {
+                margin-left: 0;
+                width: 100%;
+            }
+            .rename-input {width: 100%;}
+            .background-color-options {grid-template-columns: 1fr;}
+            .video-format-options {flex-wrap: wrap;}
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🚀 MediaProcessor</h1>
+        <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
+    </div>
+
+    <div class="upload-zone" id="dropZone">
+        <div class="upload-icon">📁</div>
+        <h3>Перетащите файлы сюда</h3>
+        <p>или</p>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+            Выбрать файлы
+        </button>
+        <input type="file" id="fileInput" class="file-input" multiple
+               accept="image/*,.mp3,.mp4,.mov,.avi,.ogg,.wav,.flac,.aac,.mkv,.webm,.wmv,.flv">
+    </div>
+
+    <div class="file-list" id="fileList">
+        <div class="empty-state" id="emptyState">
+            <div class="upload-icon">📄</div>
+            <h3>Нет загруженных файлов</h3>
+            <p>Загрузите файлы, чтобы начать обработку</p>
+        </div>
+    </div>
+
+    <div class="settings">
+        <div class="settings-header">
+            <h2>⚙️ Настройки обработки</h2>
+            <div class="settings-controls">
+                <button class="settings-btn reset" onclick="appState.resetAllSettings()">
+                    🔄 Сбросить всё
+                </button>
+                <button class="settings-btn clear" onclick="appState.clearAllCheckboxes()">
+                    ❌ Убрать галочки
+                </button>
+            </div>
+        </div>
+
+        <div class="naming-section">
+            <h3>🏷️ Переименование файлов</h3>
+            <p style="color: #666; margin-bottom: 10px;">
+                Введите новое имя для каждого файла в списке выше или укажите общее имя для умного переименования
+            </p>
+
+            <div class="naming-options">
+                <div class="naming-option">
+                    <input type="checkbox" id="useOriginalNames">
+                    <label for="useOriginalNames">Использовать оригинальные имена файлов</label>
+                </div>
+                <div class="naming-option">
+                    <input type="checkbox" id="smartRenaming">
+                    <label for="smartRenaming">Умное переименование (единая база, например: logo, banner, audio_hook)</label>
+                </div>
+                <div class="naming-option" style="flex-direction: column; align-items: flex-start;">
+                    <label for="globalBaseName">Общее имя для всех файлов (при умном переименовании):</label>
+                    <input type="text" id="globalBaseName" class="rename-input"
+                           placeholder="Например: logo, banner, audio_hook">
+                </div>
+            </div>
+
+            <div class="naming-example">
+                Пример имен после обработки:
+                <strong id="namingExample">banner.png, banner_2.png, banner_3.png</strong>
+            </div>
+        </div>
+
+        <!-- AI-советник -->
+        <div class="ai-advisor-section">
+            <h3>🧠 AI-Советник</h3>
+            <div class="ai-advisor-card">
+                <div class="ai-tip" id="aiTip">
+                    <div class="ai-tip-header">
+                        <span class="ai-icon">💡</span>
+                        <strong>Советник готов к работе</strong>
+                    </div>
+                    <div class="ai-tip-content">
+                        Загрузите файлы для получения персональных рекомендаций по оптимизации
+                    </div>
+                </div>
+
+                <div class="ai-actions">
+                    <button class="ai-btn" onclick="appState.getAIAdvice()" id="aiAdviceBtn">
+                        🤖 Получить советы
+                    </button>
+                    <button class="ai-btn secondary" onclick="appState.analyzeAllImages()" id="analyzeImagesBtn">
+                        🎨 Анализ изображений
+                    </button>
+                </div>
+
+                <div class="ai-results hidden" id="aiResults">
+                    <div class="ai-stats" id="aiStats"></div>
+                    <div class="ai-tips-list" id="aiTipsList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI-анализ бренда -->
+        <div class="ai-section">
+            <h3>🧠 AI-Анализ бренда</h3>
+            <div class="checkbox-controls">
+                <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('ai')">
+                    ✅ Выбрать все AI
+                </button>
+                <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('ai')">
+                    ❌ Убрать все AI
+                </button>
+            </div>
+            <div class="ai-feature">
+                <input type="checkbox" id="aiAnalysis">
+                <label for="aiAnalysis">Автоматически анализировать цвета и рекомендовать настройки</label>
+            </div>
+            <button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background:#9b59b6;">
+                🔍 Проанализировать бренд
+            </button>
+        </div>
+
+        <!-- Цвет подложки -->
+        <div class="background-color-section">
+            <h3>🎨 Цвет подложки для изображений</h3>
+            <p style="color: #666; margin-bottom: 15px;">
+                Выберите цвет фона для изображений (актуально для JPG и при изменении размеров)
+            </p>
+
+            <div class="background-color-options">
+                <div class="background-color-option selected" data-background="white">
+                    <div class="background-color-preview" style="background: white; border: 2px solid #ddd;">
+                        <span style="color: #666;">⬜</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Белый</div>
+                        <div class="background-color-description">Стандартный белый фон</div>
+                    </div>
+                </div>
+
+                <div class="background-color-option" data-background="lightgray">
+                    <div class="background-color-preview" style="background: #f0f0f0;">
+                        <span style="color: #666;">⬜</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Светло-серый</div>
+                        <div class="background-color-description">Нейтральный серый фон</div>
+                    </div>
+                </div>
+
+                <div class="background-color-option" data-background="transparent">
+                    <div class="background-color-preview transparent-grid" style="background: rgba(0,0,0,0);">
+                        <span>◻️</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Прозрачный</div>
+                        <div class="background-color-description">Для PNG с прозрачностью</div>
+                    </div>
+                </div>
+
+                <div class="background-color-option" data-background="black">
+                    <div class="background-color-preview" style="background: #000000;">
+                        <span style="color: white;">⬛</span>
+                    </div>
+                    <div class="background-color-info">
+                        <div class="background-color-name">Черный</div>
+                        <div class="background-color-description">Темный фон для контраста</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="custom-color-picker">
+                <label style="font-weight: 600; color: #2c3e50;">Свой цвет:</label>
+                <input type="color" class="color-input" id="customColorPicker" value="#ffffff">
+                <input type="text" class="color-hex-input" id="customColorHex" value="#ffffff" placeholder="#RRGGBB">
+                <button class="upload-btn" onclick="appState.applyCustomColor()"
+                        style="padding: 8px 15px; font-size: 0.9em; background: #9b59b6;">
+                    Применить
+                </button>
+            </div>
+
+            <p style="margin-top: 10px; font-size: 0.9em; color: #7f8c8d;">
+                <strong>Примечание:</strong> Для PNG-файлов с прозрачностью рекомендуется выбирать "Прозрачный" фон.
+            </p>
+        </div>
+
+        <div class="settings-section">
+            <h3>📷 Настройки изображений</h3>
+            <input type="text" class="size-input" id="imageSizes"
+                   value="1200x600, 800x400, 400x200"
+                   placeholder="Введите размеры через запятую">
+
+            <div class="preset-buttons">
+                <button class="preset-btn" onclick="appState.loadPreset('creatives')">Креативы</button>
+                <button class="preset-btn" onclick="appState.loadPreset('vertical')">Вертикальные</button>
+                <button class="preset-btn" onclick="appState.loadPreset('logos')">Логотипы</button>
+                <button class="preset-btn" onclick="appState.loadPreset('icons')">Иконки</button>
+            </div>
+
+            <div class="checkbox-controls">
+                <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('image')">
+                    ✅ Выбрать все форматы
+                </button>
+                <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('image')">
+                    ❌ Убрать все форматы
+                </button>
+            </div>
+            <div class="format-options">
+                <label class="format-option">
+                    <input type="checkbox" id="formatPNG"> PNG
+                </label>
+                <label class="format-option">
+                    <input type="checkbox" id="formatJPG"> JPG
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h3>🎵 Настройки аудио</h3>
+            <div class="checkbox-controls">
+                <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('audio')">
+                    ✅ Выбрать все форматы
+                </button>
+                <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('audio')">
+                    ❌ Убрать все форматы
+                </button>
+            </div>
+            <div class="format-options">
+                <label class="format-option">
+                    <input type="checkbox" id="audioMP3"> MP3
+                </label>
+                <label class="format-option">
+                    <input type="checkbox" id="audioOGG"> OGG
+                </label>
+            </div>
+            <select class="size-input" id="audioBitrate" style="margin-top: 10px;">
+                <option value="128">128 kbps (стандарт)</option>
+                <option value="192">192 kbps (качественно)</option>
+                <option value="256">256 kbps (премиум)</option>
+                <option value="320">320 kbps (максимальное)</option>
+            </select>
+        </div>
+
+        <div class="settings-section">
+            <h3>🎬 Настройки видео</h3>
+
+            <div class="video-processing-info">
+                <h4>ℹ️ Информация о обработке видео</h4>
+                <p>Видео обрабатываются с помощью FFmpeg в браузере. Для лучшей производительности ограничьте количество одновременно обрабатываемых видео.</p>
+                <p><strong>Рекомендация:</strong> Обрабатывайте не более 1-2 видео одновременно.</p>
+            </div>
+
+            <h4 style="margin: 10px 0 5px 0;">📐 Разрешение:</h4>
+            <div class="resolution-options">
+                <div class="resolution-option selected" data-resolution="640x360">
+                    <span>640×360px</span>
+                </div>
+                <div class="resolution-option" data-resolution="854x480">
+                    <span>854×480px</span>
+                </div>
+                <div class="resolution-option" data-resolution="1280x720">
+                    <span>1280×720px (HD)</span>
+                </div>
+                <div class="resolution-option" data-resolution="1920x1080">
+                    <span>1920×1080px (Full HD)</span>
+                </div>
+            </div>
+
+            <h4 style="margin: 10px 0 5px 0;">📦 Формат вывода:</h4>
+            <div class="video-format-options">
+                <div class="video-format-option selected" data-format="mp4">
+                    <span>MP4</span>
+                    <span style="font-size: 0.8em; color: #666;">(лучшая совместимость)</span>
+                </div>
+            </div>
+
+            <h4 style="margin: 15px 0 5px 0;">🎯 Качество сжатия:</h4>
+            <div class="video-quality-options">
+                <div class="video-quality-option" data-quality="none">
+                    <span>Без сжатия (оригинал)</span>
+                    <span class="quality-info">исходное качество</span>
+                </div>
+                <div class="video-quality-option" data-quality="high">
+                    <span>Высокое (CRF 18)</span>
+                    <span class="quality-info">~60% от оригинала</span>
+                </div>
+                <div class="video-quality-option selected" data-quality="medium">
+                    <span>Стандартное (CRF 23)</span>
+                    <span class="quality-info">~40% от оригинала</span>
+                </div>
+                <div class="video-quality-option" data-quality="low">
+                    <span>Экономное (CRF 28)</span>
+                    <span class="quality-info">~25% от оригинала</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats" id="statsInfo"></div>
+
+    <button class="process-btn" id="processBtn">
+        🚀 Начать обработку
+    </button>
+
+    <div class="progress-bar hidden" id="progressBar">
+        <div class="progress" id="progress"></div>
+    </div>
+
+    <div class="result hidden" id="result">
+        <h3>✅ Обработка завершена!</h3>
+        <div class="result-files" id="resultFiles"></div>
+    </div>
+
+    <div class="download-section hidden" id="downloadSection">
+        <button class="download-all-btn" id="downloadAllBtn">
+            💾 Скачать все файлы (ZIP)
+        </button>
+        <p style="text-align:center; margin-top:10px; color:#666;">
+            Будет скачан ZIP-архив со всеми обработанными файлами
+        </p>
+    </div>
+</div>
+
+<script>
+// ====== Video Processor Class ======
+class VideoProcessor {
+    constructor() {
+        this.ffmpeg = null;
+        this.isFFmpegReady = false;
+        this.initFFmpeg();
+    }
+
+    async initFFmpeg() {
+        // Проверяем, что скрипт ffmpeg.min.js реально подгрузился
+        if (typeof FFmpeg === 'undefined' || !FFmpeg || typeof FFmpeg.createFFmpeg !== 'function') {
+            console.warn('FFmpeg не подключён или недоступен. Видео будут обрабатываться без перекодирования.');
+            return;
+        }
+
+        try {
+            const { createFFmpeg } = FFmpeg;
+            this.ffmpeg = createFFmpeg({
+                log: true,
+                corePath: 'https://unpkg.com/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+                // при необходимости можно заменить на локальный /ffmpeg/ffmpeg-core.js
+            });
+
+            this.ffmpeg.setLogger(({ type, message }) => {
+                console.log(`[FFmpeg ${type}] ${message}`);
+            });
+
+            this.ffmpeg.setProgress(({ ratio }) => {
+                console.log(`[FFmpeg progress] ${(ratio * 100).toFixed(1)}%`);
+            });
+
+            console.log('Загружаем FFmpeg...');
+            await this.ffmpeg.load();
+            this.isFFmpegReady = true;
+            console.log('✅ FFmpeg успешно загружен');
+        } catch (e) {
+            console.error('❌ Ошибка загрузки FFmpeg:', e);
+        }
+    }
+
+    async processVideo(file, settings) {
+        const {
+            resolution = '640x360',
+            quality = 'medium',
+            format = 'mp4'
+        } = settings;
+
+        console.log(`🎬 Начинаю обработку видео: ${file.name}`);
+        console.log(`⚙️ Настройки: ${resolution}, ${quality}, ${format}`);
+
+        if (!this.isFFmpegReady || !this.ffmpeg) {
+            console.warn('⚠️ FFmpeg не доступен, возвращаю оригинальное видео без изменений');
+            return file;
+        }
+
+        try {
+            return await this.processWithFFmpeg(file, resolution, quality, format);
+        } catch (error) {
+            console.error('❌ Ошибка FFmpeg обработки, возвращаю оригинальный файл:', error);
+            return file;
+        }
+    }
+
+    async processWithFFmpeg(file, resolution, quality, format) {
+        const { ffmpeg } = this;
+        const [width, height] = resolution.split('x').map(Number);
+
+        const crfValues = { high: 18, medium: 23, low: 28 };
+        const crf = crfValues[quality] || 23;
+
+        const bitrateValues = { high: '1500k', medium: '1000k', low: '500k' };
+        const videoBitrate = bitrateValues[quality] || '1000k';
+
+        try {
+            console.log(`📥 Читаю видео файл: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
+            const inputData = await file.arrayBuffer();
+            const inputName = `input.${this.getFileExtension(file.name)}`;
+            const outputName = `output.${format}`;
+
+            ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
+
+            const command = [
+                '-i', inputName,
+                '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+                '-c:v', 'libx264',
+                '-b:v', videoBitrate,
+                '-crf', crf.toString(),
+                '-preset', 'fast',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-movflags', '+faststart',
+                '-y',
+                outputName
+            ];
+
+            console.log('⚙️ Выполняю команду FFmpeg...', command.join(' '));
+            await ffmpeg.run(...command);
+
+            const outputData = ffmpeg.FS('readFile', outputName);
+            ffmpeg.FS('unlink', inputName);
+            ffmpeg.FS('unlink', outputName);
+
+            const mimeType = 'video/mp4';
+            const blob = new Blob([outputData.buffer], { type: mimeType });
+
+            console.log(`✅ Видео успешно обработано: ${(blob.size / 1024 / 1024).toFixed(2)} MB`);
+            return blob;
+
+        } catch (error) {
+            console.error('❌ Ошибка обработки видео через FFmpeg:', error);
+            try {
+                const files = ffmpeg.FS('readdir', '/');
+                files.forEach(f => {
+                    if (f !== '.' && f !== '..') {
+                        try { ffmpeg.FS('unlink', `/${f}`); } catch (e) {}
+                    }
+                });
+            } catch (e) {}
+            throw error;
+        }
+    }
+
+    async processEnhancedFallback(file, resolution, format) {
+        console.log('🔄 Fallback видео: возвращаю оригинальный файл без изменений');
+        return file;
+    }
+
+    getFileExtension(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const videoExtensions = {
+            'mp4': 'mp4',
+            'mov': 'mov',
+            'avi': 'avi',
+            'mkv': 'mkv',
+            'webm': 'webm',
+            'ogg': 'ogg',
+            'wmv': 'wmv',
+            'flv': 'flv',
+            'm4v': 'm4v',
+            '3gp': '3gp'
+        };
+        return videoExtensions[ext] || 'mp4';
+    }
+
+    cancel() {
+        if (this.ffmpeg) {
+            try {
+                const files = this.ffmpeg.FS('readdir', '/');
+                files.forEach(file => {
+                    if (file !== '.' && file !== '..') {
+                        try { this.ffmpeg.FS('unlink', `/${file}`); } catch (e) {}
+                    }
+                });
+            } catch (e) {}
+        }
+    }
+}
+
+// ====== Вспомогательные утилиты ======
+class FileUtils {
+    static getFileType(filename) {
+        const ext = filename.split('.').pop().toLowerCase();
+        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+        const audioExts = ['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a'];
+        const videoExts = ['mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv', 'm4v', '3gp'];
+
+        if (imageExts.includes(ext)) return 'Изображение';
+        if (audioExts.includes(ext)) return 'Аудио';
+        if (videoExts.includes(ext)) return 'Видео';
+        return 'Другой';
+    }
+
+    static formatFileSize(bytes) {
+        if (bytes === 0) return '0 Б';
+        const k = 1024;
+        const sizes = ['Б', 'КБ', 'МБ', 'ГБ'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+}
+
+// ====== Media Processor ======
+class MediaProcessor {
+    constructor() {
+        this.isCancelled = false;
+        this.videoProcessor = new VideoProcessor();
+        this.initVideoProcessor();
+    }
+
+    async initVideoProcessor() {
+        setTimeout(() => {
+            if (!this.videoProcessor.isFFmpegReady) {
+                console.log('⏳ FFmpeg все еще загружается или недоступен...');
+            }
+        }, 1000);
+    }
+
+    cancel() {
+        this.isCancelled = true;
+        if (this.videoProcessor) {
+            this.videoProcessor.cancel();
+        }
+    }
+
+    async processFiles(files, settings, onProgress, onFileProcessed) {
+        this.isCancelled = false;
+        const totalFiles = files.length;
+        let processedCount = 0;
+
+        // Сначала изображения и аудио
+        for (let i = 0; i < files.length; i++) {
+            if (this.isCancelled) break;
+
+            const file = files[i];
+            const type = FileUtils.getFileType(file.name);
+
+            if (type === 'Видео') continue;
+
+            try {
+                console.log(`📄 Обработка ${type.toLowerCase()}: ${file.name}`);
+                const processed = await this.processSingleFile(file, settings, i);
+
+                if (processed && processed.length > 0) {
+                    onFileProcessed(processed);
+                }
+
+                processedCount++;
+                onProgress((processedCount / totalFiles) * 100);
+                await new Promise(r => setTimeout(r, 50));
+            } catch (e) {
+                console.error(`❌ Ошибка обработки файла ${file.name}:`, e);
+                this.handleFallback(file, i, onFileProcessed);
+                processedCount++;
+                onProgress((processedCount / totalFiles) * 100);
+            }
+        }
+
+        // Затем видео
+        const videoFiles = files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
+        console.log(`🎬 Начинаю обработку ${videoFiles.length} видео файлов...`);
+
+        for (let i = 0; i < videoFiles.length; i++) {
+            if (this.isCancelled) break;
+
+            const file = videoFiles[i];
+            const originalIndex = files.indexOf(file);
+
+            try {
+                console.log(`🎬 Обработка видео ${i + 1}/${videoFiles.length}: ${file.name}`);
+
+                const videoProgress = document.createElement('div');
+                videoProgress.className = 'video-processing-status';
+                videoProgress.innerHTML = `🔄 Обработка видео: ${file.name} (${i + 1}/${videoFiles.length})`;
+                document.querySelector('.settings').appendChild(videoProgress);
+
+                const processed = await this.processSingleFile(file, settings, originalIndex);
+
+                if (processed && processed.length > 0) {
+                    onFileProcessed(processed);
+                    videoProgress.className = 'video-processing-status success';
+                    videoProgress.innerHTML = `✅ Видео обработано: ${file.name}`;
+                }
+
+                processedCount++;
+                onProgress((processedCount / totalFiles) * 100);
+
+                await new Promise(r => setTimeout(r, 500));
+                setTimeout(() => videoProgress.remove(), 3000);
+
+            } catch (e) {
+                console.error(`❌ Ошибка обработки видео ${file.name}:`, e);
+
+                const errorStatus = document.createElement('div');
+                errorStatus.className = 'video-processing-status error';
+                errorStatus.innerHTML = `❌ Ошибка обработки видео: ${file.name}`;
+                document.querySelector('.settings').appendChild(errorStatus);
+
+                this.handleFallback(file, originalIndex, onFileProcessed);
+                processedCount++;
+                onProgress((processedCount / totalFiles) * 100);
+
+                setTimeout(() => errorStatus.remove(), 3000);
+            }
+        }
+
+        console.log(`🎉 Обработка завершена. Всего файлов: ${processedCount}`);
+    }
+
+    handleFallback(file, index, onFileProcessed) {
+        const fallbackName = appState.generateFileName(
+            file.customName || file.name.replace(/\.[^/.]+$/, ''),
+            (file.name.split('.').pop() || '').toLowerCase(),
+            FileUtils.getFileType(file.name),
+            file.name,
+            1,
+            index
+        );
+
+        onFileProcessed([{
+            blob: file,
+            name: fallbackName,
+            type: FileUtils.getFileType(file.name),
+            originalSize: file.size,
+            compressedSize: file.size,
+            note: 'Оригинальный файл (fallback)'
+        }]);
+    }
+
+    async processSingleFile(file, settings, fileIndex) {
+        const type = FileUtils.getFileType(file.name);
+        const processed = [];
+
+        if (type === 'Изображение') {
+            await this.processImage(file, settings, processed, fileIndex);
+        } else if (type === 'Аудио') {
+            await this.processAudio(file, settings, processed, fileIndex);
+        } else if (type === 'Видео') {
+            await this.processVideo(file, settings, processed, fileIndex);
+        } else {
+            const name = appState.generateFileName(
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                (file.name.split('.').pop() || '').toLowerCase(),
+                type,
+                file.name,
+                1,
+                fileIndex
+            );
+            processed.push({
+                blob: file,
+                name: name,
+                type: type,
+                originalSize: file.size,
+                compressedSize: file.size
+            });
+        }
+
+        return processed;
+    }
+
+    async processImage(file, settings, processed, fileIndex) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const img = new Image();
+
+                img.onload = async () => {
+                    try {
+                        const sizes = settings.imageSizes
+                            .split(',')
+                            .map(s => s.trim())
+                            .filter(Boolean);
+
+                        const formats = [];
+                        if (document.getElementById('formatPNG').checked) formats.push('png');
+                        if (document.getElementById('formatJPG').checked) formats.push('jpg');
+
+                        if (!sizes.length || !formats.length) {
+                            const name = appState.generateFileName(
+                                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                                (file.name.split('.').pop() || '').toLowerCase(),
+                                'Изображение',
+                                file.name,
+                                1,
+                                fileIndex
+                            );
+
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = img.width;
+                            canvas.height = img.height;
+                            ctx.drawImage(img, 0, 0);
+
+                            const isPng = file.type.includes('png');
+                            const mimeType = isPng ? 'image/png' : 'image/jpeg';
+                            const quality = isPng ? 0.9 : 0.85;
+
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    processed.push({
+                                        blob: blob,
+                                        name: name,
+                                        type: 'Изображение',
+                                        originalSize: file.size,
+                                        compressedSize: blob.size,
+                                        format: isPng ? 'png' : 'jpg',
+                                        background: settings.selectedBackground
+                                    });
+                                }
+                                resolve();
+                            }, mimeType, quality);
+                            return;
+                        }
+
+                        const promises = [];
+                        const totalVariants = sizes.length * formats.length || 1;
+                        let counter = 1;
+
+                        for (const size of sizes) {
+                            const [width, height] = size.replace(/х/g, 'x').split('x').map(Number);
+                            for (const format of formats) {
+                                if (this.isCancelled) {
+                                    resolve();
+                                    return;
+                                }
+                                promises.push(this.createImageVersion(
+                                    img,
+                                    width,
+                                    height,
+                                    format,
+                                    file,
+                                    processed,
+                                    counter,
+                                    totalVariants,
+                                    fileIndex,
+                                    settings
+                                ));
+                                counter++;
+                            }
+                        }
+
+                        await Promise.all(promises);
+                        resolve();
+
+                    } catch (error) {
+                        console.error('Ошибка обработки изображения:', error);
+                        resolve();
+                    }
+                };
+
+                img.onerror = () => {
+                    const name = appState.generateFileName(
+                        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                        (file.name.split('.').pop() || '').toLowerCase(),
+                        'Изображение',
+                        file.name,
+                        1,
+                        fileIndex
+                    );
+                    processed.push({
+                        blob: file,
+                        name: name,
+                        type: 'Изображение',
+                        originalSize: file.size,
+                        compressedSize: file.size,
+                        background: settings.selectedBackground
+                    });
+                    resolve();
+                };
+
+                img.src = e.target.result;
+            };
+
+            reader.onerror = () => {
+                console.error('Ошибка чтения файла');
+                resolve();
+            };
+
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async createImageVersion(img, width, height, format, file, processed, counter, totalVariants, fileIndex, settings) {
+        return new Promise((resolveVersion) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = width;
+            canvas.height = height;
+
+            const backgroundColor = this.getBackgroundColor(settings.selectedBackground);
+
+            if (backgroundColor === 'transparent' && format === 'png') {
+                ctx.clearRect(0, 0, width, height);
+            } else if (backgroundColor === 'transparent') {
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+            } else {
+                ctx.fillStyle = backgroundColor;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            const scale = Math.min(width / img.width, height / img.height);
+            const scaledWidth = img.width * scale;
+            const scaledHeight = img.height * scale;
+            const offsetX = (width - scaledWidth) / 2;
+            const offsetY = (height - scaledHeight) / 2;
+
+            ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+
+            const finalName = appState.generateFileName(
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                format,
+                'Изображение',
+                file.name,
+                counter,
+                fileIndex,
+                totalVariants
+            );
+
+            const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+            const quality = format === 'png' ? 0.9 : 0.85;
+
+            canvas.toBlob((blob) => {
+                if (blob) {
+                    processed.push({
+                        blob: blob,
+                        name: finalName,
+                        type: 'Изображение',
+                        originalSize: file.size,
+                        compressedSize: blob.size,
+                        format: format,
+                        resolution: `${width}x${height}`,
+                        background: settings.selectedBackground,
+                        backgroundColor: backgroundColor
+                    });
+                }
+                resolveVersion();
+            }, mimeType, quality);
+        });
+    }
+
+    getBackgroundColor(backgroundType) {
+        switch (backgroundType) {
+            case 'white': return '#ffffff';
+            case 'lightgray': return '#f0f0f0';
+            case 'transparent': return 'transparent';
+            case 'black': return '#000000';
+            case 'custom': {
+                const hexColor = document.getElementById('customColorHex').value;
+                return this.validateColor(hexColor) ? hexColor : '#ffffff';
+            }
+            default: return '#ffffff';
+        }
+    }
+
+    validateColor(color) {
+        const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+        return hexRegex.test(color);
+    }
+
+    async processAudio(file, settings, processed, fileIndex) {
+        try {
+            const formats = [];
+            if (document.getElementById('audioMP3').checked) formats.push('mp3');
+            if (document.getElementById('audioOGG').checked) formats.push('ogg');
+
+            const bitrate = parseInt(document.getElementById('audioBitrate').value) || 128;
+
+            if (!formats.length) {
+                const name = appState.generateFileName(
+                    file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                    (file.name.split('.').pop() || '').toLowerCase(),
+                    'Аудио',
+                    file.name,
+                    1,
+                    fileIndex
+                );
+                processed.push({
+                    blob: file,
+                    name: name,
+                    type: 'Аудио',
+                    originalSize: file.size,
+                    compressedSize: file.size
+                });
+                return;
+            }
+
+            for (let i = 0; i < formats.length; i++) {
+                const format = formats[i];
+
+                const mimeType = format === 'mp3' ? 'audio/mpeg' : 'audio/ogg';
+                const newBlob = new Blob([await file.arrayBuffer()], { type: mimeType });
+
+                const fileName = appState.generateFileName(
+                    file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                    format,
+                    'Аудио',
+                    file.name,
+                    i + 1,
+                    fileIndex
+                );
+
+                processed.push({
+                    blob: newBlob,
+                    name: fileName,
+                    type: 'Аудио',
+                    originalSize: file.size,
+                    compressedSize: newBlob.size,
+                    format: format,
+                    bitrate: `${bitrate}kbps`
+                });
+            }
+        } catch (error) {
+            console.error('Ошибка обработки аудио:', error);
+            const name = appState.generateFileName(
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                (file.name.split('.').pop() || '').toLowerCase(),
+                'Аудио',
+                file.name,
+                1,
+                fileIndex
+            );
+            processed.push({
+                blob: file,
+                name: name,
+                type: 'Аудио',
+                originalSize: file.size,
+                compressedSize: file.size
+            });
+        }
+    }
+
+    async processVideo(file, settings, processed, fileIndex) {
+        try {
+            const originalExt = (file.name.split('.').pop() || '').toLowerCase();
+            const resolution = settings.selectedVideoResolution || '640x360';
+            const quality = settings.selectedVideoQuality || 'medium';
+            const selectedFormat = settings.selectedVideoFormat || 'mp4';
+
+            const qualityLabels = {
+                none: 'Без сжатия (оригинал)',
+                high: 'Высокое сжатие (CRF 18)',
+                medium: 'Стандартное сжатие (CRF 23)',
+                low: 'Экономное сжатие (CRF 28)'
+            };
+            const qualityLabel = qualityLabels[quality] || 'Стандартное качество';
+
+            console.log(`🎬 Полная обработка видео: ${file.name}, качество: ${quality}`);
+
+            // Режим "Без сжатия" — не трогаем файл вообще
+            if (quality === 'none') {
+                const infoStatus = document.createElement('div');
+                infoStatus.className = 'video-processing-status';
+                infoStatus.innerHTML = `ℹ️ Видео ${file.name} добавлено без сжатия (оригинал).`;
+                document.querySelector('.settings').appendChild(infoStatus);
+                setTimeout(() => infoStatus.remove(), 3000);
+
+                const fileName = appState.generateFileName(
+                    file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                    originalExt || 'mp4',
+                    'Видео',
+                    file.name,
+                    1,
+                    fileIndex
+                );
+
+                processed.push({
+                    blob: file,
+                    name: fileName,
+                    type: 'Видео',
+                    originalSize: file.size,
+                    compressedSize: file.size,
+                    resolution: 'Оригинал',
+                    quality: 'none',
+                    qualityLabel: qualityLabel,
+                    format: originalExt || 'mp4',
+                    note: 'Без сжатия (оригинальный файл)'
+                });
+
+                console.log('✅ Видео добавлено без сжатия');
+                return;
+            }
+
+            const videoStatus = document.createElement('div');
+            videoStatus.className = 'video-processing-status';
+            videoStatus.innerHTML = `🔄 Обработка видео: ${file.name} (это может занять некоторое время)`;
+            document.querySelector('.settings').appendChild(videoStatus);
+
+            const processedBlob = await this.videoProcessor.processVideo(file, {
+                resolution,
+                quality,
+                format: selectedFormat
+            });
+
+            const isFallback = processedBlob === file;
+            const finalResolution = isFallback ? 'Оригинал' : resolution;
+            const finalNote = isFallback
+                ? 'FFmpeg не смог изменить размер, возвращён оригинальный файл'
+                : undefined;
+
+            if (isFallback) {
+                videoStatus.className = 'video-processing-status error';
+                videoStatus.innerHTML = `⚠️ FFmpeg не смог изменить размер, возвращён оригинальный файл: ${file.name}`;
+            } else {
+                videoStatus.className = 'video-processing-status success';
+                videoStatus.innerHTML = `✅ Видео обработано: ${file.name}`;
+            }
+            setTimeout(() => videoStatus.remove(), 3000);
+
+            const fileName = appState.generateFileName(
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                (selectedFormat || originalExt || 'mp4'),
+                'Видео',
+                file.name,
+                1,
+                fileIndex
+            );
+
+            processed.push({
+                blob: processedBlob,
+                name: fileName,
+                type: 'Видео',
+                originalSize: file.size,
+                compressedSize: processedBlob.size,
+                resolution: finalResolution,
+                quality: quality,
+                qualityLabel: isFallback
+                    ? qualityLabel + ' (FFmpeg fallback)'
+                    : qualityLabel,
+                format: selectedFormat || originalExt || 'mp4',
+                duration: 'Полная версия',
+                note: finalNote
+            });
+
+            console.log('✅ Видео успешно обработано и добавлено в результаты');
+        } catch (error) {
+            console.error('❌ Критическая ошибка обработки видео:', error);
+
+            const errorStatus = document.createElement('div');
+            errorStatus.className = 'video-processing-status error';
+            errorStatus.innerHTML = `❌ Не удалось обработать видео: ${file.name}`;
+            document.querySelector('.settings').appendChild(errorStatus);
+
+            const name = appState.generateFileName(
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                (file.name.split('.').pop() || '').toLowerCase(),
+                'Видео',
+                file.name,
+                1,
+                fileIndex
+            );
+            processed.push({
+                blob: file,
+                name: name,
+                type: 'Видео',
+                originalSize: file.size,
+                compressedSize: file.size,
+                note: 'Оригинальный файл (ошибка обработки)'
+            });
+
+            setTimeout(() => errorStatus.remove(), 3000);
+        }
+    }
+}
+
+// ====== Основной класс приложения ======
+class AppState {
+    constructor() {
+        this.files = [];
+        this.processedFiles = [];
+        this.currentSettings = this.getDefaultSettings();
+        this.mediaProcessor = new MediaProcessor();
+        this.initEventListeners();
+        this.updateUI();
+    }
+
+    getDefaultSettings() {
+        return {
+            imageSizes: '1200x600, 800x400, 400x200',
+            selectedBackground: 'white',
+            selectedVideoResolution: '640x360',
+            selectedVideoQuality: 'medium',
+            selectedVideoFormat: 'mp4'
+        };
+    }
+
+    initEventListeners() {
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const processBtn = document.getElementById('processBtn');
+
+        fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            this.handleFiles(e.dataTransfer.files);
+        });
+
+        this.initVideoSettingsListeners();
+        this.initBackgroundColorListeners();
+
+        processBtn.addEventListener('click', () => this.startProcessing());
+
+        const smartRenamingCheckbox = document.getElementById('smartRenaming');
+        const useOriginalNamesCheckbox = document.getElementById('useOriginalNames');
+        const globalBaseInput = document.getElementById('globalBaseName');
+
+        if (smartRenamingCheckbox) {
+            smartRenamingCheckbox.addEventListener('change', () => this.updateNamingExample());
+        }
+        if (useOriginalNamesCheckbox) {
+            useOriginalNamesCheckbox.addEventListener('change', () => this.updateNamingExample());
+        }
+        if (globalBaseInput) {
+            globalBaseInput.addEventListener('input', () => this.updateNamingExample());
+        }
+    }
+
+    initVideoSettingsListeners() {
+        document.querySelectorAll('.resolution-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('.resolution-option').forEach(opt =>
+                    opt.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                this.currentSettings.selectedVideoResolution =
+                    e.currentTarget.dataset.resolution;
+            });
+        });
+
+        document.querySelectorAll('.video-format-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('.video-format-option').forEach(opt =>
+                    opt.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                this.currentSettings.selectedVideoFormat =
+                    e.currentTarget.dataset.format;
+            });
+        });
+
+        document.querySelectorAll('.video-quality-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('.video-quality-option').forEach(opt =>
+                    opt.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                this.currentSettings.selectedVideoQuality =
+                    e.currentTarget.dataset.quality;
+            });
+        });
+    }
+
+    initBackgroundColorListeners() {
+        document.querySelectorAll('.background-color-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const selected = e.currentTarget.dataset.background;
+                document.querySelectorAll('.background-color-option').forEach(opt =>
+                    opt.classList.remove('selected'));
+                e.currentTarget.classList.add('selected');
+                this.currentSettings.selectedBackground = selected;
+
+                if (selected === 'custom') {
+                    document.getElementById('customColorPicker').value =
+                        document.getElementById('customColorHex').value;
+                }
+            });
+        });
+
+        document.getElementById('customColorPicker').addEventListener('input', (e) => {
+            document.getElementById('customColorHex').value = e.target.value;
+        });
+
+        document.getElementById('customColorHex').addEventListener('input', (e) => {
+            const value = e.target.value;
+            if (value.startsWith('#') && (value.length === 4 || value.length === 7)) {
+                document.getElementById('customColorPicker').value = value;
+            }
+        });
+    }
+
+    applyCustomColor() {
+        const customOption = document.querySelector('.background-color-option[data-background="custom"]');
+        if (customOption) {
+            document.querySelectorAll('.background-color-option').forEach(opt =>
+                opt.classList.remove('selected'));
+            customOption.classList.add('selected');
+            this.currentSettings.selectedBackground = 'custom';
+        }
+    }
+
+    handleFiles(fileList) {
+        const files = Array.from(fileList);
+        files.forEach(file => {
+            file.customName = file.name.replace(/\.[^/.]+$/, '');
+            this.files.push(file);
+        });
+        this.updateUI();
+    }
+
+    updateUI() {
+        const fileList = document.getElementById('fileList');
+        const emptyState = document.getElementById('emptyState');
+        const statsInfo = document.getElementById('statsInfo');
+
+        if (this.files.length === 0) {
+            emptyState.classList.remove('hidden');
+            statsInfo.textContent = '';
+            fileList.innerHTML = '';
+            fileList.appendChild(emptyState);
+            this.updateNamingExample();
+            return;
+        }
+
+        emptyState.classList.add('hidden');
+
+        let html = '';
+        let totalSize = 0;
+        let imageCount = 0;
+        let audioCount = 0;
+        let videoCount = 0;
+
+        this.files.forEach((file, index) => {
+            totalSize += file.size;
+            const type = FileUtils.getFileType(file.name);
+
+            if (type === 'Изображение') imageCount++;
+            if (type === 'Аудио') audioCount++;
+            if (type === 'Видео') videoCount++;
+
+            html += `
+                <div class="file-item" data-index="${index}">
+                    <div class="file-info">
+                        <span class="file-icon">${this.getFileIcon(type)}</span>
+                        <div>
+                            <input type="text"
+                                   class="rename-input"
+                                   value="${file.customName}"
+                                   onchange="appState.updateFileName(${index}, this.value)"
+                                   placeholder="Введите имя файла">
+                            <div class="file-size">${FileUtils.formatFileSize(file.size)} • ${type}</div>
+                        </div>
+                    </div>
+                    <button class="cancel-btn" onclick="appState.removeFile(${index})">Удалить</button>
+                </div>
+            `;
+        });
+
+        fileList.innerHTML = html;
+
+        let stats = `${this.files.length} файлов • ${FileUtils.formatFileSize(totalSize)}`;
+        if (imageCount > 0) stats += ` • ${imageCount} изображений`;
+        if (audioCount > 0) stats += ` • ${audioCount} аудио`;
+        if (videoCount > 0) stats += ` • ${videoCount} видео`;
+
+        statsInfo.textContent = stats;
+        this.updateNamingExample();
+    }
+
+    getFileIcon(type) {
+        switch (type) {
+            case 'Изображение': return '🖼️';
+            case 'Аудио': return '🎵';
+            case 'Видео': return '🎬';
+            default: return '📄';
+        }
+    }
+
+    updateFileName(index, newName) {
+        if (index >= 0 && index < this.files.length) {
+            this.files[index].customName = newName ||
+                this.files[index].name.replace(/\.[^/.]+$/, '');
+            this.updateNamingExample();
+        }
+    }
+
+    removeFile(index) {
+        if (index >= 0 && index < this.files.length) {
+            this.files.splice(index, 1);
+            this.updateUI();
+        }
+    }
+
+    getGlobalBaseName() {
+        const input = document.getElementById('globalBaseName');
+        if (!input) return '';
+        const value = input.value.trim();
+        return value || '';
+    }
+
+    extractNumberFromName(name) {
+        const match = name.match(/(\d+)/);
+        return match ? match[1] : '';
+    }
+
+    updateNamingExample() {
+        const exampleEl = document.getElementById('namingExample');
+        if (!exampleEl) return;
+
+        if (this.files.length === 0) {
+            exampleEl.textContent = 'logo.png или logo_1.png, logo_2.png';
+            return;
+        }
+
+        const useSmart = document.getElementById('smartRenaming')?.checked || false;
+        const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
+        const globalBase = this.getGlobalBaseName();
+
+        const firstFile = this.files[0];
+        const type = FileUtils.getFileType(firstFile.name);
+
+        let examples = [];
+
+        if (useOriginal) {
+            const ext = (firstFile.name.split('.').pop() || '').toLowerCase();
+            const base = firstFile.name.replace(/\.[^/.]+$/, '');
+            examples = [
+                `${base}.${ext}`,
+                `${base}_2.${ext}`,
+                `${base}_3.${ext}`
+            ];
+            exampleEl.textContent = examples.join(', ');
+            return;
+        }
+
+        if (useSmart && globalBase && type === 'Аудио') {
+            const nums = this.files
+                .slice(0, 3)
+                .map(f => this.extractNumberFromName(f.name))
+                .filter(Boolean);
+
+            if (nums.length) {
+                examples = nums.map(n => `${globalBase}${n}.mp3`);
+            } else {
+                examples = [
+                    `${globalBase}.mp3`,
+                    `${globalBase}_2.mp3`,
+                    `${globalBase}_3.mp3`
+                ];
+            }
+            exampleEl.textContent = examples.join(', ');
+            return;
+        }
+
+        if (useSmart && type === 'Изображение' && globalBase.toLowerCase() === 'logo') {
+            examples = ['logo.png', 'logo_1.png', 'logo_2.png'];
+            exampleEl.textContent = examples.join(', ');
+            return;
+        }
+
+        const baseName = useSmart
+            ? (globalBase || this.getSmartPrefix(type))
+            : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
+
+        if (type === 'Аудио') {
+            examples = [
+                `${baseName}.mp3`,
+                `${baseName}_2.mp3`,
+                `${baseName}_3.mp3`
+            ];
+        } else if (type === 'Видео') {
+            examples = [
+                `${baseName}.mp4`,
+                `${baseName}_2.mp4`,
+                `${baseName}_3.mp4`
+            ];
+        } else {
+            examples = [
+                `${baseName}.png`,
+                `${baseName}_2.png`,
+                `${baseName}_3.png`
+            ];
+        }
+
+        exampleEl.textContent = examples.join(', ');
+    }
+
+    generateFileName(baseName, format, type, originalName, index, fileIndex, totalVariants) {
+        const useSmart = document.getElementById('smartRenaming')?.checked || false;
+        const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
+        const globalBase = this.getGlobalBaseName();
+
+        const originalExt = (originalName.split('.').pop() || '').toLowerCase();
+        const ext = (format || originalExt || '').toLowerCase() || 'dat';
+
+        const originalBase = originalName.replace(/\.[^/.]+$/, '') || baseName || 'file';
+
+        if (useOriginal) {
+            return `${originalBase}.${ext}`;
+        }
+
+        if (useSmart && globalBase && type === 'Аудио') {
+            const num = this.extractNumberFromName(originalName);
+            if (num) {
+                return `${globalBase}${num}.${ext}`;
+            }
+        }
+
+        let nameBase;
+        if (useSmart) {
+            nameBase = globalBase || this.getSmartPrefix(type);
+        } else {
+            nameBase = baseName || originalBase || 'file';
+        }
+
+        if (
+            useSmart &&
+            type === 'Изображение' &&
+            (globalBase || nameBase).toLowerCase() === 'logo' &&
+            totalVariants && totalVariants > 0
+        ) {
+            if (totalVariants === 1) {
+                return `${nameBase}.${ext}`;
+            }
+
+            if (index === 1) {
+                return `${nameBase}.${ext}`;
+            }
+
+            const suffix = index - 1;
+            return `${nameBase}_${suffix}.${ext}`;
+        }
+
+        if (index === 1) {
+            return `${nameBase}.${ext}`;
+        }
+        return `${nameBase}_${index}.${ext}`;
+    }
+
+    getSmartPrefix(type) {
+        switch (type) {
+            case 'Изображение': return 'image';
+            case 'Аудио': return 'audio';
+            case 'Видео': return 'video';
+            default: return 'file';
+        }
+    }
+
+    async startProcessing() {
+        if (this.files.length === 0) {
+            alert('Пожалуйста, загрузите файлы для обработки');
+            return;
+        }
+
+        const processBtn = document.getElementById('processBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progress = document.getElementById('progress');
+        const result = document.getElementById('result');
+        const downloadSection = document.getElementById('downloadSection');
+
+        processBtn.disabled = true;
+        processBtn.textContent = '🔄 Обработка...';
+
+        progressBar.classList.remove('hidden');
+        progress.style.width = '0%';
+
+        result.classList.add('hidden');
+        downloadSection.classList.add('hidden');
+        this.processedFiles = [];
+
+        const settings = {
+            imageSizes: document.getElementById('imageSizes').value.replace(/х/g, 'x'),
+            selectedBackground: this.currentSettings.selectedBackground,
+            selectedVideoResolution: this.currentSettings.selectedVideoResolution,
+            selectedVideoQuality: this.currentSettings.selectedVideoQuality,
+            selectedVideoFormat: this.currentSettings.selectedVideoFormat
+        };
+
+        console.log('Настройки обработки:', settings);
+
+        try {
+            await this.mediaProcessor.processFiles(
+                this.files,
+                settings,
+                (percent) => {
+                    progress.style.width = `${percent}%`;
+                },
+                (processedBatch) => {
+                    this.processedFiles.push(...processedBatch);
+                    this.updateResultsUI();
+                }
+            );
+
+            progress.style.width = '100%';
+            result.classList.remove('hidden');
+            downloadSection.classList.remove('hidden');
+
+            document.getElementById('downloadAllBtn').onclick = () => this.downloadAllAsZip();
+
+        } catch (error) {
+            console.error('Ошибка обработки:', error);
+            this.showError('Ошибка обработки: ' + error.message);
+        } finally {
+            processBtn.disabled = false;
+            processBtn.textContent = '🚀 Начать обработку';
+        }
+    }
+
+    updateResultsUI() {
+        const resultFiles = document.getElementById('resultFiles');
+        let html = '';
+        let totalOriginal = 0;
+        let totalCompressed = 0;
+
+        this.processedFiles.forEach((file, index) => {
+            totalOriginal += file.originalSize;
+            totalCompressed += file.compressedSize;
+
+            const compression = file.originalSize > 0
+                ? Math.round((1 - file.compressedSize / file.originalSize) * 100)
+                : 0;
+
+            const compressionText = compression > 0
+                ? ` (сжатие: ${compression}%)`
+                : '';
+
+            const note = file.note ? `<div style="font-size:0.8em;color:#666;">${file.note}</div>` : '';
+
+            html += `
+                <div class="result-file">
+                    <div>
+                        <strong>${file.name}</strong>
+                        <div class="file-size-compression">
+                            ${FileUtils.formatFileSize(file.originalSize)} →
+                            ${FileUtils.formatFileSize(file.compressedSize)}${compressionText}
+                            ${file.resolution ? ` • ${file.resolution}` : ''}
+                            ${file.format ? ` • ${file.format.toUpperCase()}` : ''}
+                            ${file.qualityLabel ? ` • ${file.qualityLabel}` : ''}
+                        </div>
+                        ${note}
+                    </div>
+                    <button class="download-btn" onclick="appState.downloadSingleFile(${index})">
+                        📥 Скачать
+                    </button>
+                </div>
+            `;
+        });
+
+        const totalCompression = totalOriginal > 0
+            ? Math.round((1 - totalCompressed / totalOriginal) * 100)
+            : 0;
+
+        const statsHtml = `
+            <div style="margin-bottom: 15px; padding: 10px; background: #d4edda; border-radius: 8px;">
+                <strong>📊 Итоговая статистика:</strong><br>
+                Обработано файлов: ${this.processedFiles.length}<br>
+                Общий размер: ${FileUtils.formatFileSize(totalOriginal)} →
+                ${FileUtils.formatFileSize(totalCompressed)}<br>
+                Общее сжатие: ${totalCompression}%
+            </div>
+       `;
+
+        resultFiles.innerHTML = statsHtml + html;
+    }
+
+    downloadSingleFile(index) {
+        if (index >= 0 && index < this.processedFiles.length) {
+            const file = this.processedFiles[index];
+            const url = URL.createObjectURL(file.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    async downloadAllAsZip() {
+        try {
+            const zip = new JSZip();
+            const folder = zip.folder("processed_files");
+
+            this.processedFiles.forEach(file => {
+                folder.file(file.name, file.blob);
+            });
+
+            const readme = `
+Обработанные медиафайлы
+Дата: ${new Date().toLocaleDateString()}
+Всего файлов: ${this.processedFiles.length}
+
+Настройки обработки:
+- Фон изображений: ${this.currentSettings.selectedBackground}
+- Разрешение видео: ${this.currentSettings.selectedVideoResolution}
+- Качество видео: ${this.currentSettings.selectedVideoQuality}
+- Формат видео: ${this.currentSettings.selectedVideoFormat}
+
+Создано с помощью MediaProcessor | Relation-AI
+            `;
+
+            folder.file("README.txt", readme);
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `processed_files_${Date.now()}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+        } catch (error) {
+            console.error('Ошибка создания ZIP:', error);
+            this.showError('Ошибка создания архива: ' + error.message);
+        }
+    }
+
+    showError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'temp-message error-message';
+        errorDiv.innerHTML = `<strong>❌ Ошибка:</strong> ${message}`;
+
+        const container = document.querySelector('.container');
+        container.insertBefore(errorDiv, container.children[1]);
+
+        setTimeout(() => errorDiv.remove(), 5000);
+    }
+
+    // ====== Реальные AI-функции ======
+
+    // Простой советник: смотрит на типы файлов и выбранные размеры
+    getAIAdvice() {
+        if (!this.files.length) {
+            alert('Загрузите хотя бы один файл, чтобы получить советы.');
+            return;
+        }
+
+        const aiTip = document.getElementById('aiTip');
+        const aiResults = document.getElementById('aiResults');
+        const aiStats = document.getElementById('aiStats');
+        const aiTipsList = document.getElementById('aiTipsList');
+
+        const images = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+        const audio = this.files.filter(f => FileUtils.getFileType(f.name) === 'Аудио');
+        const video = this.files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
+
+        const rawSizes = document.getElementById('imageSizes').value.toLowerCase().replace(/х/g, 'x');
+        const sizes = rawSizes.split(',').map(s => s.trim()).filter(Boolean);
+
+        const logoSet = ['200x150', '300x250', '150x100', '200x200', '300x300'];
+        const blogSet = ['300x300', '400x400', '500x500', '600x600'];
+        const creativeSet = ['1200x600', '800x400', '600x300', '1400x750'];
+
+        const isLogo = sizes.some(s => logoSet.includes(s));
+        const isBlog = sizes.some(s => blogSet.includes(s));
+        const isCreative = sizes.some(s => creativeSet.includes(s));
+
+        let profile = 'generic';
+        if (isLogo) profile = 'logo';
+        else if (isCreative) profile = 'creative';
+        else if (isBlog) profile = 'blog';
+
+        let profileTitle = 'Общий профиль';
+        let sizeHint = '';
+        if (profile === 'logo') {
+            profileTitle = 'Логотипы';
+            sizeHint = 'Рекомендуемые размеры логотипов: 200×150, 300×250, 150×100, 200×200, 300×300.';
+        } else if (profile === 'creative') {
+            profileTitle = 'Рекламные креативы';
+            sizeHint = 'Рекомендуемые размеры креативов: 1200×600, 800×400, 600×300, 1400×750.';
+        } else if (profile === 'blog') {
+            profileTitle = 'Аватары/обложки каналов блогеров';
+            sizeHint = 'Рекомендуемые размеры каналов: 300×300, 400×400, 500×500, 600×600.';
+        }
+
+        aiTip.querySelector('.ai-tip-content').innerHTML = `
+            Обнаружено <strong>${this.files.length}</strong> файлов:
+            ${images.length} изображений, ${audio.length} аудио, ${video.length} видео.<br>
+            Текущий профиль: <strong>${profileTitle}</strong>.
+        `;
+
+        aiStats.innerHTML = `
+            <strong>Текущие настройки изображений:</strong><br>
+            Размеры: ${sizes.length ? sizes.join(', ') : 'не заданы'}<br>
+            ${sizeHint}
+        `;
+
+        const tips = [];
+
+        if (profile === 'logo') {
+            tips.push('Для логотипов лучше использовать PNG с прозрачностью, чтобы они аккуратно ложились на любые фоны.');
+            tips.push('Держите логотипы в квадратных или близких к квадрату пропорциях (200×200, 300×300) для аватарок.');
+        } else if (profile === 'creative') {
+            tips.push('Горизонтальные креативы (1200×600, 1400×750) отлично подходят для баннеров и промо-блоков.');
+            tips.push('Старайтесь оставлять “тихий” фон под текст: не менее 30–40% площади без шума.');
+        } else if (profile === 'blog') {
+            tips.push('Для каналов блогеров квадраты (300×300–600×600) выглядят аккуратнее на большинстве платформ.');
+            tips.push('Главный объект (лицо, логотип) лучше центрировать и делать крупнее — так аватар читабелен в маленьком размере.');
+        } else {
+            tips.push('Для универсальных задач подойдут размеры 1200×600 и 800×400 в PNG и JPG.');
+            tips.push('Поддерживайте одну цветовую палитру во всех картинках, чтобы бренд выглядел цельным.');
+        }
+
+        if (video.length) {
+            tips.push('Для видео начните с 1280×720 и стандартного качества — этого достаточно для веба и экономит вес.');
+        }
+        if (audio.length) {
+            tips.push('Для большинства кейсов 128–192 kbps достаточно; 320 kbps стоит использовать только для премиальных релизов.');
+        }
+
+        aiTipsList.innerHTML = tips.map(t => `<div class="ai-tip-item">${t}</div>`).join('');
+        aiResults.classList.remove('hidden');
+    }
+
+    // Анализ нескольких изображений через canvas
+    async analyzeAllImages() {
+        const images = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+        if (!images.length) {
+            alert('Для анализа изображений сначала загрузите хотя бы одну картинку.');
+            return;
+        }
+
+        const aiResults = document.getElementById('aiResults');
+        const aiStats = document.getElementById('aiStats');
+        const aiTipsList = document.getElementById('aiTipsList');
+
+        const maxToAnalyze = Math.min(images.length, 5);
+        const analyses = [];
+
+        for (let i = 0; i < maxToAnalyze; i++) {
+            const file = images[i];
+            const metrics = await this.analyzeSingleImage(file);
+            if (metrics) {
+                analyses.push({ file, metrics });
+            }
+        }
+
+        if (!analyses.length) {
+            alert('Не удалось проанализировать изображения (возможно, формат повреждён).');
+            return;
+        }
+
+        const avgBrightness = analyses.reduce((sum, a) => sum + a.metrics.avgBrightness, 0) / analyses.length;
+        const avgAspect = analyses.reduce((sum, a) => sum + a.metrics.aspectRatio, 0) / analyses.length;
+
+        aiStats.innerHTML = `
+            <strong>Технический анализ изображений:</strong><br>
+            Всего изображений: ${images.length}<br>
+            Проанализировано: ${analyses.length}<br>
+            Средняя яркость: ${avgBrightness.toFixed(1)}%<br>
+            Среднее соотношение сторон: ${avgAspect.toFixed(2)} : 1
+        `;
+
+        const tips = [];
+
+        if (avgBrightness < 40) {
+            tips.push('Изображения выглядят тёмными. Для маркетплейсов лучше поднять яркость/экспозицию, чтобы товар читался на светлых карточках.');
+        } else if (avgBrightness > 75) {
+            tips.push('Изображения очень светлые — следите, чтобы не терялись детали в светах и белый фон не “выбивал глаза”.');
+        } else {
+            tips.push('Яркость в комфортном диапазоне — этого достаточно для большинства витрин и карточек.');
+        }
+
+        if (avgAspect > 1.7) {
+            tips.push('У вас преобладают широкие горизонтальные изображения. Это хорошо для баннеров и промо-блоков, но для квадратных аватарок лучше подготовить отдельные версии.');
+        } else if (avgAspect < 1.2) {
+            tips.push('Изображения близки к квадрату — отлично для логотипов, аватарок и карточек товаров.');
+        } else {
+            tips.push('Пропорции ближе к “золотой середине”. Можно легко адаптировать под разные форматы (баннеры, тизеры, превью).');
+        }
+
+        const rawSizes = document.getElementById('imageSizes').value.toLowerCase().replace(/х/g, 'x');
+        const sizes = rawSizes.split(',').map(s => s.trim()).filter(Boolean);
+
+        const logoSet = ['200x150', '300x250', '150x100', '200x200', '300x300'];
+        const blogSet = ['300x300', '400x400', '500x500', '600x600'];
+        const creativeSet = ['1200x600', '800x400', '600x300', '1400x750'];
+
+        const isLogo = sizes.some(s => logoSet.includes(s));
+        const isBlog = sizes.some(s => blogSet.includes(s));
+        const isCreative = sizes.some(s => creativeSet.includes(s));
+
+        if (isLogo) {
+            tips.push('Под текущие размеры логотипов следите, чтобы в центре оставалась “чистая зона” — не заполняйте края мелким текстом.');
+        }
+        if (isCreative) {
+            tips.push('Для креативов 1200×600 и 1400×750 оставляйте под заголовок верхнюю или нижнюю полоску с минимальной текстурой фона.');
+        }
+        if (isBlog) {
+            tips.push('Для аватарок каналов убедитесь, что ключевой объект остаётся читабельным даже в очень маленькой превью (например, 64×64).');
+        }
+
+        aiTipsList.innerHTML = tips.map(t => `<div class="ai-tip-item">${t}</div>`).join('');
+        aiResults.classList.remove('hidden');
+    }
+
+    analyzeSingleImage(file) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const sampleSize = 128;
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = sampleSize;
+                        canvas.height = sampleSize;
+                        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+                        const data = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+
+                        let totalBrightness = 0;
+                        let totalR = 0, totalG = 0, totalB = 0;
+                        const pixelCount = data.length / 4;
+
+                        for (let i = 0; i < data.length; i += 4) {
+                            const r = data[i];
+                            const g = data[i + 1];
+                            const b = data[i + 2];
+                            const brightness = (r + g + b) / 3;
+                            totalBrightness += brightness;
+                            totalR += r;
+                            totalG += g;
+                            totalB += b;
+                        }
+
+                        const avgBrightness = (totalBrightness / pixelCount) / 255 * 100;
+                        const avgR = totalR / pixelCount;
+                        const avgG = totalG / pixelCount;
+                        const avgB = totalB / pixelCount;
+
+                        const toHex = (v) => Math.round(v).toString(16).padStart(2, '0');
+                        const dominantColor = `#${toHex(avgR)}${toHex(avgG)}${toHex(avgB)}`;
+
+                        const aspectRatio = img.width / img.height;
+
+                        resolve({
+                            width: img.width,
+                            height: img.height,
+                            avgBrightness,
+                            avgR,
+                            avgG,
+                            avgB,
+                            dominantColor,
+                            aspectRatio
+                        });
+                    } catch (err) {
+                        console.error('Ошибка анализа изображения:', err);
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => {
+                    resolve(null);
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async analyzeBrandAssets() {
+        if (!document.getElementById('aiAnalysis').checked) {
+            alert('Включите чекбокс "Автоматически анализировать цвета", чтобы использовать анализ бренда.');
+            return;
+        }
+
+        const images = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+        if (!images.length) {
+            alert('Для анализа бренда загрузите хотя бы одно изображение с фирменным стилем.');
+            return;
+        }
+
+        const maxToAnalyze = Math.min(images.length, 5);
+        const colors = [];
+
+        for (let i = 0; i < maxToAnalyze; i++) {
+            const metrics = await this.analyzeSingleImage(images[i]);
+            if (metrics && metrics.dominantColor) {
+                colors.push(metrics.dominantColor);
+            }
+        }
+
+        if (!colors.length) {
+            alert('Не удалось выделить цвета бренда (ошибка анализа изображений).');
+            return;
+        }
+
+        const uniqueColors = [...new Set(colors)];
+
+        const aiResults = document.getElementById('aiResults');
+        const aiTipsList = document.getElementById('aiTipsList');
+        const existing = aiTipsList.innerHTML;
+
+        const paletteHtml = uniqueColors.map(hex =>
+            `<div class="color-swatch" data-hex="${hex}" style="background:${hex};"></div>`
+        ).join('');
+
+        const blockHtml = `
+            <div class="brand-analysis-results">
+                <div style="margin-bottom:6px;"><strong>🎨 Предполагаемая палитра бренда</strong></div>
+                <div class="color-palette">
+                    ${paletteHtml}
+                </div>
+                <div style="font-size:0.85em;opacity:0.9;">
+                    Совет: используйте эти цвета как основу для карточек, креативов и логотипов,
+                    чтобы визуально связать все материалы бренда.
+                </div>
+            </div>
+        `;
+
+        aiTipsList.innerHTML = existing + blockHtml;
+        aiResults.classList.remove('hidden');
+    }
+
+    resetAllSettings() {
+        this.currentSettings = this.getDefaultSettings();
+        document.getElementById('imageSizes').value = this.currentSettings.imageSizes;
+
+        document.querySelectorAll('.resolution-option').forEach(opt =>
+            opt.classList.remove('selected'));
+        document.querySelector('.resolution-option[data-resolution="640x360"]').classList.add('selected');
+
+        document.querySelectorAll('.video-format-option').forEach(opt =>
+            opt.classList.remove('selected'));
+        document.querySelector('.video-format-option[data-format="mp4"]').classList.add('selected');
+
+        document.querySelectorAll('.video-quality-option').forEach(opt =>
+            opt.classList.remove('selected'));
+        document.querySelector('.video-quality-option[data-quality="medium"]').classList.add('selected');
+        this.currentSettings.selectedVideoQuality = 'medium';
+
+        document.querySelectorAll('.background-color-option').forEach(opt =>
+            opt.classList.remove('selected'));
+        document.querySelector('.background-color-option[data-background="white"]').classList.add('selected');
+        this.currentSettings.selectedBackground = 'white';
+
+        alert('Настройки сброшены!');
+        this.updateNamingExample();
+    }
+
+    clearAllCheckboxes() {
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        this.updateNamingExample();
+        alert('Все галочки убраны!');
+    }
+
+    selectAllCheckboxes(type) {
+        let selector = '';
+        switch (type) {
+            case 'image': selector = '#formatPNG, #formatJPG'; break;
+            case 'audio': selector = '#audioMP3, #audioOGG'; break;
+            case 'ai': selector = '#aiAnalysis'; break;
+        }
+        if (selector) {
+            document.querySelectorAll(selector).forEach(cb => cb.checked = true);
+        }
+        this.updateNamingExample();
+    }
+
+    clearCheckboxes(type) {
+        let selector = '';
+        switch (type) {
+            case 'image': selector = '#formatPNG, #formatJPG'; break;
+            case 'audio': selector = '#audioMP3, #audioOGG'; break;
+            case 'ai': selector = '#aiAnalysis'; break;
+        }
+        if (selector) {
+            document.querySelectorAll(selector).forEach(cb => cb.checked = false);
+        }
+        this.updateNamingExample();
+    }
+
+    loadPreset(preset) {
+        switch (preset) {
+            case 'creatives':
+                document.getElementById('imageSizes').value = '1200x600, 800x400, 600x300, 1400x750';
+                break;
+            case 'vertical':
+                document.getElementById('imageSizes').value = '1080x1920, 800x1400, 400x700';
+                break;
+            case 'logos':
+                document.getElementById('imageSizes').value = '200x150, 300x250, 150x100, 200x200, 300x300';
+                break;
+            case 'icons':
+                document.getElementById('imageSizes').value = '256x256, 128x128, 64x64, 32x32';
+                break;
+        }
+        alert(`Пресет "${preset}" загружен!`);
+        this.updateNamingExample();
+    }
+}
+
+// ====== Инициализация ======
+let appState;
+
+document.addEventListener('DOMContentLoaded', () => {
+    appState = new AppState();
+
+    document.getElementById('customColorPicker').addEventListener('input', (e) => {
+        document.getElementById('customColorHex').value = e.target.value;
+    });
+
+    document.getElementById('customColorHex').addEventListener('change', (e) => {
+        let value = e.target.value;
+        if (!value.startsWith('#')) {
+            value = '#' + value;
+            e.target.value = value;
+            document.getElementById('customColorPicker').value = value;
+        }
+    });
+
+    window.appState = appState;
+});
+</script>
+</body>
+</html>
