@@ -6,655 +6,2039 @@
   <title>MediaProcessor | Relation-AI</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <!-- ЛОКАЛЬНЫЙ FFmpeg (самохостинг в /ffmpeg/) -->
-  <script src="/ffmpeg/ffmpeg.min.js"></script>
+
+  <!--
+    FFmpeg WASM: авто-фолбэк:
+    1) локально (самохостинг): /ffmpeg/ffmpeg.min.js + /ffmpeg/ffmpeg-core.js (+ wasm/worker рядом)
+    2) CDN: @ffmpeg/ffmpeg@0.11.6 + @ffmpeg/core@0.11.0
+       Воркер именно:
+       https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.worker.js
+  -->
 
   <style>
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
-    body { margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 28px 16px; }
-    .wrap { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 18px; box-shadow: 0 18px 50px rgba(0,0,0,.18); overflow: hidden; }
-    header { padding: 22px 22px 14px; background: linear-gradient(135deg, #1f2937 0%, #111827 100%); color: #fff; }
-    header h1 { margin: 0 0 6px; font-size: 20px; }
-    header p { margin: 0; opacity: .85; font-size: 13px; line-height: 1.4; }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
+    .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
+    .header { background: linear-gradient(135deg, #2c3e50, #34495e); color: white; padding: 30px; text-align: center; }
+    .header h1 { font-size: 2.5em; margin-bottom: 10px; }
+    .header p { opacity: 0.9; font-size: 1.1em; }
 
-    .grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; padding: 18px 18px 22px; }
-    @media (max-width: 940px) { .grid { grid-template-columns: 1fr; } }
+    .upload-zone { border: 3px dashed #3498db; border-radius: 15px; padding: 60px 40px; text-align: center; margin: 30px; background: #f8f9fa; transition: all 0.3s ease; cursor: pointer; }
+    .upload-zone:hover { border-color: #2980b9; background: #e3f2fd; }
+    .upload-zone.dragover { border-color: #27ae60; background: #d4edda; }
+    .upload-icon { font-size: 4em; margin-bottom: 20px; color: #3498db; }
+    .file-input { display: none; }
 
-    .card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; }
-    .card h2 { margin: 0 0 10px; font-size: 14px; color: #111827; }
-    .muted { color: #6b7280; font-size: 12px; }
+    .upload-btn { background: #3498db; color: white; padding: 12px 30px; border: none; border-radius: 25px; cursor: pointer; font-size: 1.1em; transition: background 0.3s ease; margin: 5px; }
+    .upload-btn:hover { background: #2980b9; }
 
-    .drop {
-      border: 2px dashed #c7cbe6;
-      background: #f7f8ff;
-      border-radius: 14px;
-      padding: 18px;
-      text-align: center;
-      cursor: pointer;
-      transition: .15s;
+    .file-list { margin: 20px 30px; max-height: 400px; overflow-y: auto; }
+    .file-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .file-list-header h3 { color: #2c3e50; }
+    .clear-all-btn { background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: background 0.3s ease; }
+    .clear-all-btn:hover { background: #c0392b; }
+
+    .file-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #3498db; }
+    .file-info { display: flex; align-items: center; gap: 10px; flex: 1; }
+    .file-icon { font-size: 1.5em; }
+    .file-size { color: #7f8c8d; font-size: 0.9em; }
+    .file-rename { display: flex; align-items: center; gap: 10px; margin-left: 15px; }
+    .rename-input { padding: 8px 12px; border: 2px solid #bdc3c7; border-radius: 8px; font-size: 0.9em; width: 200px; transition: border-color 0.3s ease; }
+    .rename-input:focus { border-color: #3498db; outline: none; }
+
+    .settings { background: #f8f9fa; padding: 30px; margin: 20px 30px; border-radius: 15px; }
+    .settings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #e3f2fd; }
+    .settings-header h2 { color: #2c3e50; display: flex; align-items: center; gap: 10px; }
+    .settings-controls { display: flex; gap: 10px; }
+    .settings-btn { background: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: background 0.3s ease; }
+    .settings-btn:hover { background: #7f8c8d; }
+    .settings-btn.reset { background: #e67e22; }
+    .settings-btn.reset:hover { background: #d35400; }
+    .settings-btn.clear { background: #e74c3c; }
+    .settings-btn.clear:hover { background: #c0392b; }
+
+    .settings-section { margin-bottom: 25px; background: white; padding: 20px; border-radius: 10px; border: 2px solid #e3f2fd; }
+    .settings-section h3 { color: #2c3e50; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+    .size-input { width: 100%; padding: 12px; border: 2px solid #bdc3c7; border-radius: 8px; font-size: 1em; margin-bottom: 15px; }
+
+    .naming-section { background: white; padding: 20px; border-radius: 10px; border: 2px solid #e3f2fd; margin: 20px 0; }
+    .naming-example { color: #7f8c8d; font-size: 0.9em; margin-top: 5px; }
+    .naming-options { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 10px 0; }
+    .naming-option { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+
+    .format-options { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 15px; }
+    .format-option { display: flex; align-items: center; gap: 8px; }
+    .format-option input[type="checkbox"] { width: 18px; height: 18px; }
+
+    .video-quality-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 10px; }
+    .video-quality-option { display: flex; align-items: center; gap: 8px; padding: 12px; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+    .video-quality-option:hover { border-color: #3498db; background: #e3f2fd; }
+    .video-quality-option.selected { border-color: #27ae60; background: #d4edda; }
+    .quality-info { font-size: 0.8em; color: #666; margin-left: auto; }
+
+    .preset-buttons { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .preset-btn { background: #95a5a6; color: white; border: none; padding: 8px 16px; border-radius: 15px; cursor: pointer; font-size: 0.9em; transition: background 0.3s ease; }
+    .preset-btn:hover { background: #7f8c8d; }
+
+    .ai-section { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; position: relative; }
+    .ai-feature { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+
+    .ai-advisor-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; }
+    .ai-advisor-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.2); }
+    .ai-tip { background: rgba(255, 255, 255, 0.15); border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 4px solid #27ae60; }
+    .ai-tip-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .ai-tip-content { font-size: 0.95em; opacity: 0.9; }
+    .ai-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .ai-btn { background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: all 0.3s ease; flex: 1; min-width: 120px; }
+    .ai-btn:hover { background: rgba(255, 255, 255, 0.3); transform: translateY(-1px); }
+    .ai-btn.secondary { background: rgba(39, 174, 96, 0.3); border-color: rgba(39, 174, 96, 0.5); }
+
+    .ai-results { margin-top: 20px; animation: fadeIn 0.5s ease; }
+    .ai-stats { background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 15px; margin-bottom: 15px; font-size: 0.9em; }
+    .ai-tips-list { display: flex; flex-direction: column; gap: 10px; }
+    .ai-tip-item { background: rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px 15px; border-left: 3px solid #3498db; animation: slideIn 0.3s ease; }
+    .ai-tip-item:nth-child(2n) { border-left-color: #9b59b6; }
+    .ai-tip-item:nth-child(3n) { border-left-color: #e74c3c; }
+
+    .color-palette { display: flex; gap: 5px; margin: 10px 0; }
+    .color-swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid rgba(255, 255, 255, 0.3); position: relative; cursor: pointer; transition: transform 0.2s ease; }
+    .color-swatch:hover { transform: scale(1.1); }
+    .color-swatch::after { content: attr(data-hex); position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; white-space: nowrap; opacity: 0; transition: opacity 0.3s ease; }
+    .color-swatch:hover::after { opacity: 1; }
+
+    .brand-analysis-results { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255, 255, 255, 0.2); animation: fadeIn 0.5s ease; }
+    .brand-analysis-results .color-swatch { width: 25px; height: 25px; border-radius: 4px; border: 2px solid rgba(255, 255, 255, 0.5); }
+    .brand-analysis-results .color-swatch::after { bottom: -30px; z-index: 10; }
+
+    .process-btn { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 25px; cursor: pointer; display: block; margin: 30px auto; transition: transform 0.2s ease; }
+    .process-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3); }
+    .process-btn:active { transform: translateY(0); }
+    .process-btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
+
+    .result { margin: 20px 30px; padding: 25px; background: #e8f5e8; border-radius: 15px; border-left: 4px solid #27ae60; }
+    .result-files { margin-top: 15px; }
+    .result-file { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: white; border-radius: 8px; margin-bottom: 8px; border-left: 3px solid #27ae60; }
+    .file-size-compression { font-size: 0.8em; color: #27ae60; margin-left: 10px; }
+    .download-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8em; }
+    .download-btn:hover { background: #2980b9; }
+    .hidden { display: none; }
+
+    .progress-bar { width: 100%; height: 6px; background: #ecf0f1; border-radius: 3px; margin: 20px 0; overflow: hidden; }
+    .progress { height: 100%; background: linear-gradient(135deg, #3498db, #2980b9); width: 0%; transition: width 0.3s ease; }
+
+    .download-section { text-align: center; padding: 20px; background: #f0f8ff; margin: 20px 30px; border-radius: 15px; border: 2px dashed #9b59b6; }
+    .download-all-btn { background: linear-gradient(135deg, #9b59b6, #8e44ad); color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 25px; cursor: pointer; transition: transform 0.2s ease; }
+    .download-all-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(155, 89, 182, 0.3); }
+
+    .stats { text-align: center; margin: 10px 0; color: #7f8c8d; font-size: 0.9em; }
+
+    .resolution-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
+    .resolution-option { display: flex; align-items: center; gap: 8px; padding: 10px; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+    .resolution-option:hover { border-color: #3498db; background: #e3f2fd; }
+    .resolution-option.selected { border-color: #27ae60; background: #d4edda; }
+
+    .checkbox-controls { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+    .checkbox-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 0.8em; transition: background 0.3s ease; }
+    .checkbox-btn:hover { background: #2980b9; }
+    .checkbox-btn.select-all { background: #27ae60; }
+    .checkbox-btn.select-all:hover { background: #219a52; }
+    .checkbox-btn.clear-all { background: #e74c3c; }
+    .checkbox-btn.clear-all:hover { background: #c0392b; }
+
+    .empty-state { text-align: center; padding: 40px; color: #7f8c8d; }
+    .empty-state .upload-icon { font-size: 3em; margin-bottom: 10px; }
+
+    .cancel-btn { background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; margin-left: 10px; }
+    .cancel-btn:hover { background: #c0392b; }
+
+    .temp-message { border-radius: 8px; padding: 15px; margin: 15px 30px; }
+    .error-message { background: #f8d7da; border: 2px solid #e74c3c; color: #721c24; }
+    .info-message { background: #e3f2fd; border: 2px solid #3498db; color: #1b4b72; }
+
+    .background-color-section { background: white; padding: 20px; border-radius: 10px; border: 2px solid #e3f2fd; margin: 20px 0; }
+    .background-color-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 15px; }
+    .background-color-option { display: flex; align-items: center; gap: 12px; padding: 15px; border: 2px solid #bdc3c7; border-radius: 10px; cursor: pointer; transition: all 0.3s ease; }
+    .background-color-option:hover { border-color: #3498db; background: #f0f8ff; transform: translateY(-2px); }
+    .background-color-option.selected { border-color: #27ae60; background: #e8f5e8; box-shadow: 0 4px 12px rgba(39, 174, 96, 0.2); }
+    .background-color-preview { width: 40px; height: 40px; border-radius: 8px; border: 2px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 1.2em; }
+    .background-color-info { display: flex; flex-direction: column; gap: 3px; }
+    .background-color-name { font-weight: 600; color: #2c3e50; }
+    .background-color-description { font-size: 0.85em; color: #7f8c8d; }
+
+    .custom-color-picker { display: flex; align-items: center; gap: 10px; margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; border: 1px dashed #bdc3c7; }
+    .color-input { width: 60px; height: 40px; border: 2px solid #bdc3c7; border-radius: 6px; cursor: pointer; padding: 2px; }
+    .color-input::-webkit-color-swatch-wrapper { padding: 0; }
+    .color-input::-webkit-color-swatch { border: none; border-radius: 4px; }
+    .color-hex-input { flex: 1; padding: 8px 12px; border: 2px solid #bdc3c7; border-radius: 6px; font-size: 0.9em; font-family: monospace; }
+
+    .transparent-grid {
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
     }
-    .drop:hover { transform: translateY(-1px); }
-    .drop.drag { background: #eef0ff; border-color: #8892ff; }
 
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
-    label { display: block; font-size: 12px; color: #374151; margin-bottom: 6px; }
-    input, select, button, textarea {
-      width: 100%;
-      padding: 10px 10px;
-      border: 1px solid #e5e7eb;
-      border-radius: 10px;
-      font-size: 13px;
-      outline: none;
+    .video-processing-info { background: #e3f2fd; border-radius: 8px; padding: 15px; margin: 15px 0; border-left: 4px solid #3498db; }
+    .video-processing-info h4 { margin-bottom: 10px; color: #2c3e50; }
+
+    .video-format-options { display: flex; gap: 15px; margin: 10px 0; }
+    .video-format-option { display: flex; align-items: center; gap: 8px; padding: 10px 15px; border: 2px solid #bdc3c7; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; }
+    .video-format-option:hover { border-color: #3498db; background: #e3f2fd; }
+    .video-format-option.selected { border-color: #27ae60; background: #d4edda; }
+
+    .video-processing-status { background: #e3f2fd; border-radius: 8px; padding: 10px; margin: 10px 0; border-left: 4px solid #3498db; font-size: 0.9em; }
+    .video-processing-status.success { background: #d4edda; border-left-color: #27ae60; }
+    .video-processing-status.error { background: #f8d7da; border-left-color: #e74c3c; }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+    @media (max-width: 768px) {
+      .ai-actions { flex-direction: column; }
+      .ai-btn { flex: none; }
+      .file-item { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .file-rename { margin-left: 0; width: 100%; }
+      .rename-input { width: 100%; }
+      .background-color-options { grid-template-columns: 1fr; }
+      .video-format-options { flex-wrap: wrap; }
     }
-    input:focus, select:focus, textarea:focus { border-color: #8b94ff; box-shadow: 0 0 0 3px rgba(139,148,255,.18); }
-
-    .btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .btns3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
-    button { cursor: pointer; border: none; }
-    .primary { background: #4f46e5; color: #fff; }
-    .primary:hover { filter: brightness(1.05); }
-    .ghost { background: #eef2ff; color: #3730a3; }
-    .ghost:hover { filter: brightness(1.03); }
-    .danger { background: #fee2e2; color: #991b1b; }
-    .danger:hover { filter: brightness(1.03); }
-
-    .files { margin-top: 10px; max-height: 220px; overflow: auto; border: 1px solid #eef2f7; border-radius: 12px; }
-    .file { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-top: 1px solid #f1f5f9; }
-    .file:first-child { border-top: none; }
-    .file b { font-size: 13px; }
-    .pill { font-size: 11px; color: #111827; background: #f3f4f6; padding: 4px 8px; border-radius: 999px; }
-
-    textarea { height: 220px; resize: vertical; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 11.5px; }
-    .warn { background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412; padding: 10px 12px; border-radius: 12px; font-size: 12px; line-height: 1.35; margin-top: 10px; }
-    .ok { background: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; padding: 10px 12px; border-radius: 12px; font-size: 12px; }
   </style>
 </head>
 
 <body>
-  <div class="wrap">
-    <header>
-      <h1>MediaProcessor | Relation-AI</h1>
-      <p>Картинки — через Canvas, Видео/Аудио — через FFmpeg WASM (самохостинг из /ffmpeg). Результат — ZIP.</p>
-    </header>
+<div class="container">
+  <div class="header">
+    <h1>🚀 MediaProcessor</h1>
+    <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
+  </div>
 
-    <div class="grid">
-      <div class="card">
-        <h2>1) Файлы</h2>
+  <div class="upload-zone" id="dropZone">
+    <div class="upload-icon">📁</div>
+    <h3>Перетащите файлы сюда</h3>
+    <p>или</p>
+    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+      Выбрать файлы
+    </button>
+    <input type="file" id="fileInput" class="file-input" multiple
+      accept="image/*,.mp3,.mp4,.mov,.avi,.ogg,.wav,.flac,.aac,.mkv,.webm,.wmv,.flv">
+  </div>
 
-        <div id="drop" class="drop">
-          <div style="font-size:14px; font-weight:700;">Перетащи файлы сюда</div>
-          <div class="muted" style="margin-top:6px;">или нажми для выбора (картинки / видео / аудио)</div>
-          <input id="fileInput" type="file" multiple style="display:none" />
+  <div class="file-list" id="fileList">
+    <div class="empty-state" id="emptyState">
+      <div class="upload-icon">📄</div>
+      <h3>Нет загруженных файлов</h3>
+      <p>Загрузите файлы, чтобы начать обработку</p>
+    </div>
+  </div>
+
+  <div class="settings">
+    <div class="settings-header">
+      <h2>⚙️ Настройки обработки</h2>
+      <div class="settings-controls">
+        <button class="settings-btn reset" onclick="appState.resetAllSettings()">🔄 Сбросить всё</button>
+        <button class="settings-btn clear" onclick="appState.clearAllCheckboxes()">❌ Убрать галочки</button>
+      </div>
+    </div>
+
+    <div class="naming-section">
+      <h3>🏷️ Переименование файлов</h3>
+      <p style="color:#666;margin-bottom:10px;">
+        Введите новое имя для каждого файла в списке выше или укажите общее имя для умного переименования
+      </p>
+
+      <div class="naming-options">
+        <div class="naming-option">
+          <input type="checkbox" id="useOriginalNames">
+          <label for="useOriginalNames">Использовать оригинальные имена файлов</label>
         </div>
 
-        <div id="fileList" class="files" style="display:none;"></div>
-
-        <div class="row">
-          <div>
-            <label>Базовое имя (например: logo или audio_hook)</label>
-            <input id="baseName" placeholder="logo" value="logo" />
-          </div>
-          <div>
-            <label>Схема имени</label>
-            <select id="nameMode">
-              <option value="base_index">base_1, base_2…</option>
-              <option value="base_digits">base + цифры из исходного имени</option>
-              <option value="original">оставить оригинал</option>
-            </select>
-          </div>
+        <div class="naming-option">
+          <input type="checkbox" id="smartRenaming">
+          <label for="smartRenaming">Умное переименование (единая база, например: logo, banner, audio_hook)</label>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Стартовый номер (для base_1…)</label>
-            <input id="startIndex" type="number" min="1" value="1" />
-          </div>
-          <div>
-            <label>Если цифр нет (для base_digits)</label>
-            <select id="digitsFallback">
-              <option value="index">использовать порядковый номер</option>
-              <option value="skip">оставить base без номера</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="btns3">
-          <button class="ghost" id="btnLoadFFmpeg">Проверить / загрузить FFmpeg</button>
-          <button class="primary" id="btnProcess">Обработать → ZIP</button>
-          <button class="danger" id="btnClear">Очистить</button>
-        </div>
-
-        <div id="ffmpegStatus" style="margin-top:10px;" class="muted">FFmpeg: не проверялся</div>
-
-        <div id="fileProtoWarn" class="warn" style="display:none;">
-          Ты открыл страницу как <b>file:///</b>. В таком режиме браузер блокирует загрузку worker/wasm.<br/>
-          Открывай через Vercel (https://…) или локальный сервер.
+        <div class="naming-option" style="flex-direction:column;align-items:flex-start;">
+          <label for="globalBaseName">Общее имя для всех файлов (при умном переименовании):</label>
+          <input type="text" id="globalBaseName" class="rename-input" placeholder="Например: logo, banner, audio_hook">
         </div>
       </div>
 
-      <div class="card">
-        <h2>2) Настройки обработки</h2>
+      <div class="naming-example">
+        Пример имен после обработки:
+        <strong id="namingExample">banner.png, banner_2.png, banner_3.png</strong>
+      </div>
+    </div>
 
-        <div class="row">
-          <div>
-            <label>Видео размер (W)</label>
-            <input id="vW" type="number" min="1" value="640" />
+    <!-- AI-советник -->
+    <div class="ai-advisor-section">
+      <h3>🧠 AI-Советник</h3>
+      <div class="ai-advisor-card">
+        <div class="ai-tip" id="aiTip">
+          <div class="ai-tip-header">
+            <span class="ai-icon">💡</span>
+            <strong>Советник готов к работе</strong>
           </div>
-          <div>
-            <label>Видео размер (H)</label>
-            <input id="vH" type="number" min="1" value="360" />
+          <div class="ai-tip-content">Загрузите файлы для получения рекомендаций по оптимизации</div>
+        </div>
+
+        <div class="ai-actions">
+          <button class="ai-btn" onclick="appState.getAIAdvice()" id="aiAdviceBtn">🤖 Получить советы</button>
+          <button class="ai-btn secondary" onclick="appState.analyzeAllImages()" id="analyzeImagesBtn">🎨 Анализ изображений</button>
+        </div>
+
+        <div class="ai-results hidden" id="aiResults">
+          <div class="ai-stats" id="aiStats"></div>
+          <div class="ai-tips-list" id="aiTipsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI-анализ бренда -->
+    <div class="ai-section">
+      <h3>🧠 AI-Анализ бренда</h3>
+
+      <div class="checkbox-controls">
+        <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('ai')">✅ Выбрать все AI</button>
+        <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('ai')">❌ Убрать все AI</button>
+      </div>
+
+      <div class="ai-feature">
+        <input type="checkbox" id="aiAnalysis">
+        <label for="aiAnalysis">Автоматически анализировать цвета и рекомендовать настройки</label>
+      </div>
+
+      <button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background:#9b59b6;">
+        🔍 Проанализировать бренд
+      </button>
+
+      <div class="brand-analysis-results hidden" id="brandAnalysisResults"></div>
+    </div>
+
+    <!-- Цвет подложки -->
+    <div class="background-color-section">
+      <h3>🎨 Цвет подложки для изображений</h3>
+      <p style="color:#666;margin-bottom:15px;">Выберите цвет фона для изображений (актуально для JPG и при изменении размеров)</p>
+
+      <div class="background-color-options">
+        <div class="background-color-option selected" data-background="white">
+          <div class="background-color-preview" style="background:white;border:2px solid #ddd;"><span style="color:#666;">⬜</span></div>
+          <div class="background-color-info">
+            <div class="background-color-name">Белый</div>
+            <div class="background-color-description">Стандартный белый фон</div>
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Видео формат</label>
-            <select id="vFmt">
-              <option value="mp4">mp4</option>
-              <option value="webm">webm</option>
-            </select>
-          </div>
-          <div>
-            <label>Сохранить пропорции</label>
-            <select id="keepAR">
-              <option value="yes">да (contain + паддинг)</option>
-              <option value="no">нет (стретч в точный размер)</option>
-            </select>
+        <div class="background-color-option" data-background="lightgray">
+          <div class="background-color-preview" style="background:#f0f0f0;"><span style="color:#666;">⬜</span></div>
+          <div class="background-color-info">
+            <div class="background-color-name">Светло-серый</div>
+            <div class="background-color-description">Нейтральный серый фон</div>
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Аудио формат</label>
-            <select id="aFmt">
-              <option value="mp3">mp3</option>
-              <option value="ogg">ogg</option>
-            </select>
-          </div>
-          <div>
-            <label>Аудио битрейт</label>
-            <select id="aBitrate">
-              <option value="128k">128k</option>
-              <option value="192k">192k</option>
-              <option value="256k">256k</option>
-            </select>
+        <div class="background-color-option" data-background="transparent">
+          <div class="background-color-preview transparent-grid" style="background:rgba(0,0,0,0);"><span>◻️</span></div>
+          <div class="background-color-info">
+            <div class="background-color-name">Прозрачный</div>
+            <div class="background-color-description">Для PNG с прозрачностью</div>
           </div>
         </div>
 
-        <div class="row">
-          <div>
-            <label>Картинки формат</label>
-            <select id="iFmt">
-              <option value="png">png</option>
-              <option value="jpg">jpg</option>
-              <option value="webp">webp</option>
-            </select>
-          </div>
-          <div>
-            <label>Картинки размер (W×H)</label>
-            <input id="iSize" placeholder="например 1200x1200" value="1200x1200" />
+        <div class="background-color-option" data-background="black">
+          <div class="background-color-preview" style="background:#000;"><span style="color:white;">⬛</span></div>
+          <div class="background-color-info">
+            <div class="background-color-name">Черный</div>
+            <div class="background-color-description">Темный фон для контраста</div>
           </div>
         </div>
 
-        <div style="margin-top:10px;" class="muted">
-          Важно: если FFmpeg не загрузится — видео/аудио вернутся как оригиналы и это будет видно в логе.
+        <div class="background-color-option" data-background="custom" id="customBgOption">
+          <div class="background-color-preview" id="customBgPreview" style="background:#ffffff;">
+            <span style="color:#666;">🎨</span>
+          </div>
+          <div class="background-color-info">
+            <div class="background-color-name">Свой цвет</div>
+            <div class="background-color-description">Из hex / picker</div>
+          </div>
         </div>
+      </div>
 
-        <div style="margin-top:10px;">
-          <label>Лог</label>
-          <textarea id="log" readonly></textarea>
-        </div>
+      <div class="custom-color-picker">
+        <label style="font-weight:600;color:#2c3e50;">Свой цвет:</label>
+        <input type="color" class="color-input" id="customColorPicker" value="#ffffff">
+        <input type="text" class="color-hex-input" id="customColorHex" value="#ffffff" placeholder="#RRGGBB">
+        <button class="upload-btn" onclick="appState.applyCustomColor()" style="padding:8px 15px;font-size:0.9em;background:#9b59b6;">
+          Применить
+        </button>
+      </div>
+
+      <p style="margin-top:10px;font-size:0.9em;color:#7f8c8d;">
+        <strong>Примечание:</strong> Для PNG-файлов с прозрачностью рекомендуется выбирать "Прозрачный" фон.
+      </p>
+    </div>
+
+    <div class="settings-section">
+      <h3>📷 Настройки изображений</h3>
+      <input type="text" class="size-input" id="imageSizes" value="1200x600, 800x400, 400x200" placeholder="Введите размеры через запятую">
+
+      <div class="preset-buttons">
+        <button class="preset-btn" onclick="appState.loadPreset('creatives')">Креативы</button>
+        <button class="preset-btn" onclick="appState.loadPreset('vertical')">Вертикальные</button>
+        <button class="preset-btn" onclick="appState.loadPreset('logos')">Логотипы</button>
+        <button class="preset-btn" onclick="appState.loadPreset('icons')">Иконки</button>
+      </div>
+
+      <div class="checkbox-controls">
+        <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('image')">✅ Выбрать все форматы</button>
+        <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('image')">❌ Убрать все форматы</button>
+      </div>
+
+      <div class="format-options">
+        <label class="format-option"><input type="checkbox" id="formatPNG"> PNG</label>
+        <label class="format-option"><input type="checkbox" id="formatJPG"> JPG</label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>🎵 Настройки аудио</h3>
+
+      <div class="checkbox-controls">
+        <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('audio')">✅ Выбрать все форматы</button>
+        <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('audio')">❌ Убрать все форматы</button>
+      </div>
+
+      <div class="format-options">
+        <label class="format-option"><input type="checkbox" id="audioMP3"> MP3</label>
+        <label class="format-option"><input type="checkbox" id="audioOGG"> OGG</label>
+      </div>
+
+      <select class="size-input" id="audioBitrate" style="margin-top:10px;">
+        <option value="128">128 kbps (стандарт)</option>
+        <option value="192" selected>192 kbps (качественно)</option>
+        <option value="256">256 kbps (премиум)</option>
+        <option value="320">320 kbps (максимальное)</option>
+      </select>
+    </div>
+
+    <div class="settings-section">
+      <h3>🎬 Настройки видео</h3>
+
+      <div class="video-processing-info">
+        <h4>ℹ️ Информация о обработке видео</h4>
+        <p>Видео обрабатываются с помощью FFmpeg в браузере. Для лучшей производительности ограничьте количество одновременно обрабатываемых видео.</p>
+        <p><strong>Рекомендация:</strong> Обрабатывайте не более 1-2 видео одновременно.</p>
+      </div>
+
+      <h4 style="margin:10px 0 5px 0;">📐 Разрешение:</h4>
+      <div class="resolution-options">
+        <div class="resolution-option selected" data-resolution="640x360"><span>640×360px</span></div>
+        <div class="resolution-option" data-resolution="854x480"><span>854×480px</span></div>
+        <div class="resolution-option" data-resolution="1280x720"><span>1280×720px (HD)</span></div>
+        <div class="resolution-option" data-resolution="1920x1080"><span>1920×1080px (Full HD)</span></div>
+      </div>
+
+      <h4 style="margin:10px 0 5px 0;">📦 Формат вывода:</h4>
+      <div class="video-format-options">
+        <div class="video-format-option selected" data-format="mp4"><span>MP4</span><span style="font-size:0.8em;color:#666;">(лучшая совместимость)</span></div>
+      </div>
+
+      <h4 style="margin:15px 0 5px 0;">🎯 Качество сжатия:</h4>
+      <div class="video-quality-options">
+        <div class="video-quality-option" data-quality="high"><span>Высокое (CRF 18)</span><span class="quality-info">~60% от оригинала</span></div>
+        <div class="video-quality-option selected" data-quality="medium"><span>Стандартное (CRF 23)</span><span class="quality-info">~40% от оригинала</span></div>
+        <div class="video-quality-option" data-quality="low"><span>Экономное (CRF 28)</span><span class="quality-info">~25% от оригинала</span></div>
       </div>
     </div>
   </div>
 
+  <div class="stats" id="statsInfo"></div>
+
+  <button class="process-btn" id="processBtn">🚀 Начать обработку</button>
+
+  <div class="progress-bar hidden" id="progressBar">
+    <div class="progress" id="progress"></div>
+  </div>
+
+  <div class="result hidden" id="result">
+    <h3>✅ Обработка завершена!</h3>
+    <div class="result-files" id="resultFiles"></div>
+  </div>
+
+  <div class="download-section hidden" id="downloadSection">
+    <button class="download-all-btn" id="downloadAllBtn">💾 Скачать все файлы (ZIP)</button>
+    <p style="text-align:center;margin-top:10px;color:#666;">Будет скачан ZIP-архив со всеми обработанными файлами</p>
+  </div>
+</div>
+
 <script>
-  const el = (id) => document.getElementById(id);
-  const logEl = el("log");
-
-  function log(msg) {
-    const line = `[${new Date().toLocaleTimeString()}] ${msg}`;
-    logEl.value += line + "\n";
-    logEl.scrollTop = logEl.scrollHeight;
-    console.log(line);
-  }
-
-  // ---------- FILE UI ----------
-  const drop = el("drop");
-  const fileInput = el("fileInput");
-  const fileList = el("fileList");
-  let files = [];
-
-  drop.addEventListener("click", () => fileInput.click());
-  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("drag"); });
-  drop.addEventListener("dragleave", () => drop.classList.remove("drag"));
-  drop.addEventListener("drop", (e) => {
-    e.preventDefault();
-    drop.classList.remove("drag");
-    addFiles(Array.from(e.dataTransfer.files || []));
+/* =======================
+   Helpers: load scripts + UI messages
+======================= */
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = () => resolve(src);
+    s.onerror = () => reject(new Error('Failed to load: ' + src));
+    document.head.appendChild(s);
   });
-  fileInput.addEventListener("change", () => addFiles(Array.from(fileInput.files || [])));
+}
 
-  function addFiles(newFiles) {
-    if (!newFiles.length) return;
-    files = files.concat(newFiles);
-    renderFiles();
-    log(`Добавлено файлов: ${newFiles.length} (всего: ${files.length})`);
+function showTempMessage(text, kind = 'info', timeoutMs = 6000) {
+  const div = document.createElement('div');
+  div.className = `temp-message ${kind === 'error' ? 'error-message' : 'info-message'}`;
+  div.innerHTML = `<strong>${kind === 'error' ? '❌' : 'ℹ️'}</strong> ${text}`;
+  const container = document.querySelector('.container');
+  container.insertBefore(div, container.children[1]);
+  setTimeout(() => div.remove(), timeoutMs);
+}
+
+/* =======================
+   FFmpeg loader (ВАЖНО: версии)
+   - @ffmpeg/ffmpeg: 0.11.6
+   - @ffmpeg/core:  0.11.0 (worker будет .../ffmpeg-core.worker.js)
+======================= */
+async function ensureFFmpegLibLoaded() {
+  if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') return true;
+
+  const candidates = [
+    '/ffmpeg/ffmpeg.min.js',
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
+  ];
+
+  for (const url of candidates) {
+    try {
+      await loadScript(url);
+      if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') return true;
+    } catch (e) {
+      console.warn('FFmpeg lib load failed:', url, e);
+    }
+  }
+  return false;
+}
+
+/* =======================
+   Video+Audio Processor
+======================= */
+class VideoProcessor {
+  constructor() {
+    this.ffmpeg = null;
+    this.isFFmpegReady = false;
+    this.loadedCorePath = null;
+
+    // промис загрузки, чтобы уметь "дождаться"
+    this.readyPromise = this.initFFmpeg();
   }
 
-  function renderFiles() {
-    if (!files.length) {
-      fileList.style.display = "none";
-      fileList.innerHTML = "";
+  async ensureReady(timeoutMs = 25000) {
+    const timeout = new Promise((resolve) => setTimeout(() => resolve(false), timeoutMs));
+    const ok = await Promise.race([
+      this.readyPromise.then(() => this.isFFmpegReady).catch(() => false),
+      timeout
+    ]);
+    return !!ok;
+  }
+
+  async initFFmpeg() {
+    const ok = await ensureFFmpegLibLoaded();
+    if (!ok) {
+      console.warn('FFmpeg не подключён. Видео/аудио будут обрабатываться без перекодирования.');
+      this.isFFmpegReady = false;
       return;
     }
-    fileList.style.display = "block";
-    fileList.innerHTML = "";
-    files.forEach((f, i) => {
-      const row = document.createElement("div");
-      row.className = "file";
-      row.innerHTML = `
-        <div style="min-width:0">
-          <b title="${escapeHtml(f.name)}" style="display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(f.name)}</b>
-          <div class="muted">${escapeHtml(f.type || "unknown")} · ${formatBytes(f.size)}</div>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-          <span class="pill">${detectKind(f)}</span>
-          <button class="danger" style="width:auto; padding:8px 10px;" title="Удалить" onclick="removeFile(${i})">✕</button>
+
+    try {
+      const { createFFmpeg } = window.FFmpeg;
+
+      // ВАЖНО: core 0.11.0 (и worker тоже 0.11.0)
+      const coreCandidates = [
+        '/ffmpeg/ffmpeg-core.js',
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
+      ];
+
+      for (const corePath of coreCandidates) {
+        try {
+          this.ffmpeg = createFFmpeg({ log: true, corePath });
+          console.log('Загружаем FFmpeg core:', corePath);
+          await this.ffmpeg.load();
+          this.isFFmpegReady = true;
+          this.loadedCorePath = corePath;
+          console.log('✅ FFmpeg успешно загружен (corePath):', corePath);
+          return;
+        } catch (e) {
+          console.warn('❌ Не удалось загрузить corePath:', corePath, e);
+          this.ffmpeg = null;
+          this.isFFmpegReady = false;
+          this.loadedCorePath = null;
+        }
+      }
+
+      console.error('❌ FFmpeg core не удалось загрузить ни локально, ни с CDN.');
+    } catch (e) {
+      console.error('❌ Ошибка инициализации FFmpeg:', e);
+      this.ffmpeg = null;
+      this.isFFmpegReady = false;
+      this.loadedCorePath = null;
+    }
+  }
+
+  safeUnlink(path) { try { this.ffmpeg && this.ffmpeg.FS('unlink', path); } catch (e) {} }
+
+  getVideoExtension(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const map = { mp4:'mp4', mov:'mov', avi:'avi', mkv:'mkv', webm:'webm', ogg:'ogg', wmv:'wmv', flv:'flv', m4v:'m4v', '3gp':'3gp' };
+    return map[ext] || 'mp4';
+  }
+
+  getAudioExtension(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const map = { mp3:'mp3', wav:'wav', ogg:'ogg', flac:'flac', aac:'aac', m4a:'m4a' };
+    return map[ext] || 'mp3';
+  }
+
+  /* ===== VIDEO ===== */
+  async processVideo(file, settings) {
+    const { resolution='640x360', quality='medium', format='mp4' } = settings;
+
+    const ready = await this.ensureReady();
+    if (!ready || !this.ffmpeg) {
+      console.warn('⚠️ FFmpeg не готов/недоступен, возвращаю оригинальное видео');
+      return file;
+    }
+
+    try {
+      return await this.processVideoWithFFmpeg(file, resolution, quality, format);
+    } catch (error) {
+      console.error('❌ Ошибка FFmpeg обработки видео, возвращаю оригинальный файл:', error);
+      return file;
+    }
+  }
+
+  async processVideoWithFFmpeg(file, resolution, quality, format) {
+    const { ffmpeg } = this;
+    const [width, height] = resolution.split('x').map(Number);
+
+    const crfValues = { high: 18, medium: 23, low: 28 };
+    const crf = crfValues[quality] ?? 23;
+
+    const bitrateValues = { high: '1500k', medium: '1000k', low: '500k' };
+    const videoBitrate = bitrateValues[quality] ?? '1000k';
+
+    const inputData = await file.arrayBuffer();
+    const inputName = `vinput.${this.getVideoExtension(file.name)}`;
+    const outputName = `voutput.${format}`;
+
+    ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
+
+    const command = [
+      '-i', inputName,
+      '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
+      '-c:v', 'libx264',
+      '-pix_fmt', 'yuv420p',
+      '-crf', String(crf),
+      '-b:v', videoBitrate,
+      '-preset', 'veryfast',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-movflags', '+faststart',
+      '-y',
+      outputName
+    ];
+
+    await ffmpeg.run(...command);
+
+    const out = ffmpeg.FS('readFile', outputName);
+    this.safeUnlink(inputName);
+    this.safeUnlink(outputName);
+
+    return new Blob([out], { type: 'video/mp4' });
+  }
+
+  /* ===== AUDIO (настоящее перекодирование) ===== */
+  async processAudio(file, settings) {
+    const { format='mp3', bitrate=192 } = settings;
+
+    const ready = await this.ensureReady();
+    if (!ready || !this.ffmpeg) {
+      console.warn('⚠️ FFmpeg не готов/недоступен, возвращаю оригинальное аудио');
+      return file;
+    }
+
+    try {
+      return await this.processAudioWithFFmpeg(file, format, bitrate);
+    } catch (error) {
+      console.error('❌ Ошибка FFmpeg обработки аудио, возвращаю оригинальный файл:', error);
+      return file;
+    }
+  }
+
+  async processAudioWithFFmpeg(file, format, bitrate) {
+    const { ffmpeg } = this;
+
+    const inputData = await file.arrayBuffer();
+    const inputExt = this.getAudioExtension(file.name);
+    const inputName = `ainput.${inputExt}`;
+    const outputName = `aoutput.${format}`;
+
+    ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
+
+    const bps = `${Math.max(32, Math.min(320, Number(bitrate) || 192))}k`;
+
+    const mp3Primary = ['-i', inputName, '-vn', '-c:a', 'libmp3lame', '-b:a', bps, '-ar', '44100', '-ac', '2', '-y', outputName];
+    const mp3Fallback = ['-i', inputName, '-vn', '-c:a', 'mp3',       '-b:a', bps, '-ar', '44100', '-ac', '2', '-y', outputName];
+
+    const oggPrimary = ['-i', inputName, '-vn', '-c:a', 'libvorbis',  '-b:a', bps, '-ar', '44100', '-ac', '2', '-y', outputName];
+    const oggFallback = ['-i', inputName, '-vn', '-c:a', 'vorbis',    '-b:a', bps, '-ar', '44100', '-ac', '2', '-y', outputName];
+
+    const runWithFallback = async (primary, fallback) => {
+      try { await ffmpeg.run(...primary); }
+      catch (e) { console.warn('⚠️ primary codec failed, trying fallback', e); await ffmpeg.run(...fallback); }
+    };
+
+    if (format === 'ogg') await runWithFallback(oggPrimary, oggFallback);
+    else await runWithFallback(mp3Primary, mp3Fallback);
+
+    const out = ffmpeg.FS('readFile', outputName);
+    this.safeUnlink(inputName);
+    this.safeUnlink(outputName);
+
+    const mime = (format === 'ogg') ? 'audio/ogg' : 'audio/mpeg';
+    return new Blob([out], { type: mime });
+  }
+
+  cancel() {
+    if (!this.ffmpeg) return;
+    try {
+      const files = this.ffmpeg.FS('readdir', '/');
+      files.forEach(f => {
+        if (f !== '.' && f !== '..') {
+          try { this.ffmpeg.FS('unlink', `/${f}`); } catch (e) {}
+        }
+      });
+    } catch (e) {}
+  }
+}
+
+/* =======================
+   Utils
+======================= */
+class FileUtils {
+  static getFileType(filename) {
+    const ext = filename.split('.').pop().toLowerCase();
+    const imageExts = ['jpg','jpeg','png','gif','webp','bmp','svg'];
+    const audioExts = ['mp3','wav','ogg','flac','aac','m4a'];
+    const videoExts = ['mp4','mov','avi','mkv','webm','wmv','flv','m4v','3gp'];
+    if (imageExts.includes(ext)) return 'Изображение';
+    if (audioExts.includes(ext)) return 'Аудио';
+    if (videoExts.includes(ext)) return 'Видео';
+    return 'Другой';
+  }
+
+  static formatFileSize(bytes) {
+    if (bytes === 0) return '0 Б';
+    const k = 1024;
+    const sizes = ['Б','КБ','МБ','ГБ'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+}
+
+/* =======================
+   Media Processor
+======================= */
+class MediaProcessor {
+  constructor() {
+    this.isCancelled = false;
+    this.videoProcessor = new VideoProcessor();
+    this.initVideoProcessor();
+  }
+
+  async initVideoProcessor() {
+    setTimeout(() => {
+      if (!this.videoProcessor.isFFmpegReady) {
+        console.log('⏳ FFmpeg все еще загружается или недоступен...');
+      }
+    }, 1200);
+  }
+
+  cancel() {
+    this.isCancelled = true;
+    this.videoProcessor && this.videoProcessor.cancel();
+  }
+
+  async processFiles(files, settings, onProgress, onFileProcessed) {
+    this.isCancelled = false;
+    const totalFiles = files.length;
+    let processedCount = 0;
+
+    const hasVideo = files.some(f => FileUtils.getFileType(f.name) === 'Видео');
+    const hasAudio = files.some(f => FileUtils.getFileType(f.name) === 'Аудио');
+
+    // если есть видео/аудио и включены конвертации — попробуем дождаться FFmpeg
+    const audioWantConvert = hasAudio && ((document.getElementById('audioMP3')?.checked) || (document.getElementById('audioOGG')?.checked));
+    const needFFmpeg = hasVideo || audioWantConvert;
+
+    if (needFFmpeg) {
+      const ok = await this.videoProcessor.ensureReady(25000);
+      if (!ok) {
+        showTempMessage(
+          'FFmpeg не успел загрузиться (или недоступен). Видео/аудио могут выйти как оригиналы. Проверь доступность /ffmpeg/* или CORS CDN.',
+          'error',
+          9000
+        );
+      } else {
+        const corePath = this.videoProcessor.loadedCorePath || '—';
+        showTempMessage(`FFmpeg готов ✅ (corePath: ${corePath.includes('http') ? 'CDN' : 'local'})`, 'info', 4000);
+      }
+    }
+
+    // Сначала изображения/аудио
+    for (let i = 0; i < files.length; i++) {
+      if (this.isCancelled) break;
+
+      const file = files[i];
+      const type = FileUtils.getFileType(file.name);
+      if (type === 'Видео') continue;
+
+      try {
+        const processed = await this.processSingleFile(file, settings, i);
+        if (processed && processed.length) onFileProcessed(processed);
+
+        processedCount++;
+        onProgress((processedCount / totalFiles) * 100);
+        await new Promise(r => setTimeout(r, 50));
+      } catch (e) {
+        console.error(`❌ Ошибка обработки файла ${file.name}:`, e);
+        this.handleFallback(file, i, onFileProcessed);
+        processedCount++;
+        onProgress((processedCount / totalFiles) * 100);
+      }
+    }
+
+    // Потом видео
+    const videoFiles = files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
+    for (let i = 0; i < videoFiles.length; i++) {
+      if (this.isCancelled) break;
+
+      const file = videoFiles[i];
+      const originalIndex = files.indexOf(file);
+
+      try {
+        const videoProgress = document.createElement('div');
+        videoProgress.className = 'video-processing-status';
+        videoProgress.textContent = `🔄 Обработка видео: ${file.name} (${i+1}/${videoFiles.length})`;
+        document.querySelector('.settings').appendChild(videoProgress);
+
+        const processed = await this.processSingleFile(file, settings, originalIndex);
+        if (processed && processed.length) {
+          onFileProcessed(processed);
+          videoProgress.className = 'video-processing-status success';
+          videoProgress.textContent = `✅ Видео обработано: ${file.name}`;
+        }
+
+        processedCount++;
+        onProgress((processedCount / totalFiles) * 100);
+
+        await new Promise(r => setTimeout(r, 300));
+        setTimeout(() => videoProgress.remove(), 2500);
+      } catch (e) {
+        console.error(`❌ Ошибка обработки видео ${file.name}:`, e);
+
+        const errorStatus = document.createElement('div');
+        errorStatus.className = 'video-processing-status error';
+        errorStatus.textContent = `❌ Ошибка обработки видео: ${file.name}`;
+        document.querySelector('.settings').appendChild(errorStatus);
+
+        this.handleFallback(file, originalIndex, onFileProcessed);
+        processedCount++;
+        onProgress((processedCount / totalFiles) * 100);
+
+        setTimeout(() => errorStatus.remove(), 2500);
+      }
+    }
+  }
+
+  handleFallback(file, index, onFileProcessed) {
+    const fallbackName = appState.generateFileName(
+      file.customName || file.name.replace(/\.[^/.]+$/, ''),
+      (file.name.split('.').pop() || '').toLowerCase(),
+      FileUtils.getFileType(file.name),
+      file.name,
+      1,
+      index
+    );
+
+    onFileProcessed([{
+      blob: file,
+      name: fallbackName,
+      type: FileUtils.getFileType(file.name),
+      originalSize: file.size,
+      compressedSize: file.size,
+      note: 'Оригинал (fallback)'
+    }]);
+  }
+
+  async processSingleFile(file, settings, fileIndex) {
+    const type = FileUtils.getFileType(file.name);
+    const processed = [];
+
+    if (type === 'Изображение') {
+      await this.processImage(file, settings, processed, fileIndex);
+    } else if (type === 'Аудио') {
+      await this.processAudio(file, settings, processed, fileIndex);
+    } else if (type === 'Видео') {
+      await this.processVideo(file, settings, processed, fileIndex);
+    } else {
+      const name = appState.generateFileName(
+        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+        (file.name.split('.').pop() || '').toLowerCase(),
+        type,
+        file.name,
+        1,
+        fileIndex
+      );
+      processed.push({ blob: file, name, type, originalSize: file.size, compressedSize: file.size });
+    }
+
+    return processed;
+  }
+
+  async processImage(file, settings, processed, fileIndex) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        const img = new Image();
+
+        img.onload = async () => {
+          try {
+            const sizes = settings.imageSizes.split(',').map(s => s.trim()).filter(Boolean);
+
+            const formats = [];
+            if (document.getElementById('formatPNG').checked) formats.push('png');
+            if (document.getElementById('formatJPG').checked) formats.push('jpg');
+
+            if (!sizes.length || !formats.length) {
+              const name = appState.generateFileName(
+                file.customName || file.name.replace(/\.[^/.]+$/, ''),
+                (file.name.split('.').pop() || '').toLowerCase(),
+                'Изображение',
+                file.name,
+                1,
+                fileIndex
+              );
+
+              const canvas = document.createElement('canvas');
+              const ctx = canvas.getContext('2d');
+              canvas.width = img.width;
+              canvas.height = img.height;
+              ctx.drawImage(img, 0, 0);
+
+              const isPng = (file.type || '').includes('png');
+              const mimeType = isPng ? 'image/png' : 'image/jpeg';
+              const quality = isPng ? 0.9 : 0.85;
+
+              canvas.toBlob((blob) => {
+                if (blob) {
+                  processed.push({
+                    blob, name,
+                    type: 'Изображение',
+                    originalSize: file.size,
+                    compressedSize: blob.size,
+                    format: isPng ? 'png' : 'jpg',
+                    background: settings.selectedBackground
+                  });
+                }
+                resolve();
+              }, mimeType, quality);
+              return;
+            }
+
+            const promises = [];
+            const totalVariants = sizes.length * formats.length || 1;
+            let counter = 1;
+
+            for (const size of sizes) {
+              const [width, height] = size.split('x').map(Number);
+              for (const format of formats) {
+                if (this.isCancelled) { resolve(); return; }
+                promises.push(this.createImageVersion(
+                  img, width, height, format, file, processed,
+                  counter, totalVariants, fileIndex, settings
+                ));
+                counter++;
+              }
+            }
+
+            await Promise.all(promises);
+            resolve();
+          } catch (error) {
+            console.error('Ошибка обработки изображения:', error);
+            resolve();
+          }
+        };
+
+        img.onerror = () => {
+          const name = appState.generateFileName(
+            file.customName || file.name.replace(/\.[^/.]+$/, ''),
+            (file.name.split('.').pop() || '').toLowerCase(),
+            'Изображение',
+            file.name,
+            1,
+            fileIndex
+          );
+          processed.push({ blob: file, name, type: 'Изображение', originalSize: file.size, compressedSize: file.size, background: settings.selectedBackground });
+          resolve();
+        };
+
+        img.src = e.target.result;
+      };
+
+      reader.onerror = () => resolve();
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async createImageVersion(img, width, height, format, file, processed, counter, totalVariants, fileIndex, settings) {
+    return new Promise((resolveVersion) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const backgroundColor = this.getBackgroundColor(settings.selectedBackground);
+
+      if (backgroundColor === 'transparent' && format === 'png') {
+        ctx.clearRect(0, 0, width, height);
+      } else if (backgroundColor === 'transparent') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+      } else {
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, width, height);
+      }
+
+      const scale = Math.min(width / img.width, height / img.height);
+      const scaledWidth = img.width * scale;
+      const scaledHeight = img.height * scale;
+      const offsetX = (width - scaledWidth) / 2;
+      const offsetY = (height - scaledHeight) / 2;
+
+      ctx.drawImage(img, offsetX, offsetY, scaledWidth, scaledHeight);
+
+      const finalName = appState.generateFileName(
+        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+        format,
+        'Изображение',
+        file.name,
+        counter,
+        fileIndex,
+        totalVariants
+      );
+
+      const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+      const quality = format === 'png' ? 0.9 : 0.85;
+
+      canvas.toBlob((blob) => {
+        if (blob) {
+          processed.push({
+            blob,
+            name: finalName,
+            type: 'Изображение',
+            originalSize: file.size,
+            compressedSize: blob.size,
+            format,
+            resolution: `${width}x${height}`,
+            background: settings.selectedBackground,
+            backgroundColor
+          });
+        }
+        resolveVersion();
+      }, mimeType, quality);
+    });
+  }
+
+  getBackgroundColor(backgroundType) {
+    switch (backgroundType) {
+      case 'white': return '#ffffff';
+      case 'lightgray': return '#f0f0f0';
+      case 'transparent': return 'transparent';
+      case 'black': return '#000000';
+      case 'custom': {
+        const hexColor = document.getElementById('customColorHex').value;
+        return this.validateColor(hexColor) ? hexColor : '#ffffff';
+      }
+      default: return '#ffffff';
+    }
+  }
+
+  validateColor(color) {
+    const hexRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    return hexRegex.test(color);
+  }
+
+  /* ===== AUDIO ===== */
+  async processAudio(file, settings, processed, fileIndex) {
+    try {
+      const formats = [];
+      if (document.getElementById('audioMP3').checked) formats.push('mp3');
+      if (document.getElementById('audioOGG').checked) formats.push('ogg');
+
+      const bitrate = parseInt(document.getElementById('audioBitrate').value) || 128;
+
+      if (!formats.length) {
+        const name = appState.generateFileName(
+          file.customName || file.name.replace(/\.[^/.]+$/, ''),
+          (file.name.split('.').pop() || '').toLowerCase(),
+          'Аудио',
+          file.name,
+          1,
+          fileIndex
+        );
+        processed.push({ blob: file, name, type: 'Аудио', originalSize: file.size, compressedSize: file.size });
+        return;
+      }
+
+      for (let i = 0; i < formats.length; i++) {
+        const format = formats[i];
+
+        const status = document.createElement('div');
+        status.className = 'video-processing-status';
+        status.textContent = `🔄 Перекодирование аудио: ${file.name} → ${format.toUpperCase()} (${bitrate} kbps)`;
+        document.querySelector('.settings').appendChild(status);
+
+        const outBlob = await this.videoProcessor.processAudio(file, { format, bitrate });
+
+        status.className = (outBlob === file) ? 'video-processing-status error' : 'video-processing-status success';
+        status.textContent = (outBlob === file)
+          ? `⚠️ Аудио без перекодирования (FFmpeg недоступен): ${file.name}`
+          : `✅ Аудио готово: ${file.name} → ${format.toUpperCase()} (${bitrate} kbps)`;
+        setTimeout(() => status.remove(), 2500);
+
+        const outName = appState.generateFileName(
+          file.customName || file.name.replace(/\.[^/.]+$/, ''),
+          format,
+          'Аудио',
+          file.name,
+          i + 1,
+          fileIndex
+        );
+
+        processed.push({
+          blob: outBlob,
+          name: outName,
+          type: 'Аудио',
+          originalSize: file.size,
+          compressedSize: outBlob.size || file.size,
+          format,
+          bitrate: `${bitrate}kbps`,
+          note: (outBlob === file) ? 'Оригинал (FFmpeg недоступен/ошибка)' : ''
+        });
+      }
+    } catch (error) {
+      console.error('Ошибка обработки аудио:', error);
+      const name = appState.generateFileName(
+        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+        (file.name.split('.').pop() || '').toLowerCase(),
+        'Аудио',
+        file.name,
+        1,
+        fileIndex
+      );
+      processed.push({ blob: file, name, type: 'Аудио', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка)' });
+    }
+  }
+
+  /* ===== VIDEO ===== */
+  async processVideo(file, settings, processed, fileIndex) {
+    try {
+      const resolution = settings.selectedVideoResolution || '640x360';
+      const quality = settings.selectedVideoQuality || 'medium';
+      const format = settings.selectedVideoFormat || 'mp4';
+
+      const videoStatus = document.createElement('div');
+      videoStatus.className = 'video-processing-status';
+      videoStatus.textContent = `🔄 Обработка видео: ${file.name} (может занять время)`;
+      document.querySelector('.settings').appendChild(videoStatus);
+
+      const processedBlob = await this.videoProcessor.processVideo(file, { resolution, quality, format });
+
+      const isFallback = (processedBlob === file);
+      videoStatus.className = isFallback ? 'video-processing-status error' : 'video-processing-status success';
+      videoStatus.textContent = isFallback
+        ? `⚠️ Видео без перекодирования (FFmpeg недоступен): ${file.name}`
+        : `✅ Видео обработано: ${file.name}`;
+      setTimeout(() => videoStatus.remove(), 2500);
+
+      const fileName = appState.generateFileName(
+        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+        format,
+        'Видео',
+        file.name,
+        1,
+        fileIndex
+      );
+
+      processed.push({
+        blob: processedBlob,
+        name: fileName,
+        type: 'Видео',
+        originalSize: file.size,
+        compressedSize: processedBlob.size || file.size,
+        resolution,
+        quality,
+        format,
+        note: isFallback ? 'Оригинал (FFmpeg недоступен/ошибка)' : ''
+      });
+    } catch (error) {
+      console.error('❌ Критическая ошибка обработки видео:', error);
+
+      const errorStatus = document.createElement('div');
+      errorStatus.className = 'video-processing-status error';
+      errorStatus.textContent = `❌ Не удалось обработать видео: ${file.name}`;
+      document.querySelector('.settings').appendChild(errorStatus);
+
+      const name = appState.generateFileName(
+        file.customName || file.name.replace(/\.[^/.]+$/, ''),
+        (file.name.split('.').pop() || '').toLowerCase(),
+        'Видео',
+        file.name,
+        1,
+        fileIndex
+      );
+
+      processed.push({ blob: file, name, type: 'Видео', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка обработки)' });
+      setTimeout(() => errorStatus.remove(), 2500);
+    }
+  }
+}
+
+/* =======================
+   App State
+======================= */
+class AppState {
+  constructor() {
+    this.files = [];
+    this.processedFiles = [];
+    this.currentSettings = this.getDefaultSettings();
+    this.mediaProcessor = new MediaProcessor();
+    this.lastBrandRecommendations = null;
+    this.initEventListeners();
+    this.updateUI();
+  }
+
+  getDefaultSettings() {
+    return {
+      imageSizes: '1200x600, 800x400, 400x200',
+      selectedBackground: 'white',
+      selectedVideoResolution: '640x360',
+      selectedVideoQuality: 'medium',
+      selectedVideoFormat: 'mp4'
+    };
+  }
+
+  initEventListeners() {
+    const fileInput = document.getElementById('fileInput');
+    const dropZone = document.getElementById('dropZone');
+    const processBtn = document.getElementById('processBtn');
+
+    fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      this.handleFiles(e.dataTransfer.files);
+    });
+
+    this.initVideoSettingsListeners();
+    this.initBackgroundColorListeners();
+
+    processBtn.addEventListener('click', () => this.startProcessing());
+
+    const smartRenamingCheckbox = document.getElementById('smartRenaming');
+    const useOriginalNamesCheckbox = document.getElementById('useOriginalNames');
+    const globalBaseInput = document.getElementById('globalBaseName');
+
+    smartRenamingCheckbox && smartRenamingCheckbox.addEventListener('change', () => this.updateNamingExample());
+    useOriginalNamesCheckbox && useOriginalNamesCheckbox.addEventListener('change', () => this.updateNamingExample());
+    globalBaseInput && globalBaseInput.addEventListener('input', () => this.updateNamingExample());
+  }
+
+  initVideoSettingsListeners() {
+    document.querySelectorAll('.resolution-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        document.querySelectorAll('.resolution-option').forEach(opt => opt.classList.remove('selected'));
+        e.currentTarget.classList.add('selected');
+        this.currentSettings.selectedVideoResolution = e.currentTarget.dataset.resolution;
+      });
+    });
+
+    document.querySelectorAll('.video-format-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        document.querySelectorAll('.video-format-option').forEach(opt => opt.classList.remove('selected'));
+        e.currentTarget.classList.add('selected');
+        this.currentSettings.selectedVideoFormat = e.currentTarget.dataset.format;
+      });
+    });
+
+    document.querySelectorAll('.video-quality-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        document.querySelectorAll('.video-quality-option').forEach(opt => opt.classList.remove('selected'));
+        e.currentTarget.classList.add('selected');
+        this.currentSettings.selectedVideoQuality = e.currentTarget.dataset.quality;
+      });
+    });
+  }
+
+  initBackgroundColorListeners() {
+    document.querySelectorAll('.background-color-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        const selected = e.currentTarget.dataset.background;
+        this.setBackgroundSelection(selected);
+      });
+    });
+
+    const picker = document.getElementById('customColorPicker');
+    const hex = document.getElementById('customColorHex');
+
+    picker.addEventListener('input', (e) => {
+      hex.value = e.target.value;
+      this.updateCustomPreview();
+    });
+
+    hex.addEventListener('input', (e) => {
+      const value = e.target.value;
+      if (value.startsWith('#') && (value.length === 4 || value.length === 7)) {
+        picker.value = value;
+        this.updateCustomPreview();
+      }
+    });
+
+    this.updateCustomPreview();
+  }
+
+  updateCustomPreview() {
+    const hex = document.getElementById('customColorHex').value;
+    const preview = document.getElementById('customBgPreview');
+    if (preview) preview.style.background = (this.isValidHex(hex) ? hex : '#ffffff');
+  }
+
+  isValidHex(color) {
+    return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(color);
+  }
+
+  setBackgroundSelection(selected) {
+    document.querySelectorAll('.background-color-option').forEach(opt => opt.classList.remove('selected'));
+    const opt = document.querySelector(`.background-color-option[data-background="${selected}"]`);
+    if (opt) opt.classList.add('selected');
+    this.currentSettings.selectedBackground = selected;
+  }
+
+  applyCustomColor() {
+    this.setBackgroundSelection('custom');
+  }
+
+  handleFiles(fileList) {
+    const files = Array.from(fileList);
+    files.forEach(file => {
+      file.customName = file.name.replace(/\.[^/.]+$/, '');
+      this.files.push(file);
+    });
+    this.updateUI();
+  }
+
+  updateUI() {
+    const fileList = document.getElementById('fileList');
+    const emptyState = document.getElementById('emptyState');
+    const statsInfo = document.getElementById('statsInfo');
+
+    if (this.files.length === 0) {
+      emptyState.classList.remove('hidden');
+      statsInfo.textContent = '';
+      fileList.innerHTML = '';
+      fileList.appendChild(emptyState);
+      this.updateNamingExample();
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+
+    let html = '';
+    let totalSize = 0;
+    let imageCount = 0;
+    let audioCount = 0;
+    let videoCount = 0;
+
+    this.files.forEach((file, index) => {
+      totalSize += file.size;
+      const type = FileUtils.getFileType(file.name);
+      if (type === 'Изображение') imageCount++;
+      if (type === 'Аудио') audioCount++;
+      if (type === 'Видео') videoCount++;
+
+      html += `
+        <div class="file-item" data-index="${index}">
+          <div class="file-info">
+            <span class="file-icon">${this.getFileIcon(type)}</span>
+            <div>
+              <input type="text"
+                class="rename-input"
+                value="${file.customName}"
+                onchange="appState.updateFileName(${index}, this.value)"
+                placeholder="Введите имя файла">
+              <div class="file-size">${FileUtils.formatFileSize(file.size)} • ${type}</div>
+            </div>
+          </div>
+          <button class="cancel-btn" onclick="appState.removeFile(${index})">Удалить</button>
         </div>
       `;
-      fileList.appendChild(row);
     });
+
+    fileList.innerHTML = html;
+
+    let stats = `${this.files.length} файлов • ${FileUtils.formatFileSize(totalSize)}`;
+    if (imageCount > 0) stats += ` • ${imageCount} изображений`;
+    if (audioCount > 0) stats += ` • ${audioCount} аудио`;
+    if (videoCount > 0) stats += ` • ${videoCount} видео`;
+
+    statsInfo.textContent = stats;
+    this.updateNamingExample();
   }
 
-  window.removeFile = (idx) => {
-    files.splice(idx, 1);
-    renderFiles();
-  };
-
-  function escapeHtml(s) {
-    return String(s).replace(/[&<>"']/g, (m) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
-    }[m]));
-  }
-  function formatBytes(bytes) {
-    const u = ["B","KB","MB","GB"];
-    let i = 0, n = bytes;
-    while (n >= 1024 && i < u.length-1) { n/=1024; i++; }
-    return `${n.toFixed(i===0?0:1)} ${u[i]}`;
+  getFileIcon(type) {
+    switch (type) {
+      case 'Изображение': return '🖼️';
+      case 'Аудио': return '🎵';
+      case 'Видео': return '🎬';
+      default: return '📄';
+    }
   }
 
-  function detectKind(file) {
-    const t = (file.type || "").toLowerCase();
-    const n = file.name.toLowerCase();
-    if (t.startsWith("image/") || /\.(png|jpg|jpeg|webp|gif|bmp)$/i.test(n)) return "image";
-    if (t.startsWith("video/") || /\.(mp4|mov|mkv|webm|avi|m4v)$/i.test(n)) return "video";
-    if (t.startsWith("audio/") || /\.(mp3|wav|ogg|m4a|aac|flac)$/i.test(n)) return "audio";
-    return "file";
+  updateFileName(index, newName) {
+    if (index >= 0 && index < this.files.length) {
+      this.files[index].customName = newName || this.files[index].name.replace(/\.[^/.]+$/, '');
+      this.updateNamingExample();
+    }
   }
 
-  // ---------- FFmpeg ----------
-  let ffmpeg = null;
-  let ffmpegReady = false;
-
-  function isHttp() {
-    return location.protocol === "http:" || location.protocol === "https:";
+  removeFile(index) {
+    if (index >= 0 && index < this.files.length) {
+      this.files.splice(index, 1);
+      this.updateUI();
+    }
   }
 
-  async function checkStatic(path) {
-    const url = isHttp() ? (new URL(path, location.origin)).toString() : path;
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`${path} -> HTTP ${res.status}`);
-    return true;
+  getGlobalBaseName() {
+    const input = document.getElementById('globalBaseName');
+    if (!input) return '';
+    return input.value.trim() || '';
   }
 
-  async function initFFmpeg() {
-    if (ffmpegReady) return true;
+  extractNumberFromName(name) {
+    const match = name.match(/(\d+)/);
+    return match ? match[1] : '';
+  }
 
-    if (location.protocol === "file:") {
-      el("fileProtoWarn").style.display = "block";
-      throw new Error("Нельзя запускать FFmpeg из file:/// — открой через https:// (Vercel) или локальный сервер.");
+  updateNamingExample() {
+    const exampleEl = document.getElementById('namingExample');
+    if (!exampleEl) return;
+
+    if (this.files.length === 0) {
+      exampleEl.textContent = 'logo.png или logo_1.png, logo_2.png';
+      return;
     }
 
-    if (!window.FFmpeg || !window.FFmpeg.createFFmpeg) {
-      throw new Error("FFmpeg библиотека не найдена. Проверь: /ffmpeg/ffmpeg.min.js существует и подключается.");
+    const useSmart = document.getElementById('smartRenaming')?.checked || false;
+    const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
+    const globalBase = this.getGlobalBaseName();
+
+    const firstFile = this.files[0];
+    const type = FileUtils.getFileType(firstFile.name);
+
+    if (useOriginal) {
+      const ext = (firstFile.name.split('.').pop() || '').toLowerCase();
+      const base = firstFile.name.replace(/\.[^/.]+$/, '');
+      exampleEl.textContent = `${base}.${ext}, ${base}_2.${ext}, ${base}_3.${ext}`;
+      return;
     }
 
-    const corePath = (new URL("/ffmpeg/ffmpeg-core.js", location.origin)).toString();
-
-    log("Проверяю наличие FFmpeg файлов в /ffmpeg/ ...");
-    await checkStatic("/ffmpeg/ffmpeg.min.js");
-    await checkStatic("/ffmpeg/ffmpeg-core.js");
-    await checkStatic("/ffmpeg/ffmpeg-core.wasm");
-    await checkStatic("/ffmpeg/ffmpeg-core.worker.js");
-    log("OK: файлы /ffmpeg/* доступны.");
-
-    const { createFFmpeg, fetchFile } = window.FFmpeg;
-    window.__fetchFile = fetchFile;
-
-    ffmpeg = createFFmpeg({
-      log: true,
-      corePath
-    });
-
-    ffmpeg.setLogger(({ type, message }) => {
-      // type: "info" | "fferr" | "ffout"
-      if (type === "fferr") log(`fferr: ${message}`);
-    });
-
-    ffmpeg.setProgress(({ ratio }) => {
-      const pct = Math.round((ratio || 0) * 100);
-      el("ffmpegStatus").textContent = `FFmpeg: работаю… ${pct}%`;
-    });
-
-    log(`Загружаю FFmpeg core: ${corePath}`);
-    await ffmpeg.load();
-    ffmpegReady = true;
-    el("ffmpegStatus").textContent = "FFmpeg: готов ✅";
-    log("FFmpeg успешно загружен ✅");
-    return true;
-  }
-
-  // ---------- Naming ----------
-  function extractDigits(name) {
-    const m = String(name).match(/(\d+)/g);
-    if (!m) return "";
-    return m.join(""); // все группы цифр слитно
-  }
-
-  function buildOutName(file, idx, ext) {
-    const base = (el("baseName").value || "file").trim();
-    const mode = el("nameMode").value;
-    const startIndex = Math.max(1, parseInt(el("startIndex").value || "1", 10));
-    const order = startIndex + idx;
-
-    if (mode === "original") {
-      const pure = file.name.replace(/\.[^/.]+$/, "");
-      return `${pure}.${ext}`;
+    // аудио: base + цифры из оригинала (если есть)
+    if (useSmart && globalBase && type === 'Аудио') {
+      const nums = this.files.slice(0, 3).map(f => this.extractNumberFromName(f.name)).filter(Boolean);
+      if (nums.length) {
+        exampleEl.textContent = nums.map(n => `${globalBase}${n}.mp3`).join(', ');
+        return;
+      }
     }
 
-    if (mode === "base_digits") {
-      const digits = extractDigits(file.name);
-      if (digits) return `${base}${digits}.${ext}`;
-      const fb = el("digitsFallback").value;
-      if (fb === "index") return `${base}${order}.${ext}`;
-      return `${base}.${ext}`;
+    if (useSmart && type === 'Изображение' && globalBase.toLowerCase() === 'logo') {
+      exampleEl.textContent = 'logo.png, logo_1.png, logo_2.png';
+      return;
     }
 
-    // base_index
-    return `${base}_${order}.${ext}`;
+    const baseName = useSmart ? (globalBase || this.getSmartPrefix(type)) : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
+
+    if (type === 'Аудио') exampleEl.textContent = `${baseName}.mp3, ${baseName}_2.mp3, ${baseName}_3.mp3`;
+    else if (type === 'Видео') exampleEl.textContent = `${baseName}.mp4, ${baseName}_2.mp4, ${baseName}_3.mp4`;
+    else exampleEl.textContent = `${baseName}.png, ${baseName}_2.png, ${baseName}_3.png`;
   }
 
-  // ---------- Processing: Image (Canvas) ----------
-  async function processImage(file) {
-    const fmt = el("iFmt").value;
-    const size = (el("iSize").value || "").toLowerCase().trim();
-    const m = size.match(/^(\d+)\s*x\s*(\d+)$/);
-    const targetW = m ? parseInt(m[1], 10) : null;
-    const targetH = m ? parseInt(m[2], 10) : null;
+  generateFileName(baseName, format, type, originalName, index, fileIndex, totalVariants) {
+    const useSmart = document.getElementById('smartRenaming')?.checked || false;
+    const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
+    const globalBase = this.getGlobalBaseName();
 
-    const img = await loadImageFromFile(file);
-    const w = targetW || img.width;
-    const h = targetH || img.height;
+    const originalExt = (originalName.split('.').pop() || '').toLowerCase();
+    const ext = (format || originalExt || '').toLowerCase() || 'dat';
 
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
+    const originalBase = originalName.replace(/\.[^/.]+$/, '') || baseName || 'file';
 
-    // contain + центр (как у видео с паддингом)
-    const scale = Math.min(w / img.width, h / img.height);
-    const dw = Math.round(img.width * scale);
-    const dh = Math.round(img.height * scale);
-    const dx = Math.round((w - dw) / 2);
-    const dy = Math.round((h - dh) / 2);
-    ctx.clearRect(0, 0, w, h);
-    ctx.drawImage(img, dx, dy, dw, dh);
+    if (useOriginal) {
+      return `${originalBase}.${ext}`;
+    }
 
-    const mime = fmt === "jpg" ? "image/jpeg" : (fmt === "png" ? "image/png" : "image/webp");
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, mime, 0.92));
-    return new Uint8Array(await blob.arrayBuffer());
+    // аудио: base + number из оригинала
+    if (useSmart && globalBase && type === 'Аудио') {
+      const num = this.extractNumberFromName(originalName);
+      if (num) return `${globalBase}${num}.${ext}`;
+    }
+
+    let nameBase = useSmart ? (globalBase || this.getSmartPrefix(type)) : (baseName || originalBase || 'file');
+
+    // спец-логика логотипов
+    if (useSmart && type === 'Изображение' && nameBase.toLowerCase() === 'logo' && totalVariants && totalVariants > 0) {
+      if (totalVariants === 1) return `${nameBase}.${ext}`;
+      if (index === 1) return `${nameBase}.${ext}`;
+      const suffix = index - 1;
+      return `${nameBase}_${suffix}.${ext}`;
+    }
+
+    if (index === 1) return `${nameBase}.${ext}`;
+    return `${nameBase}_${index}.${ext}`;
   }
 
-  function loadImageFromFile(file) {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
-      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Не удалось прочитать картинку")); };
-      img.src = url;
+  getSmartPrefix(type) {
+    switch (type) {
+      case 'Изображение': return 'image';
+      case 'Аудио': return 'audio';
+      case 'Видео': return 'video';
+      default: return 'file';
+    }
+  }
+
+  async startProcessing() {
+    if (this.files.length === 0) {
+      alert('Пожалуйста, загрузите файлы для обработки');
+      return;
+    }
+
+    const processBtn = document.getElementById('processBtn');
+    const progressBar = document.getElementById('progressBar');
+    const progress = document.getElementById('progress');
+    const result = document.getElementById('result');
+    const downloadSection = document.getElementById('downloadSection');
+
+    processBtn.disabled = true;
+    processBtn.textContent = '🔄 Обработка...';
+
+    progressBar.classList.remove('hidden');
+    progress.style.width = '0%';
+
+    result.classList.add('hidden');
+    downloadSection.classList.add('hidden');
+    this.processedFiles = [];
+
+    const settings = {
+      imageSizes: document.getElementById('imageSizes').value,
+      selectedBackground: this.currentSettings.selectedBackground,
+      selectedVideoResolution: this.currentSettings.selectedVideoResolution,
+      selectedVideoQuality: this.currentSettings.selectedVideoQuality,
+      selectedVideoFormat: this.currentSettings.selectedVideoFormat
+    };
+
+    try {
+      await this.mediaProcessor.processFiles(
+        this.files,
+        settings,
+        (percent) => { progress.style.width = `${percent}%`; },
+        (processedBatch) => {
+          this.processedFiles.push(...processedBatch);
+          this.updateResultsUI();
+        }
+      );
+
+      progress.style.width = '100%';
+      result.classList.remove('hidden');
+      downloadSection.classList.remove('hidden');
+      document.getElementById('downloadAllBtn').onclick = () => this.downloadAllAsZip();
+
+    } catch (error) {
+      console.error('Ошибка обработки:', error);
+      this.showError('Ошибка обработки: ' + error.message);
+    } finally {
+      processBtn.disabled = false;
+      processBtn.textContent = '🚀 Начать обработку';
+    }
+  }
+
+  updateResultsUI() {
+    const resultFiles = document.getElementById('resultFiles');
+    let html = '';
+    let totalOriginal = 0;
+    let totalCompressed = 0;
+
+    this.processedFiles.forEach((file, index) => {
+      totalOriginal += file.originalSize || 0;
+      totalCompressed += file.compressedSize || 0;
+
+      const compression = (file.originalSize > 0 && file.compressedSize > 0)
+        ? Math.round((1 - file.compressedSize / file.originalSize) * 100)
+        : 0;
+      const compressionText = compression > 0 ? ` (сжатие: ${compression}%)` : '';
+      const note = file.note ? `<div style="font-size:0.8em;color:#666;">${file.note}</div>` : '';
+
+      html += `
+        <div class="result-file">
+          <div>
+            <strong>${file.name}</strong>
+            <div class="file-size-compression">
+              ${FileUtils.formatFileSize(file.originalSize || 0)} →
+              ${FileUtils.formatFileSize(file.compressedSize || 0)}${compressionText}
+              ${file.resolution ? ` • ${file.resolution}` : ''}
+              ${file.format ? ` • ${String(file.format).toUpperCase()}` : ''}
+              ${file.bitrate ? ` • ${file.bitrate}` : ''}
+            </div>
+            ${note}
+          </div>
+          <button class="download-btn" onclick="appState.downloadSingleFile(${index})">📥 Скачать</button>
+        </div>
+      `;
     });
+
+    const totalCompression = (totalOriginal > 0 && totalCompressed > 0)
+      ? Math.round((1 - totalCompressed / totalOriginal) * 100)
+      : 0;
+
+    const statsHtml = `
+      <div style="margin-bottom:15px;padding:10px;background:#d4edda;border-radius:8px;">
+        <strong>📊 Итоговая статистика:</strong><br>
+        Обработано файлов: ${this.processedFiles.length}<br>
+        Общий размер: ${FileUtils.formatFileSize(totalOriginal)} → ${FileUtils.formatFileSize(totalCompressed)}<br>
+        Общее сжатие: ${totalCompression}%
+      </div>
+    `;
+
+    resultFiles.innerHTML = statsHtml + html;
   }
 
-  // ---------- Processing: Video/Audio (FFmpeg) ----------
-  function guessExt(name) {
-    const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
-    return m ? m[1] : "bin";
+  downloadSingleFile(index) {
+    if (index >= 0 && index < this.processedFiles.length) {
+      const file = this.processedFiles[index];
+      const url = URL.createObjectURL(file.blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   }
 
-  async function processVideo(file, outExt) {
-    const W = Math.max(1, parseInt(el("vW").value || "640", 10));
-    const H = Math.max(1, parseInt(el("vH").value || "360", 10));
-    const keep = el("keepAR").value === "yes";
+  async downloadAllAsZip() {
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder("processed_files");
 
-    const inExt = guessExt(file.name);
-    const inName = `in_${Date.now()}_${Math.random().toString(16).slice(2)}.${inExt}`;
-    const outName = `out_${Date.now()}_${Math.random().toString(16).slice(2)}.${outExt}`;
+      this.processedFiles.forEach(file => folder.file(file.name, file.blob));
 
-    const inputData = await window.__fetchFile(file);
-    ffmpeg.FS("writeFile", inName, inputData);
+      const readme = `
+Обработанные медиафайлы
+Дата: ${new Date().toLocaleDateString()}
+Всего файлов: ${this.processedFiles.length}
 
-    const vf = keep
-      ? `scale=${W}:${H}:force_original_aspect_ratio=decrease,pad=${W}:${H}:(ow-iw)/2:(oh-ih)/2,setsar=1`
-      : `scale=${W}:${H},setsar=1`;
+Настройки обработки:
+- Фон изображений: ${this.currentSettings.selectedBackground}
+- Разрешение видео: ${this.currentSettings.selectedVideoResolution}
+- Качество видео: ${this.currentSettings.selectedVideoQuality}
+- Формат видео: ${this.currentSettings.selectedVideoFormat}
 
-    // 1) пробуем "нормальные" кодеки
-    let args;
-    if (outExt === "mp4") {
-      args = ["-i", inName, "-vf", vf, "-pix_fmt", "yuv420p", "-movflags", "+faststart",
-              "-c:v", "libx264", "-preset", "veryfast", "-crf", "28",
-              "-c:a", "aac", "-b:a", "128k",
-              outName];
+Создано с помощью MediaProcessor | Relation-AI
+      `.trim();
+
+      folder.file("README.txt", readme);
+
+      const content = await zip.generateAsync({ type: "blob" });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `processed_files_${Date.now()}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Ошибка создания ZIP:', error);
+      this.showError('Ошибка создания архива: ' + error.message);
+    }
+  }
+
+  showError(message) {
+    showTempMessage(message, 'error', 7000);
+  }
+
+  /* =======================
+     AI: советник
+  ======================= */
+  getAIAdvice() {
+    const aiTip = document.getElementById('aiTip');
+    const aiResults = document.getElementById('aiResults');
+    const aiStats = document.getElementById('aiStats');
+    const aiTipsList = document.getElementById('aiTipsList');
+
+    const total = this.files.length;
+    const images = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+    const audios = this.files.filter(f => FileUtils.getFileType(f.name) === 'Аудио');
+    const videos = this.files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
+    const totalSize = this.files.reduce((s, f) => s + f.size, 0);
+
+    const tips = [];
+
+    const ffmpegReady = this.mediaProcessor?.videoProcessor?.isFFmpegReady;
+    const corePath = this.mediaProcessor?.videoProcessor?.loadedCorePath || '—';
+
+    if (!ffmpegReady) {
+      tips.push('FFmpeg WASM сейчас недоступен → видео/аудио могут выйти “как оригинал”. Проверь самохостинг (/ffmpeg/*) или доступность CDN.');
     } else {
-      // webm
-      args = ["-i", inName, "-vf", vf,
-              "-c:v", "libvpx-vp9", "-crf", "33", "-b:v", "0",
-              "-c:a", "libopus", "-b:a", "96k",
-              outName];
+      tips.push(`FFmpeg готов ✅ (corePath: ${corePath.includes('http') ? 'CDN' : 'local'})`);
+      tips.push('CDN core: @ffmpeg/core@0.11.0 (worker: ffmpeg-core.worker.js) учтён.');
     }
 
-    try {
-      log(`Видео: FFmpeg run (primary) → ${outExt} (${W}x${H}, keepAR=${keep ? "yes" : "no"})`);
-      await ffmpeg.run(...args);
-    } catch (e) {
-      // 2) фолбэк на более простые кодеки (часто есть почти везде)
-      log(`⚠️ primary-кодеки не сработали, пробую fallback… Причина: ${e?.message || e}`);
-      try {
-        if (outExt === "mp4") {
-          // mpeg4 (простая кодировка) + aac
-          args = ["-i", inName, "-vf", vf,
-                  "-c:v", "mpeg4", "-q:v", "6",
-                  "-c:a", "aac", "-b:a", "128k",
-                  outName];
-        } else {
-          args = ["-i", inName, "-vf", vf,
-                  "-c:v", "libvpx", "-b:v", "1200k",
-                  "-c:a", "libvorbis", "-q:a", "4",
-                  outName];
-        }
-        await ffmpeg.run(...args);
-      } catch (e2) {
-        log(`❌ fallback тоже не сработал: ${e2?.message || e2}`);
-        // очистка
-        safeUnlink(inName);
-        safeUnlink(outName);
-        throw new Error("FFmpeg не смог перекодировать видео (см. лог выше).");
+    const png = document.getElementById('formatPNG').checked;
+    const jpg = document.getElementById('formatJPG').checked;
+    if (images.length && !png && !jpg) tips.push('Для изображений не выбраны форматы вывода (PNG/JPG).');
+
+    const mp3 = document.getElementById('audioMP3').checked;
+    const ogg = document.getElementById('audioOGG').checked;
+    if (audios.length && !mp3 && !ogg) tips.push('Для аудио не выбран формат (MP3/OGG).');
+
+    const useSmart = document.getElementById('smartRenaming').checked;
+    const base = this.getGlobalBaseName();
+    if (useSmart && !base) tips.push('Умное переименование включено, но “общее имя” пустое → заполни, иначе будет image/audio/video.');
+    if (useSmart && base && audios.length) tips.push('Для аудио умное переименование использует цифры из исходного имени: base+число (пример: audio_hook333.mp3).');
+
+    if (videos.length > 2) tips.push('Видео > 2 шт: лучше обрабатывать 1–2 видео за раз (память/производительность).');
+
+    const bg = this.currentSettings.selectedBackground;
+    if (jpg && bg === 'transparent') tips.push('Выбран “Прозрачный” фон, но JPG прозрачность не поддерживает → будет заливка белым.');
+
+    const sizesRaw = (document.getElementById('imageSizes').value || '').split(',').map(s => s.trim()).filter(Boolean);
+    if (sizesRaw.length > 8) tips.push('Слишком много размеров изображений → сильная нагрузка и большой ZIP. Лучше 3–6 размеров.');
+
+    if (aiTip) {
+      aiTip.querySelector('.ai-tip-header strong').textContent = 'Рекомендации готовы';
+      aiTip.querySelector('.ai-tip-content').textContent = tips[0] || 'Нет рекомендаций — всё выглядит нормально.';
+    }
+
+    aiStats.innerHTML = `
+      <strong>📌 Сводка:</strong><br>
+      Файлов: ${total} • ${FileUtils.formatFileSize(totalSize)}<br>
+      Изображения: ${images.length} • Аудио: ${audios.length} • Видео: ${videos.length}<br>
+      Видео: ${this.currentSettings.selectedVideoResolution}, качество: ${this.currentSettings.selectedVideoQuality}
+    `;
+
+    aiTipsList.innerHTML = tips.map(t => `<div class="ai-tip-item">${t}</div>`).join('');
+    aiResults.classList.remove('hidden');
+  }
+
+  async analyzeAllImages() {
+    const aiResults = document.getElementById('aiResults');
+    const aiStats = document.getElementById('aiStats');
+    const aiTipsList = document.getElementById('aiTipsList');
+
+    const images = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+    if (!images.length) {
+      this.showError('Нет изображений для анализа.');
+      return;
+    }
+
+    const results = [];
+    for (const file of images.slice(0, 30)) {
+      const info = await this.getImageInfo(file);
+      results.push(info);
+    }
+
+    const big = results.filter(r => r.megapixels >= 4).length;
+    const small = results.filter(r => r.megapixels < 1).length;
+
+    aiStats.innerHTML = `
+      <strong>🎨 Анализ изображений:</strong><br>
+      Проанализировано: ${results.length}<br>
+      ≥4MP: ${big} • &lt;1MP: ${small}<br>
+      Совет: не увеличивай размер больше исходного, чтобы избежать мыла.
+    `;
+
+    aiTipsList.innerHTML = results.map(r => {
+      const warn = r.tooSmall ? ' ⚠️ мало пикселей' : '';
+      return `<div class="ai-tip-item"><strong>${r.name}</strong><br>${r.w}×${r.h} (${r.megapixels.toFixed(2)} MP) • ${FileUtils.formatFileSize(r.size)}${warn}</div>`;
+    }).join('');
+
+    aiResults.classList.remove('hidden');
+  }
+
+  getImageInfo(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const w = img.width, h = img.height;
+          const mp = (w * h) / 1_000_000;
+          resolve({
+            name: file.name,
+            size: file.size,
+            w, h,
+            megapixels: mp,
+            tooSmall: (w < 600 || h < 600)
+          });
+        };
+        img.onerror = () => resolve({ name: file.name, size: file.size, w: 0, h: 0, megapixels: 0, tooSmall: true });
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve({ name: file.name, size: file.size, w: 0, h: 0, megapixels: 0, tooSmall: true });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async analyzeBrandAssets() {
+    const out = document.getElementById('brandAnalysisResults');
+    out.classList.add('hidden');
+    out.innerHTML = '';
+
+    const images = this.files.filter(f => FileUtils.getFileType(f.name) === 'Изображение');
+    if (!images.length) {
+      this.showError('Для анализа бренда нужны изображения.');
+      return;
+    }
+
+    const sample = images.slice(0, 6);
+    const paletteMap = new Map();
+    let brightnessSum = 0;
+    let brightnessCount = 0;
+
+    let squareish = 0;
+    let wide = 0;
+    let tall = 0;
+
+    for (const file of sample) {
+      const { colors, avgBrightness, ratio } = await this.sampleImageColors(file);
+      brightnessSum += avgBrightness;
+      brightnessCount++;
+
+      if (ratio > 0.85 && ratio < 1.18) squareish++;
+      else if (ratio >= 1.18) wide++;
+      else tall++;
+
+      for (const [hex, count] of colors.entries()) {
+        paletteMap.set(hex, (paletteMap.get(hex) || 0) + count);
       }
     }
 
-    const out = ffmpeg.FS("readFile", outName);
+    const avgB = brightnessCount ? (brightnessSum / brightnessCount) : 0.6;
 
-    safeUnlink(inName);
-    safeUnlink(outName);
+    const top = [...paletteMap.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .map(([hex]) => hex);
 
-    return out;
+    const recommendedBg = (avgB < 0.45) ? 'white' : 'lightgray';
+    const recommendedPreset = (squareish >= wide && squareish >= tall) ? 'logos' : (tall > wide ? 'vertical' : 'creatives');
+
+    this.lastBrandRecommendations = { recommendedBg, recommendedPreset, palette: top };
+
+    const paletteHtml = top.length
+      ? `<div class="color-palette">${top.map(hex => `<div class="color-swatch" style="background:${hex}" data-hex="${hex}"></div>`).join('')}</div>`
+      : `<div style="opacity:.9;">Не удалось построить палитру (попробуй PNG/JPG без SVG).</div>`;
+
+    out.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div><strong>🎯 Результаты анализа бренда</strong></div>
+        <button class="ai-btn secondary" onclick="appState.applyBrandRecommendations()" style="flex:0 0 auto;">✅ Применить рекомендации</button>
+      </div>
+      <div style="margin-top:10px;opacity:.95;">
+        Средняя “светлота” визуала: <strong>${Math.round(avgB * 100)}%</strong><br>
+        Рекомендованный фон: <strong>${recommendedBg}</strong> • Рекомендованный пресет: <strong>${recommendedPreset}</strong>
+      </div>
+      <div style="margin-top:10px;"><strong>Палитра (топ цветов):</strong>${paletteHtml}</div>
+      <div style="margin-top:10px;font-size:.92em;opacity:.9;">
+        Совет: закрепи палитру (2 нейтрала + 1 акцент) и делай одинаковые подложки → карточки будут выглядеть “брендово”.
+      </div>
+    `;
+
+    out.classList.remove('hidden');
+
+    if (document.getElementById('aiAnalysis').checked) {
+      this.applyBrandRecommendations();
+    }
   }
 
-  async function processAudio(file, outExt) {
-    const bitrate = el("aBitrate").value || "128k";
+  applyBrandRecommendations() {
+    if (!this.lastBrandRecommendations) return;
 
-    const inExt = guessExt(file.name);
-    const inName = `in_${Date.now()}_${Math.random().toString(16).slice(2)}.${inExt}`;
-    const outName = `out_${Date.now()}_${Math.random().toString(16).slice(2)}.${outExt}`;
+    const { recommendedBg, recommendedPreset } = this.lastBrandRecommendations;
+    this.setBackgroundSelection(recommendedBg);
+    this.loadPreset(recommendedPreset);
 
-    const inputData = await window.__fetchFile(file);
-    ffmpeg.FS("writeFile", inName, inputData);
-
-    let args;
-    if (outExt === "mp3") {
-      args = ["-i", inName, "-vn", "-c:a", "libmp3lame", "-b:a", bitrate, outName];
-    } else {
-      args = ["-i", inName, "-vn", "-c:a", "libvorbis", "-q:a", "4", outName];
+    const aiTip = document.getElementById('aiTip');
+    if (aiTip) {
+      aiTip.querySelector('.ai-tip-header strong').textContent = 'Рекомендации применены';
+      aiTip.querySelector('.ai-tip-content').textContent = `Фон: ${recommendedBg}, пресет размеров: ${recommendedPreset}.`;
     }
-
-    try {
-      log(`Аудио: FFmpeg run → ${outExt} (${bitrate})`);
-      await ffmpeg.run(...args);
-    } catch (e) {
-      log(`⚠️ primary аудио-кодек не сработал, пробую fallback… Причина: ${e?.message || e}`);
-      try {
-        if (outExt === "mp3") {
-          args = ["-i", inName, "-vn", "-c:a", "mp3", "-b:a", bitrate, outName];
-        } else {
-          args = ["-i", inName, "-vn", "-c:a", "opus", "-b:a", "96k", outName];
-        }
-        await ffmpeg.run(...args);
-      } catch (e2) {
-        log(`❌ fallback аудио тоже не сработал: ${e2?.message || e2}`);
-        safeUnlink(inName);
-        safeUnlink(outName);
-        throw new Error("FFmpeg не смог перекодировать аудио (см. лог выше).");
-      }
-    }
-
-    const out = ffmpeg.FS("readFile", outName);
-    safeUnlink(inName);
-    safeUnlink(outName);
-    return out;
   }
 
-  function safeUnlink(name) {
-    try { ffmpeg.FS("unlink", name); } catch (_) {}
-  }
+  sampleImageColors(file) {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
 
-  // ---------- MAIN ----------
-  el("btnLoadFFmpeg").addEventListener("click", async () => {
-    try {
-      el("ffmpegStatus").textContent = "FFmpeg: проверяю…";
-      await initFFmpeg();
-    } catch (e) {
-      el("ffmpegStatus").textContent = "FFmpeg: ошибка ❌";
-      log(`❌ FFmpeg init error: ${e?.message || e}`);
-    }
-  });
+          const max = 180;
+          const scale = Math.min(max / img.width, max / img.height, 1);
+          const w = Math.max(1, Math.floor(img.width * scale));
+          const h = Math.max(1, Math.floor(img.height * scale));
 
-  el("btnClear").addEventListener("click", () => {
-    files = [];
-    renderFiles();
-    logEl.value = "";
-    el("ffmpegStatus").textContent = "FFmpeg: не проверялся";
-    log("Очищено.");
-  });
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
 
-  el("btnProcess").addEventListener("click", async () => {
-    if (!files.length) return log("⚠️ Нет файлов для обработки.");
+          const data = ctx.getImageData(0, 0, w, h).data;
 
-    const zip = new JSZip();
+          const colors = new Map();
+          let bSum = 0;
+          let bN = 0;
 
-    // FFmpeg нужен только если есть видео/аудио
-    const needFF = files.some(f => ["video","audio"].includes(detectKind(f)));
-    if (needFF) {
-      try {
-        el("ffmpegStatus").textContent = "FFmpeg: загружаю…";
-        await initFFmpeg();
-      } catch (e) {
-        el("ffmpegStatus").textContent = "FFmpeg: недоступен ❌";
-        log(`❌ FFmpeg недоступен, видео/аудио будут без изменений. Причина: ${e?.message || e}`);
-      }
-    }
+          const step = 6;
+          for (let y = 0; y < h; y += step) {
+            for (let x = 0; x < w; x += step) {
+              const i = (y * w + x) * 4;
+              const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+              if (a < 30) continue;
 
-    const vFmt = el("vFmt").value;
-    const aFmt = el("aFmt").value;
-    const iFmt = el("iFmt").value;
+              const q = 32;
+              const rq = Math.floor(r / q) * q;
+              const gq = Math.floor(g / q) * q;
+              const bq = Math.floor(b / q) * q;
 
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      const kind = detectKind(f);
+              const hex = '#' + [rq, gq, bq].map(v => v.toString(16).padStart(2, '0')).join('');
+              colors.set(hex, (colors.get(hex) || 0) + 1);
 
-      try {
-        if (kind === "image") {
-          const bytes = await processImage(f);
-          const outName = buildOutName(f, i, iFmt);
-          zip.file(outName, bytes);
-          log(`✅ image → ${outName}`);
-        } else if (kind === "video") {
-          if (!ffmpegReady) {
-            // без FFmpeg — кладем оригинал
-            zip.file(buildOutName(f, i, guessExt(f.name)), f);
-            log(`⚠️ video без FFmpeg → оригинал`);
-          } else {
-            const bytes = await processVideo(f, vFmt);
-            const outName = buildOutName(f, i, vFmt);
-            zip.file(outName, bytes);
-            log(`✅ video → ${outName}`);
+              const br = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+              bSum += br;
+              bN++;
+            }
           }
-        } else if (kind === "audio") {
-          if (!ffmpegReady) {
-            zip.file(buildOutName(f, i, guessExt(f.name)), f);
-            log(`⚠️ audio без FFmpeg → оригинал`);
-          } else {
-            const bytes = await processAudio(f, aFmt);
-            const outName = buildOutName(f, i, aFmt);
-            zip.file(outName, bytes);
-            log(`✅ audio → ${outName}`);
-          }
-        } else {
-          // прочие файлы — как есть
-          zip.file(buildOutName(f, i, guessExt(f.name)), f);
-          log(`ℹ️ file → как есть`);
-        }
-      } catch (err) {
-        log(`❌ Ошибка на файле "${f.name}": ${err?.message || err}`);
-        // кладём оригинал, чтобы человек ничего не потерял
-        zip.file(buildOutName(f, i, guessExt(f.name)), f);
-        log(`↩️ Вернул оригинал в ZIP`);
-      }
-    }
 
-    el("ffmpegStatus").textContent = ffmpegReady ? "FFmpeg: готов ✅" : "FFmpeg: не использовался";
-    log("Собираю ZIP…");
-    const blob = await zip.generateAsync({ type: "blob" });
-    downloadBlob(blob, `MediaProcessor_${Date.now()}.zip`);
-    log("✅ ZIP скачан.");
+          const ratio = img.width / img.height;
+          resolve({ colors, avgBrightness: bN ? bSum / bN : 0.6, ratio });
+        };
+        img.onerror = () => resolve({ colors: new Map(), avgBrightness: 0.6, ratio: 1 });
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve({ colors: new Map(), avgBrightness: 0.6, ratio: 1 });
+      reader.readAsDataURL(file);
+    });
+  }
+
+  resetAllSettings() {
+    this.currentSettings = this.getDefaultSettings();
+    document.getElementById('imageSizes').value = this.currentSettings.imageSizes;
+
+    document.querySelectorAll('.resolution-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelector('.resolution-option[data-resolution="640x360"]').classList.add('selected');
+
+    document.querySelectorAll('.video-format-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelector('.video-format-option[data-format="mp4"]').classList.add('selected');
+
+    document.querySelectorAll('.video-quality-option').forEach(opt => opt.classList.remove('selected'));
+    document.querySelector('.video-quality-option[data-quality="medium"]').classList.add('selected');
+
+    this.setBackgroundSelection('white');
+
+    alert('Настройки сброшены!');
+    this.updateNamingExample();
+  }
+
+  clearAllCheckboxes() {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => cb.checked = false);
+    this.updateNamingExample();
+    alert('Все галочки убраны!');
+  }
+
+  selectAllCheckboxes(type) {
+    let selector = '';
+    switch (type) {
+      case 'image': selector = '#formatPNG, #formatJPG'; break;
+      case 'audio': selector = '#audioMP3, #audioOGG'; break;
+      case 'ai': selector = '#aiAnalysis'; break;
+    }
+    if (selector) document.querySelectorAll(selector).forEach(cb => cb.checked = true);
+    this.updateNamingExample();
+  }
+
+  clearCheckboxes(type) {
+    let selector = '';
+    switch (type) {
+      case 'image': selector = '#formatPNG, #formatJPG'; break;
+      case 'audio': selector = '#audioMP3, #audioOGG'; break;
+      case 'ai': selector = '#aiAnalysis'; break;
+    }
+    if (selector) document.querySelectorAll(selector).forEach(cb => cb.checked = false);
+    this.updateNamingExample();
+  }
+
+  loadPreset(preset) {
+    switch (preset) {
+      case 'creatives': document.getElementById('imageSizes').value = '1200x600, 800x400, 600x300'; break;
+      case 'vertical': document.getElementById('imageSizes').value = '1080x1920, 800x1400, 400x700'; break;
+      case 'logos': document.getElementById('imageSizes').value = '800x800, 400x400, 200x200'; break;
+      case 'icons': document.getElementById('imageSizes').value = '256x256, 128x128, 64x64, 32x32'; break;
+    }
+    alert(`Пресет "${preset}" загружен!`);
+    this.updateNamingExample();
+  }
+}
+
+/* =======================
+   Init
+======================= */
+let appState;
+document.addEventListener('DOMContentLoaded', () => {
+  appState = new AppState();
+
+  // поддержка ввода hex без "#"
+  document.getElementById('customColorHex').addEventListener('change', (e) => {
+    let value = e.target.value.trim();
+    if (!value.startsWith('#')) value = '#' + value;
+    e.target.value = value;
+    if (value.length === 4 || value.length === 7) {
+      document.getElementById('customColorPicker').value = value;
+      appState.updateCustomPreview();
+    }
   });
 
-  function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  // подсказка если кто-то открыл file://
-  if (location.protocol === "file:") {
-    el("fileProtoWarn").style.display = "block";
-    log("⚠️ Открыто как file:/// — FFmpeg работать не будет. Открой через https:// (Vercel) или локальный сервер.");
-  }
+  window.appState = appState;
+});
 </script>
 </body>
 </html>
