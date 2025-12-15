@@ -8,7 +8,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <!--
-    FFmpeg WASM: сделано с авто-фолбэком:
+    FFmpeg WASM: авто-фолбэк:
     1) сначала пробуем локально (самохостинг): /ffmpeg/ffmpeg.min.js и /ffmpeg/ffmpeg-core.js (+ wasm/worker рядом)
     2) если локально нет — пробуем CDN jsDelivr
 
@@ -358,7 +358,6 @@
           </div>
         </div>
 
-        <!-- НОВОЕ: custom option -->
         <div class="background-color-option" data-background="custom" id="customBgOption">
           <div class="background-color-preview" id="customBgPreview" style="background:#ffffff;">
             <span style="color:#666;">🎨</span>
@@ -421,7 +420,7 @@
 
       <select class="size-input" id="audioBitrate" style="margin-top:10px;">
         <option value="128">128 kbps (стандарт)</option>
-        <option value="192">192 kbps (качественно)</option>
+        <option value="192" selected>192 kbps (качественно)</option>
         <option value="256">256 kbps (премиум)</option>
         <option value="320">320 kbps (максимальное)</option>
       </select>
@@ -717,6 +716,9 @@ class FileUtils {
   }
 }
 
+/* =======================
+   Media Processor
+======================= */
 class MediaProcessor {
   constructor() {
     this.isCancelled = false;
@@ -737,12 +739,16 @@ class MediaProcessor {
     this.videoProcessor && this.videoProcessor.cancel();
   }
 
+  // ✅ ВАЖНО: fileIndex тут теперь "порядковый номер внутри типа"
   async processFiles(files, settings, onProgress, onFileProcessed) {
     this.isCancelled = false;
     const totalFiles = files.length;
     let processedCount = 0;
 
-    // Сначала изображения/аудио
+    // порядковые номера внутри типа
+    let imgN = 0, audN = 0, vidN = 0, otherN = 0;
+
+    // 1) Сначала не-видео
     for (let i = 0; i < files.length; i++) {
       if (this.isCancelled) break;
 
@@ -750,8 +756,13 @@ class MediaProcessor {
       const type = FileUtils.getFileType(file.name);
       if (type === 'Видео') continue;
 
+      const typeIndex =
+        type === 'Изображение' ? ++imgN :
+        type === 'Аудио' ? ++audN :
+        ++otherN;
+
       try {
-        const processed = await this.processSingleFile(file, settings, i);
+        const processed = await this.processSingleFile(file, settings, typeIndex);
         if (processed && processed.length) onFileProcessed(processed);
 
         processedCount++;
@@ -759,27 +770,27 @@ class MediaProcessor {
         await new Promise(r => setTimeout(r, 50));
       } catch (e) {
         console.error(`❌ Ошибка обработки файла ${file.name}:`, e);
-        this.handleFallback(file, i, onFileProcessed);
+        this.handleFallback(file, typeIndex, onFileProcessed);
         processedCount++;
         onProgress((processedCount / totalFiles) * 100);
       }
     }
 
-    // Потом видео
+    // 2) Потом видео
     const videoFiles = files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
     for (let i = 0; i < videoFiles.length; i++) {
       if (this.isCancelled) break;
 
       const file = videoFiles[i];
-      const originalIndex = files.indexOf(file);
+      const typeIndex = ++vidN;
 
       try {
         const videoProgress = document.createElement('div');
         videoProgress.className = 'video-processing-status';
-        videoProgress.textContent = `🔄 Обработка видео: ${file.name} (${i+1}/${videoFiles.length})`;
+        videoProgress.textContent = `🔄 Обработка видео: ${file.name} (${i + 1}/${videoFiles.length})`;
         document.querySelector('.settings').appendChild(videoProgress);
 
-        const processed = await this.processSingleFile(file, settings, originalIndex);
+        const processed = await this.processSingleFile(file, settings, typeIndex);
         if (processed && processed.length) {
           onFileProcessed(processed);
           videoProgress.className = 'video-processing-status success';
@@ -799,7 +810,7 @@ class MediaProcessor {
         errorStatus.textContent = `❌ Ошибка обработки видео: ${file.name}`;
         document.querySelector('.settings').appendChild(errorStatus);
 
-        this.handleFallback(file, originalIndex, onFileProcessed);
+        this.handleFallback(file, typeIndex, onFileProcessed);
         processedCount++;
         onProgress((processedCount / totalFiles) * 100);
 
@@ -808,14 +819,15 @@ class MediaProcessor {
     }
   }
 
-  handleFallback(file, index, onFileProcessed) {
+  handleFallback(file, fileIndex, onFileProcessed) {
     const fallbackName = appState.generateFileName(
       file.customName || file.name.replace(/\.[^/.]+$/, ''),
       (file.name.split('.').pop() || '').toLowerCase(),
       FileUtils.getFileType(file.name),
       file.name,
       1,
-      index
+      fileIndex,
+      1
     );
 
     onFileProcessed([{
@@ -845,7 +857,8 @@ class MediaProcessor {
         type,
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
       processed.push({ blob: file, name, type, originalSize: file.size, compressedSize: file.size });
     }
@@ -853,6 +866,7 @@ class MediaProcessor {
     return processed;
   }
 
+  /* ===== IMAGE ===== */
   async processImage(file, settings, processed, fileIndex) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -875,7 +889,8 @@ class MediaProcessor {
                 'Изображение',
                 file.name,
                 1,
-                fileIndex
+                fileIndex,
+                1
               );
 
               const canvas = document.createElement('canvas');
@@ -935,7 +950,8 @@ class MediaProcessor {
             'Изображение',
             file.name,
             1,
-            fileIndex
+            fileIndex,
+            1
           );
           processed.push({ blob: file, name, type: 'Изображение', originalSize: file.size, compressedSize: file.size, background: settings.selectedBackground });
           resolve();
@@ -1028,7 +1044,7 @@ class MediaProcessor {
     return hexRegex.test(color);
   }
 
-  /* ===== AUDIO: РЕАЛЬНОЕ ПЕРЕКОДИРОВАНИЕ ===== */
+  /* ===== AUDIO (real transcoding) ===== */
   async processAudio(file, settings, processed, fileIndex) {
     try {
       const formats = [];
@@ -1044,7 +1060,8 @@ class MediaProcessor {
           'Аудио',
           file.name,
           1,
-          fileIndex
+          fileIndex,
+          1
         );
         processed.push({ blob: file, name, type: 'Аудио', originalSize: file.size, compressedSize: file.size });
         return;
@@ -1060,17 +1077,21 @@ class MediaProcessor {
 
         const outBlob = await this.videoProcessor.processAudio(file, { format, bitrate });
 
+        const isConverted = (outBlob !== file);
+        const outExt = isConverted ? format : this.videoProcessor.getAudioExtension(file.name);
+
         status.className = 'video-processing-status success';
-        status.textContent = `✅ Аудио готово: ${file.name} → ${format.toUpperCase()} (${bitrate} kbps)`;
+        status.textContent = `✅ Аудио готово: ${file.name} → ${isConverted ? format.toUpperCase() : outExt.toUpperCase()} (${bitrate} kbps)`;
         setTimeout(() => status.remove(), 2500);
 
         const outName = appState.generateFileName(
           file.customName || file.name.replace(/\.[^/.]+$/, ''),
-          format,
+          outExt,
           'Аудио',
           file.name,
           i + 1,
-          fileIndex
+          fileIndex,
+          formats.length
         );
 
         processed.push({
@@ -1078,10 +1099,10 @@ class MediaProcessor {
           name: outName,
           type: 'Аудио',
           originalSize: file.size,
-          compressedSize: outBlob.size,
-          format,
+          compressedSize: outBlob.size || file.size,
+          format: outExt,
           bitrate: `${bitrate}kbps`,
-          note: (outBlob === file) ? 'Оригинал (FFmpeg недоступен/ошибка)' : ''
+          note: (!isConverted) ? 'Оригинал (FFmpeg недоступен/ошибка)' : ''
         });
       }
     } catch (error) {
@@ -1092,12 +1113,14 @@ class MediaProcessor {
         'Аудио',
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
       processed.push({ blob: file, name, type: 'Аудио', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка)' });
     }
   }
 
+  /* ===== VIDEO ===== */
   async processVideo(file, settings, processed, fileIndex) {
     try {
       const resolution = settings.selectedVideoResolution || '640x360';
@@ -1111,17 +1134,21 @@ class MediaProcessor {
 
       const processedBlob = await this.videoProcessor.processVideo(file, { resolution, quality, format });
 
+      const isConverted = (processedBlob !== file);
+      const outExt = isConverted ? format : this.videoProcessor.getVideoExtension(file.name);
+
       videoStatus.className = 'video-processing-status success';
       videoStatus.textContent = `✅ Видео обработано: ${file.name}`;
       setTimeout(() => videoStatus.remove(), 2500);
 
       const fileName = appState.generateFileName(
         file.customName || file.name.replace(/\.[^/.]+$/, ''),
-        format,
+        outExt,
         'Видео',
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
 
       processed.push({
@@ -1129,10 +1156,11 @@ class MediaProcessor {
         name: fileName,
         type: 'Видео',
         originalSize: file.size,
-        compressedSize: processedBlob.size,
+        compressedSize: processedBlob.size || file.size,
         resolution,
         quality,
-        format
+        format: outExt,
+        note: (!isConverted) ? 'Оригинал (FFmpeg недоступен/ошибка)' : ''
       });
     } catch (error) {
       console.error('❌ Критическая ошибка обработки видео:', error);
@@ -1148,7 +1176,8 @@ class MediaProcessor {
         'Видео',
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
 
       processed.push({ blob: file, name, type: 'Видео', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка обработки)' });
@@ -1169,6 +1198,15 @@ class AppState {
     this.lastBrandRecommendations = null;
     this.initEventListeners();
     this.updateUI();
+  }
+
+  escapeHtml(str) {
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
   }
 
   getDefaultSettings() {
@@ -1194,6 +1232,13 @@ class AppState {
       e.preventDefault();
       dropZone.classList.remove('dragover');
       this.handleFiles(e.dataTransfer.files);
+    });
+
+    // click zone opens file picker (кроме клика по кнопке/инпуту)
+    dropZone.addEventListener('click', (e) => {
+      const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+      if (tag === 'button' || tag === 'input' || tag === 'label') return;
+      document.getElementById('fileInput').click();
     });
 
     this.initVideoSettingsListeners();
@@ -1285,11 +1330,16 @@ class AppState {
   }
 
   handleFiles(fileList) {
-    const files = Array.from(fileList);
+    const files = Array.from(fileList || []);
     files.forEach(file => {
       file.customName = file.name.replace(/\.[^/.]+$/, '');
       this.files.push(file);
     });
+
+    // ✅ позволяет выбрать те же файлы повторно
+    const input = document.getElementById('fileInput');
+    if (input) input.value = '';
+
     this.updateUI();
   }
 
@@ -1322,6 +1372,9 @@ class AppState {
       if (type === 'Аудио') audioCount++;
       if (type === 'Видео') videoCount++;
 
+      const safeCustom = this.escapeHtml(file.customName);
+      const safeType = this.escapeHtml(type);
+
       html += `
         <div class="file-item" data-index="${index}">
           <div class="file-info">
@@ -1329,10 +1382,10 @@ class AppState {
             <div>
               <input type="text"
                 class="rename-input"
-                value="${file.customName}"
+                value="${safeCustom}"
                 onchange="appState.updateFileName(${index}, this.value)"
                 placeholder="Введите имя файла">
-              <div class="file-size">${FileUtils.formatFileSize(file.size)} • ${type}</div>
+              <div class="file-size">${FileUtils.formatFileSize(file.size)} • ${safeType}</div>
             </div>
           </div>
           <button class="cancel-btn" onclick="appState.removeFile(${index})">Удалить</button>
@@ -1408,13 +1461,14 @@ class AppState {
       return;
     }
 
-    // аудио: base + цифры из оригинала (если есть)
     if (useSmart && globalBase && type === 'Аудио') {
       const nums = this.files.slice(0, 3).map(f => this.extractNumberFromName(f.name)).filter(Boolean);
       if (nums.length) {
         exampleEl.textContent = nums.map(n => `${globalBase}${n}.mp3`).join(', ');
         return;
       }
+      exampleEl.textContent = `${globalBase}.mp3, ${globalBase}_2.mp3, ${globalBase}_3.mp3`;
+      return;
     }
 
     if (useSmart && type === 'Изображение' && globalBase.toLowerCase() === 'logo') {
@@ -1429,36 +1483,49 @@ class AppState {
     else exampleEl.textContent = `${baseName}.png, ${baseName}_2.png, ${baseName}_3.png`;
   }
 
-  generateFileName(baseName, format, type, originalName, index, fileIndex, totalVariants) {
+  // ✅ исправлено: уникальные имена по типу + корректный useOriginalNames при нескольких вариантах
+  generateFileName(baseName, format, type, originalName, index, fileIndex = 1, totalVariants = 1) {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
     const globalBase = this.getGlobalBaseName();
 
     const originalExt = (originalName.split('.').pop() || '').toLowerCase();
-    const ext = (format || originalExt || '').toLowerCase() || 'dat';
-
+    const ext = (format || originalExt || 'dat').toLowerCase();
     const originalBase = originalName.replace(/\.[^/.]+$/, '') || baseName || 'file';
 
     if (useOriginal) {
+      if (Number(totalVariants) > 1 && Number(index) > 1) return `${originalBase}_${index}.${ext}`;
       return `${originalBase}.${ext}`;
     }
 
-    // аудио: base + number из оригинала
-    if (useSmart && globalBase && type === 'Аудио') {
-      const num = this.extractNumberFromName(originalName);
-      if (num) return `${globalBase}${num}.${ext}`;
+    if (useSmart) {
+      const nameBase = (globalBase || this.getSmartPrefix(type) || 'file').trim() || 'file';
+
+      // аудио: base + число из исходника, иначе base_2, base_3...
+      if (type === 'Аудио' && globalBase) {
+        const num = this.extractNumberFromName(originalName);
+        if (num) return `${globalBase}${num}.${ext}`;
+        if (fileIndex === 1) return `${globalBase}.${ext}`;
+        return `${globalBase}_${fileIndex}.${ext}`;
+      }
+
+      const variants = Math.max(1, Number(totalVariants) || 1);
+      const fi = Math.max(1, Number(fileIndex) || 1);
+      const ix = Math.max(1, Number(index) || 1);
+
+      // сквозной индекс по типу: (файл-1)*вариантов + вариант
+      const seq = (fi - 1) * variants + ix;
+
+      if (type === 'Изображение' && nameBase.toLowerCase() === 'logo') {
+        if (seq === 1) return `${nameBase}.${ext}`;
+        return `${nameBase}_${seq - 1}.${ext}`;
+      }
+
+      if (seq === 1) return `${nameBase}.${ext}`;
+      return `${nameBase}_${seq}.${ext}`;
     }
 
-    let nameBase = useSmart ? (globalBase || this.getSmartPrefix(type)) : (baseName || originalBase || 'file');
-
-    // спец-логика логотипов
-    if (useSmart && type === 'Изображение' && nameBase.toLowerCase() === 'logo' && totalVariants && totalVariants > 0) {
-      if (totalVariants === 1) return `${nameBase}.${ext}`;
-      if (index === 1) return `${nameBase}.${ext}`;
-      const suffix = index - 1;
-      return `${nameBase}_${suffix}.${ext}`;
-    }
-
+    const nameBase = (baseName || originalBase || 'file').trim() || 'file';
     if (index === 1) return `${nameBase}.${ext}`;
     return `${nameBase}_${index}.${ext}`;
   }
@@ -1534,23 +1601,23 @@ class AppState {
     let totalCompressed = 0;
 
     this.processedFiles.forEach((file, index) => {
-      totalOriginal += file.originalSize;
-      totalCompressed += file.compressedSize;
+      totalOriginal += file.originalSize || 0;
+      totalCompressed += file.compressedSize || 0;
 
-      const compression = file.originalSize > 0 ? Math.round((1 - file.compressedSize / file.originalSize) * 100) : 0;
+      const compression = (file.originalSize > 0) ? Math.round((1 - (file.compressedSize / file.originalSize)) * 100) : 0;
       const compressionText = compression > 0 ? ` (сжатие: ${compression}%)` : '';
-      const note = file.note ? `<div style="font-size:0.8em;color:#666;">${file.note}</div>` : '';
+      const note = file.note ? `<div style="font-size:0.8em;color:#666;">${this.escapeHtml(file.note)}</div>` : '';
 
       html += `
         <div class="result-file">
           <div>
-            <strong>${file.name}</strong>
+            <strong>${this.escapeHtml(file.name)}</strong>
             <div class="file-size-compression">
               ${FileUtils.formatFileSize(file.originalSize)} →
               ${FileUtils.formatFileSize(file.compressedSize)}${compressionText}
-              ${file.resolution ? ` • ${file.resolution}` : ''}
-              ${file.format ? ` • ${String(file.format).toUpperCase()}` : ''}
-              ${file.bitrate ? ` • ${file.bitrate}` : ''}
+              ${file.resolution ? ` • ${this.escapeHtml(file.resolution)}` : ''}
+              ${file.format ? ` • ${this.escapeHtml(String(file.format).toUpperCase())}` : ''}
+              ${file.bitrate ? ` • ${this.escapeHtml(file.bitrate)}` : ''}
             </div>
             ${note}
           </div>
@@ -1592,6 +1659,7 @@ class AppState {
       const zip = new JSZip();
       const folder = zip.folder("processed_files");
 
+      // ВАЖНО: имена уже уникальные (исправлено в generateFileName/processFiles)
       this.processedFiles.forEach(file => folder.file(file.name, file.blob));
 
       const readme = `
@@ -1628,7 +1696,7 @@ class AppState {
   showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'temp-message error-message';
-    errorDiv.innerHTML = `<strong>❌ Ошибка:</strong> ${message}`;
+    errorDiv.innerHTML = `<strong>❌ Ошибка:</strong> ${this.escapeHtml(message)}`;
 
     const container = document.querySelector('.container');
     container.insertBefore(errorDiv, container.children[1]);
@@ -1637,7 +1705,7 @@ class AppState {
   }
 
   /* =======================
-     AI: советник (реальный)
+     AI: советник
   ======================= */
   getAIAdvice() {
     const aiTip = document.getElementById('aiTip');
@@ -1662,34 +1730,27 @@ class AppState {
       tips.push(`FFmpeg готов ✅ (corePath: ${corePath.includes('http') ? 'CDN' : 'local'})`);
     }
 
-    // image formats
     const png = document.getElementById('formatPNG').checked;
     const jpg = document.getElementById('formatJPG').checked;
     if (images.length && !png && !jpg) tips.push('Для изображений не выбраны форматы вывода (PNG/JPG). Иначе изображения выйдут “как есть”.');
 
-    // audio formats
     const mp3 = document.getElementById('audioMP3').checked;
     const ogg = document.getElementById('audioOGG').checked;
     if (audios.length && !mp3 && !ogg) tips.push('Для аудио не выбран формат (MP3/OGG). Иначе аудио выйдет “как есть”.');
 
-    // naming
     const useSmart = document.getElementById('smartRenaming').checked;
     const base = this.getGlobalBaseName();
     if (useSmart && !base) tips.push('Умное переименование включено, но “общее имя” пустое → заполни, иначе будет image/audio/video.');
     if (useSmart && base && audios.length) tips.push('Для аудио умное переименование использует цифры из исходного имени: base+число (пример: audio_hook333.mp3).');
 
-    // video heavy
     if (videos.length > 2) tips.push('Видео > 2 шт: лучше обрабатывать 1–2 видео за раз, иначе возможны вылеты по памяти (особенно на больших файлах).');
 
-    // JPG + transparent bg
     const bg = this.currentSettings.selectedBackground;
     if (jpg && bg === 'transparent') tips.push('Выбран “Прозрачный” фон, но JPG прозрачность не поддерживает → будет заливка белым.');
 
-    // sizes sanity
     const sizesRaw = (document.getElementById('imageSizes').value || '').split(',').map(s => s.trim()).filter(Boolean);
     if (sizesRaw.length > 8) tips.push('Слишком много размеров изображений → сильная нагрузка и большой ZIP. Лучше 3–6 размеров за раз.');
 
-    // show main tip
     if (aiTip) {
       aiTip.querySelector('.ai-tip-header strong').textContent = 'Рекомендации готовы';
       aiTip.querySelector('.ai-tip-content').textContent = tips[0] || 'Нет рекомендаций — всё выглядит нормально.';
@@ -1702,7 +1763,7 @@ class AppState {
       Видео: ${this.currentSettings.selectedVideoResolution}, качество: ${this.currentSettings.selectedVideoQuality}
     `;
 
-    aiTipsList.innerHTML = tips.map(t => `<div class="ai-tip-item">${t}</div>`).join('');
+    aiTipsList.innerHTML = tips.map(t => `<div class="ai-tip-item">${this.escapeHtml(t)}</div>`).join('');
     aiResults.classList.remove('hidden');
   }
 
@@ -1738,7 +1799,7 @@ class AppState {
 
     aiTipsList.innerHTML = results.map(r => {
       const warn = r.tooSmall ? ' ⚠️ мало пикселей' : '';
-      return `<div class="ai-tip-item"><strong>${r.name}</strong><br>${r.w}×${r.h} (${r.megapixels.toFixed(2)} MP) • ${FileUtils.formatFileSize(r.size)}${warn}</div>`;
+      return `<div class="ai-tip-item"><strong>${this.escapeHtml(r.name)}</strong><br>${r.w}×${r.h} (${r.megapixels.toFixed(2)} MP) • ${FileUtils.formatFileSize(r.size)}${warn}</div>`;
     }).join('');
 
     aiResults.classList.remove('hidden');
@@ -1769,7 +1830,7 @@ class AppState {
   }
 
   /* =======================
-     AI: анализ бренда (палитра + рекомендации)
+     AI: анализ бренда
   ======================= */
   async analyzeBrandAssets() {
     const out = document.getElementById('brandAnalysisResults');
@@ -1787,7 +1848,6 @@ class AppState {
     let brightnessSum = 0;
     let brightnessCount = 0;
 
-    // ratio stats
     let squareish = 0;
     let wide = 0;
     let tall = 0;
@@ -1839,7 +1899,6 @@ class AppState {
 
     out.classList.remove('hidden');
 
-    // если включено "Авто"
     if (document.getElementById('aiAnalysis').checked) {
       this.applyBrandRecommendations();
     }
@@ -1852,7 +1911,6 @@ class AppState {
     this.setBackgroundSelection(recommendedBg);
     this.loadPreset(recommendedPreset);
 
-    // мягкая подсказка
     const aiTip = document.getElementById('aiTip');
     if (aiTip) {
       aiTip.querySelector('.ai-tip-header strong').textContent = 'Рекомендации применены';
@@ -1869,7 +1927,6 @@ class AppState {
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
 
-          // маленькая превьюшка для быстрого семплинга
           const max = 180;
           const scale = Math.min(max / img.width, max / img.height, 1);
           const w = Math.max(1, Math.floor(img.width * scale));
@@ -1885,14 +1942,13 @@ class AppState {
           let bSum = 0;
           let bN = 0;
 
-          const step = 6; // чем больше, тем быстрее
+          const step = 6;
           for (let y = 0; y < h; y += step) {
             for (let x = 0; x < w; x += step) {
               const i = (y * w + x) * 4;
               const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
               if (a < 30) continue;
 
-              // quantize
               const q = 32;
               const rq = Math.floor(r / q) * q;
               const gq = Math.floor(g / q) * q;
