@@ -8,15 +8,16 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
   <!--
-    FFmpeg WASM: авто-фолбэк:
-    1) сначала пробуем локально (самохостинг): /ffmpeg/ffmpeg.min.js и /ffmpeg/ffmpeg-core.js (+ wasm/worker рядом)
-    2) если локально нет — пробуем CDN jsDelivr
+    FFmpeg WASM (совместимо с API createFFmpeg/run/FS):
+    ✅ Локально (самохостинг): /ffmpeg/ffmpeg.min.js + /ffmpeg/ffmpeg-core.js + /ffmpeg/ffmpeg-core.wasm
+    ✅ Фолбэк CDN: @ffmpeg/ffmpeg@0.11.6 и @ffmpeg/core-st@0.11.0
 
-    Для самохостинга положи файлы в /public/ffmpeg/:
-      - ffmpeg.min.js
-      - ffmpeg-core.js
-      - ffmpeg-core.wasm
-      - ffmpeg-core.worker.js (если есть)
+    ВАЖНО для Vercel (статический сайт):
+    Положи файлы прямо в корень репозитория:
+      /index.html
+      /ffmpeg/ffmpeg.min.js
+      /ffmpeg/ffmpeg-core.js
+      /ffmpeg/ffmpeg-core.wasm
   -->
 
   <style>
@@ -37,16 +38,10 @@
     .upload-btn:hover { background: #2980b9; }
 
     .file-list { margin: 20px 30px; max-height: 400px; overflow-y: auto; }
-    .file-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-    .file-list-header h3 { color: #2c3e50; }
-    .clear-all-btn { background: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 0.9em; transition: background 0.3s ease; }
-    .clear-all-btn:hover { background: #c0392b; }
-
     .file-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #f8f9fa; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #3498db; }
     .file-info { display: flex; align-items: center; gap: 10px; flex: 1; }
     .file-icon { font-size: 1.5em; }
     .file-size { color: #7f8c8d; font-size: 0.9em; }
-    .file-rename { display: flex; align-items: center; gap: 10px; margin-left: 15px; }
     .rename-input { padding: 8px 12px; border: 2px solid #bdc3c7; border-radius: 8px; font-size: 0.9em; width: 200px; transition: border-color 0.3s ease; }
     .rename-input:focus { border-color: #3498db; outline: none; }
 
@@ -85,7 +80,6 @@
     .preset-btn:hover { background: #7f8c8d; }
 
     .ai-section { background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; position: relative; }
-    .ai-feature { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
 
     .ai-advisor-section { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; }
     .ai-advisor-card { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 20px; border: 1px solid rgba(255, 255, 255, 0.2); }
@@ -116,7 +110,6 @@
 
     .process-btn { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; border: none; padding: 15px 40px; font-size: 1.2em; border-radius: 25px; cursor: pointer; display: block; margin: 30px auto; transition: transform 0.2s ease; }
     .process-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(39, 174, 96, 0.3); }
-    .process-btn:active { transform: translateY(0); }
     .process-btn:disabled { background: #bdc3c7; cursor: not-allowed; transform: none; }
 
     .result { margin: 20px 30px; padding: 25px; background: #e8f5e8; border-radius: 15px; border-left: 4px solid #27ae60; }
@@ -203,7 +196,6 @@
       .ai-actions { flex-direction: column; }
       .ai-btn { flex: none; }
       .file-item { flex-direction: column; align-items: flex-start; gap: 10px; }
-      .file-rename { margin-left: 0; width: 100%; }
       .rename-input { width: 100%; }
       .background-color-options { grid-template-columns: 1fr; }
       .video-format-options { flex-wrap: wrap; }
@@ -494,9 +486,10 @@ function loadScript(src) {
 async function ensureFFmpegLibLoaded() {
   if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') return true;
 
+  // ✅ ВАЖНО: используем @ffmpeg/ffmpeg 0.11.x (там есть createFFmpeg/run/FS)
   const candidates = [
     '/ffmpeg/ffmpeg.min.js',
-    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.4/dist/ffmpeg.min.js'
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js'
   ];
 
   for (const url of candidates) {
@@ -531,9 +524,10 @@ class VideoProcessor {
     try {
       const { createFFmpeg } = window.FFmpeg;
 
+      // ✅ Для 0.11.x лучше core-st (без worker) — проще для самохостинга
       const coreCandidates = [
         '/ffmpeg/ffmpeg-core.js',
-        'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.4/dist/ffmpeg-core.js'
+        'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js'
       ];
 
       for (const corePath of coreCandidates) {
@@ -605,6 +599,7 @@ class VideoProcessor {
 
     ffmpeg.FS('writeFile', inputName, new Uint8Array(inputData));
 
+    // ✅ Гарантируем итоговый кадр ровно width x height: scale + pad
     const command = [
       '-i', inputName,
       '-vf', `scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2`,
@@ -739,16 +734,13 @@ class MediaProcessor {
     this.videoProcessor && this.videoProcessor.cancel();
   }
 
-  // ✅ ВАЖНО: fileIndex тут теперь "порядковый номер внутри типа"
   async processFiles(files, settings, onProgress, onFileProcessed) {
     this.isCancelled = false;
     const totalFiles = files.length;
     let processedCount = 0;
 
-    // порядковые номера внутри типа
     let imgN = 0, audN = 0, vidN = 0, otherN = 0;
 
-    // 1) Сначала не-видео
     for (let i = 0; i < files.length; i++) {
       if (this.isCancelled) break;
 
@@ -776,7 +768,6 @@ class MediaProcessor {
       }
     }
 
-    // 2) Потом видео
     const videoFiles = files.filter(f => FileUtils.getFileType(f.name) === 'Видео');
     for (let i = 0; i < videoFiles.length; i++) {
       if (this.isCancelled) break;
@@ -1234,7 +1225,6 @@ class AppState {
       this.handleFiles(e.dataTransfer.files);
     });
 
-    // click zone opens file picker (кроме клика по кнопке/инпуту)
     dropZone.addEventListener('click', (e) => {
       const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
       if (tag === 'button' || tag === 'input' || tag === 'label') return;
@@ -1336,7 +1326,6 @@ class AppState {
       this.files.push(file);
     });
 
-    // ✅ позволяет выбрать те же файлы повторно
     const input = document.getElementById('fileInput');
     if (input) input.value = '';
 
@@ -1483,7 +1472,6 @@ class AppState {
     else exampleEl.textContent = `${baseName}.png, ${baseName}_2.png, ${baseName}_3.png`;
   }
 
-  // ✅ исправлено: уникальные имена по типу + корректный useOriginalNames при нескольких вариантах
   generateFileName(baseName, format, type, originalName, index, fileIndex = 1, totalVariants = 1) {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
@@ -1501,7 +1489,6 @@ class AppState {
     if (useSmart) {
       const nameBase = (globalBase || this.getSmartPrefix(type) || 'file').trim() || 'file';
 
-      // аудио: base + число из исходника, иначе base_2, base_3...
       if (type === 'Аудио' && globalBase) {
         const num = this.extractNumberFromName(originalName);
         if (num) return `${globalBase}${num}.${ext}`;
@@ -1513,7 +1500,6 @@ class AppState {
       const fi = Math.max(1, Number(fileIndex) || 1);
       const ix = Math.max(1, Number(index) || 1);
 
-      // сквозной индекс по типу: (файл-1)*вариантов + вариант
       const seq = (fi - 1) * variants + ix;
 
       if (type === 'Изображение' && nameBase.toLowerCase() === 'logo') {
@@ -1525,9 +1511,9 @@ class AppState {
       return `${nameBase}_${seq}.${ext}`;
     }
 
-    const nameBase = (baseName || originalBase || 'file').trim() || 'file';
-    if (index === 1) return `${nameBase}.${ext}`;
-    return `${nameBase}_${index}.${ext}`;
+    const nameBase2 = (baseName || originalBase || 'file').trim() || 'file';
+    if (index === 1) return `${nameBase2}.${ext}`;
+    return `${nameBase2}_${index}.${ext}`;
   }
 
   getSmartPrefix(type) {
@@ -1659,7 +1645,6 @@ class AppState {
       const zip = new JSZip();
       const folder = zip.folder("processed_files");
 
-      // ВАЖНО: имена уже уникальные (исправлено в generateFileName/processFiles)
       this.processedFiles.forEach(file => folder.file(file.name, file.blob));
 
       const readme = `
@@ -1725,7 +1710,7 @@ class AppState {
     const corePath = this.mediaProcessor?.videoProcessor?.loadedCorePath || '—';
 
     if (!ffmpegReady) {
-      tips.push('FFmpeg WASM сейчас недоступен → видео/аудио могут выходить “как оригинал”. Если видишь ошибки CORS/политики ресурсов — включи самохостинг (/public/ffmpeg/*).');
+      tips.push('FFmpeg WASM сейчас недоступен → видео/аудио выходят “как оригинал”. Проверь, что /ffmpeg/ffmpeg.min.js и /ffmpeg/ffmpeg-core.(js/wasm) открываются без 404.');
     } else {
       tips.push(`FFmpeg готов ✅ (corePath: ${corePath.includes('http') ? 'CDN' : 'local'})`);
     }
@@ -1743,7 +1728,7 @@ class AppState {
     if (useSmart && !base) tips.push('Умное переименование включено, но “общее имя” пустое → заполни, иначе будет image/audio/video.');
     if (useSmart && base && audios.length) tips.push('Для аудио умное переименование использует цифры из исходного имени: base+число (пример: audio_hook333.mp3).');
 
-    if (videos.length > 2) tips.push('Видео > 2 шт: лучше обрабатывать 1–2 видео за раз, иначе возможны вылеты по памяти (особенно на больших файлах).');
+    if (videos.length > 2) tips.push('Видео > 2 шт: лучше обрабатывать 1–2 видео за раз, иначе возможны вылеты по памяти.');
 
     const bg = this.currentSettings.selectedBackground;
     if (jpg && bg === 'transparent') tips.push('Выбран “Прозрачный” фон, но JPG прозрачность не поддерживает → будет заливка белым.');
@@ -1974,9 +1959,6 @@ class AppState {
     });
   }
 
-  /* =======================
-     misc controls
-  ======================= */
   resetAllSettings() {
     this.currentSettings = this.getDefaultSettings();
     document.getElementById('imageSizes').value = this.currentSettings.imageSizes;
@@ -2044,7 +2026,6 @@ let appState;
 document.addEventListener('DOMContentLoaded', () => {
   appState = new AppState();
 
-  // поддержка ввода hex без "#"
   document.getElementById('customColorHex').addEventListener('change', (e) => {
     let value = e.target.value.trim();
     if (!value.startsWith('#')) value = '#' + value;
