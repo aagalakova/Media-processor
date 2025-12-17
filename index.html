@@ -559,14 +559,11 @@ class VideoProcessor {
       const isolated = (self.crossOriginIsolated === true);
       const canUseMT = hasSAB && isolated;
 
-      // multi-thread core (требует COOP/COEP). worker будет грузиться:
-      // https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.worker.js
       const mtCoreCandidates = [
         '/ffmpeg/ffmpeg-core.js',
         'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
       ];
 
-      // single-thread fallback (работает без SharedArrayBuffer; медленнее)
       const stCoreCandidates = [
         'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js',
         'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js'
@@ -765,6 +762,41 @@ class FileUtils {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
+
+  static inferImageFormatFromFile(file) {
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext === 'png') return 'png';
+    if (ext === 'jpg' || ext === 'jpeg') return 'jpg';
+    const t = (file.type || '').toLowerCase();
+    if (t.includes('png')) return 'png';
+    return 'jpg';
+  }
+
+  static parseSizes(raw) {
+    const out = [];
+    const parts = String(raw || '')
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    for (const p of parts) {
+      const m = p.toLowerCase().match(/^(\d+)\s*x\s*(\d+)$/);
+      if (!m) continue;
+      const w = Math.max(1, parseInt(m[1], 10));
+      const h = Math.max(1, parseInt(m[2], 10));
+      if (Number.isFinite(w) && Number.isFinite(h) && w > 0 && h > 0) out.push({ w, h });
+    }
+    return out;
+  }
+
+  static escapeHtmlAttr(str) {
+    return String(str ?? '')
+      .replaceAll('&', '&amp;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;');
+  }
 }
 
 class MediaProcessor {
@@ -865,7 +897,8 @@ class MediaProcessor {
       FileUtils.getFileType(file.name),
       file.name,
       1,
-      index
+      index,
+      1
     );
 
     onFileProcessed([{
@@ -895,7 +928,8 @@ class MediaProcessor {
         type,
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
       processed.push({ blob: file, name, type, originalSize: file.size, compressedSize: file.size });
     }
@@ -903,6 +937,12 @@ class MediaProcessor {
     return processed;
   }
 
+  /* =======================
+     IMAGE (исправлено):
+     - всегда делает подложку + центрирует
+     - ресайз работает даже если PNG/JPG не выбраны (берём формат исходника)
+     - генерация вариантов последовательная (без Promise.all)
+  ======================= */
   async processImage(file, settings, processed, fileIndex) {
     return new Promise((resolve) => {
       const reader = new FileReader();
@@ -912,68 +952,45 @@ class MediaProcessor {
 
         img.onload = async () => {
           try {
-            const sizes = settings.imageSizes.split(',').map(s => s.trim()).filter(Boolean);
+            // sizes
+            let sizes = FileUtils.parseSizes(settings.imageSizes);
+            if (!sizes.length) sizes = [{ w: img.width, h: img.height }];
 
+            // formats
             const formats = [];
             if (document.getElementById('formatPNG').checked) formats.push('png');
             if (document.getElementById('formatJPG').checked) formats.push('jpg');
+            if (!formats.length) formats.push(FileUtils.inferImageFormatFromFile(file)); // важная правка
 
-            if (!sizes.length || !formats.length) {
-              const name = appState.generateFileName(
-                file.customName || file.name.replace(/\.[^/.]+$/, ''),
-                (file.name.split('.').pop() || '').toLowerCase(),
-                'Изображение',
-                file.name,
-                1,
-                fileIndex
-              );
-
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              canvas.width = img.width;
-              canvas.height = img.height;
-              ctx.drawImage(img, 0, 0);
-
-              const isPng = (file.type || '').includes('png');
-              const mimeType = isPng ? 'image/png' : 'image/jpeg';
-              const quality = isPng ? 0.9 : 0.85;
-
-              canvas.toBlob((blob) => {
-                if (blob) {
-                  processed.push({
-                    blob, name,
-                    type: 'Изображение',
-                    originalSize: file.size,
-                    compressedSize: blob.size,
-                    format: isPng ? 'png' : 'jpg',
-                    background: settings.selectedBackground
-                  });
-                }
-                resolve();
-              }, mimeType, quality);
-              return;
-            }
-
-            const promises = [];
-            const totalVariants = sizes.length * formats.length || 1;
+            const totalVariants = sizes.length * formats.length;
             let counter = 1;
 
-            for (const size of sizes) {
-              const [width, height] = size.split('x').map(Number);
+            // последовательно (правка D)
+            for (const s of sizes) {
               for (const format of formats) {
                 if (this.isCancelled) { resolve(); return; }
-                promises.push(this.createImageVersion(
-                  img, width, height, format, file, processed,
+                await this.createImageVersion(
+                  img, s.w, s.h, format, file, processed,
                   counter, totalVariants, fileIndex, settings
-                ));
+                );
                 counter++;
               }
             }
 
-            await Promise.all(promises);
             resolve();
           } catch (error) {
             console.error('Ошибка обработки изображения:', error);
+
+            const name = appState.generateFileName(
+              file.customName || file.name.replace(/\.[^/.]+$/, ''),
+              FileUtils.inferImageFormatFromFile(file),
+              'Изображение',
+              file.name,
+              1,
+              fileIndex,
+              1
+            );
+            processed.push({ blob: file, name, type: 'Изображение', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка)' });
             resolve();
           }
         };
@@ -981,13 +998,14 @@ class MediaProcessor {
         img.onerror = () => {
           const name = appState.generateFileName(
             file.customName || file.name.replace(/\.[^/.]+$/, ''),
-            (file.name.split('.').pop() || '').toLowerCase(),
+            FileUtils.inferImageFormatFromFile(file),
             'Изображение',
             file.name,
             1,
-            fileIndex
+            fileIndex,
+            1
           );
-          processed.push({ blob: file, name, type: 'Изображение', originalSize: file.size, compressedSize: file.size, background: settings.selectedBackground });
+          processed.push({ blob: file, name, type: 'Изображение', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (не удалось прочитать как изображение)' });
           resolve();
         };
 
@@ -1001,6 +1019,9 @@ class MediaProcessor {
 
   async createImageVersion(img, width, height, format, file, processed, counter, totalVariants, fileIndex, settings) {
     return new Promise((resolveVersion) => {
+      width = Math.max(1, Math.round(Number(width) || 1));
+      height = Math.max(1, Math.round(Number(height) || 1));
+
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
@@ -1009,6 +1030,7 @@ class MediaProcessor {
 
       const backgroundColor = this.getBackgroundColor(settings.selectedBackground);
 
+      // подложка
       if (backgroundColor === 'transparent' && format === 'png') {
         ctx.clearRect(0, 0, width, height);
       } else if (backgroundColor === 'transparent') {
@@ -1019,7 +1041,8 @@ class MediaProcessor {
         ctx.fillRect(0, 0, width, height);
       }
 
-      const scale = Math.min(width / img.width, height / img.height);
+      // масштаб с запретом апскейла (как в "нормальных" карточках)
+      const scale = Math.min(width / img.width, height / img.height, 1);
       const scaledWidth = img.width * scale;
       const scaledHeight = img.height * scale;
       const offsetX = (width - scaledWidth) / 2;
@@ -1066,7 +1089,7 @@ class MediaProcessor {
       case 'transparent': return 'transparent';
       case 'black': return '#000000';
       case 'custom': {
-        const hexColor = document.getElementById('customColorHex').value;
+        const hexColor = document.getElementById('customColorHex')?.value || '#ffffff';
         return this.validateColor(hexColor) ? hexColor : '#ffffff';
       }
       default: return '#ffffff';
@@ -1094,7 +1117,8 @@ class MediaProcessor {
           'Аудио',
           file.name,
           1,
-          fileIndex
+          fileIndex,
+          1
         );
         processed.push({ blob: file, name, type: 'Аудио', originalSize: file.size, compressedSize: file.size });
         return;
@@ -1120,7 +1144,8 @@ class MediaProcessor {
           'Аудио',
           file.name,
           i + 1,
-          fileIndex
+          fileIndex,
+          formats.length
         );
 
         processed.push({
@@ -1142,7 +1167,8 @@ class MediaProcessor {
         'Аудио',
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
       processed.push({ blob: file, name, type: 'Аудио', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка)' });
     }
@@ -1171,7 +1197,8 @@ class MediaProcessor {
         'Видео',
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
 
       processed.push({
@@ -1198,7 +1225,8 @@ class MediaProcessor {
         'Видео',
         file.name,
         1,
-        fileIndex
+        fileIndex,
+        1
       );
 
       processed.push({ blob: file, name, type: 'Видео', originalSize: file.size, compressedSize: file.size, note: 'Оригинал (ошибка обработки)' });
@@ -1217,6 +1245,11 @@ class AppState {
     this.currentSettings = this.getDefaultSettings();
     this.mediaProcessor = new MediaProcessor();
     this.lastBrandRecommendations = null;
+
+    // === smart naming plan (правка C/E) ===
+    this.smartPlanCounts = null;   // { key: number }
+    this.smartCounters = null;     // { key: number }
+
     this.initEventListeners();
     this.updateUI();
   }
@@ -1379,7 +1412,7 @@ class AppState {
             <div>
               <input type="text"
                 class="rename-input"
-                value="${file.customName}"
+                value="${FileUtils.escapeHtmlAttr(file.customName)}"
                 onchange="appState.updateFileName(${index}, this.value)"
                 placeholder="Введите имя файла">
               <div class="file-size">${FileUtils.formatFileSize(file.size)} • ${type}</div>
@@ -1458,7 +1491,6 @@ class AppState {
       return;
     }
 
-    // аудио: base + цифры из оригинала (если есть)
     if (useSmart && globalBase && type === 'Аудио') {
       const nums = this.files.slice(0, 3).map(f => this.extractNumberFromName(f.name)).filter(Boolean);
       if (nums.length) {
@@ -1467,18 +1499,88 @@ class AppState {
       }
     }
 
-    if (useSmart && type === 'Изображение' && globalBase.toLowerCase() === 'logo') {
-      exampleEl.textContent = 'logo.png, logo_1.png, logo_2.png';
+    const baseName = useSmart ? (globalBase || this.getSmartPrefix(type)) : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
+
+    // при useSmart показываем нумерацию, чтобы было понятно что будет уникально
+    if (useSmart) {
+      if (type === 'Видео') exampleEl.textContent = `${baseName}_1.mp4, ${baseName}_2.mp4, ${baseName}_3.mp4`;
+      else if (type === 'Аудио') exampleEl.textContent = `${baseName}_1.mp3, ${baseName}_2.mp3, ${baseName}_3.mp3`;
+      else exampleEl.textContent = `${baseName}_1.png, ${baseName}_2.png, ${baseName}_3.png`;
       return;
     }
-
-    const baseName = useSmart ? (globalBase || this.getSmartPrefix(type)) : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
 
     if (type === 'Аудио') exampleEl.textContent = `${baseName}.mp3, ${baseName}_2.mp3, ${baseName}_3.mp3`;
     else if (type === 'Видео') exampleEl.textContent = `${baseName}.mp4, ${baseName}_2.mp4, ${baseName}_3.mp4`;
     else exampleEl.textContent = `${baseName}.png, ${baseName}_2.png, ${baseName}_3.png`;
   }
 
+  /* =======================
+     SMART PLAN (правка C):
+     считаем, сколько файлов выйдет в каждой группе (type+base+ext),
+     чтобы:
+       - если всего 1 → base.ext
+       - если >1 → base_1.ext, base_2.ext ...
+  ======================= */
+  prepareSmartNamingPlan(settings) {
+    const useSmart = document.getElementById('smartRenaming')?.checked || false;
+    if (!useSmart) {
+      this.smartPlanCounts = null;
+      this.smartCounters = null;
+      return;
+    }
+
+    const globalBase = this.getGlobalBaseName();
+
+    const baseForType = (type) => (globalBase || this.getSmartPrefix(type));
+
+    const sizes = FileUtils.parseSizes(document.getElementById('imageSizes')?.value || '');
+    const sizeCount = sizes.length ? sizes.length : 1;
+
+    const selectedFormats = [];
+    if (document.getElementById('formatPNG')?.checked) selectedFormats.push('png');
+    if (document.getElementById('formatJPG')?.checked) selectedFormats.push('jpg');
+
+    const plan = {};
+
+    const add = (key, n) => {
+      plan[key] = (plan[key] || 0) + n;
+    };
+
+    for (const file of this.files) {
+      const type = FileUtils.getFileType(file.name);
+
+      if (type === 'Изображение') {
+        const base = baseForType(type);
+
+        const formats = selectedFormats.length
+          ? selectedFormats
+          : [FileUtils.inferImageFormatFromFile(file)];
+
+        for (const fmt of formats) {
+          add(`${type}:${base}:${fmt}`, sizeCount);
+        }
+      }
+
+      if (type === 'Видео') {
+        const base = baseForType(type);
+        const fmt = (settings.selectedVideoFormat || 'mp4').toLowerCase();
+        add(`${type}:${base}:${fmt}`, 1);
+      }
+
+      // Аудио в smart режиме у тебя отдельной логикой base+digits,
+      // его в этот план не включаем.
+    }
+
+    this.smartPlanCounts = plan;
+    this.smartCounters = {};
+  }
+
+  /* =======================
+     generateFileName (исправлено C + E):
+     - useOriginalNames: при нескольких вариантах добавляет суффикс
+     - useSmart: использует глобальные счётчики (уникально для нескольких файлов)
+     - audio smart base+digits оставлен как было
+  ======================= */
   generateFileName(baseName, format, type, originalName, index, fileIndex, totalVariants) {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
@@ -1486,10 +1588,14 @@ class AppState {
 
     const originalExt = (originalName.split('.').pop() || '').toLowerCase();
     const ext = (format || originalExt || '').toLowerCase() || 'dat';
-
     const originalBase = originalName.replace(/\.[^/.]+$/, '') || baseName || 'file';
 
+    // E) useOriginalNames + multiple variants
     if (useOriginal) {
+      if (totalVariants && totalVariants > 1) {
+        if (index === 1) return `${originalBase}.${ext}`;
+        return `${originalBase}_${index}.${ext}`;
+      }
       return `${originalBase}.${ext}`;
     }
 
@@ -1497,18 +1603,26 @@ class AppState {
     if (useSmart && globalBase && type === 'Аудио') {
       const num = this.extractNumberFromName(originalName);
       if (num) return `${globalBase}${num}.${ext}`;
+      // если числа нет — падаем на общий smart-счётчик ниже
     }
 
     let nameBase = useSmart ? (globalBase || this.getSmartPrefix(type)) : (baseName || originalBase || 'file');
 
-    // спец-логика логотипов
-    if (useSmart && type === 'Изображение' && nameBase.toLowerCase() === 'logo' && totalVariants && totalVariants > 0) {
-      if (totalVariants === 1) return `${nameBase}.${ext}`;
-      if (index === 1) return `${nameBase}.${ext}`;
-      const suffix = index - 1;
-      return `${nameBase}_${suffix}.${ext}`;
+    // C) smart naming: уникальные имена для нескольких файлов/вариантов
+    if (useSmart) {
+      const key = `${type}:${nameBase}:${ext}`;
+      const total = this.smartPlanCounts ? (this.smartPlanCounts[key] || 0) : 0;
+
+      if (total <= 1) {
+        return `${nameBase}.${ext}`;
+      }
+
+      const next = (this.smartCounters[key] || 0) + 1;
+      this.smartCounters[key] = next;
+      return `${nameBase}_${next}.${ext}`;
     }
 
+    // обычный режим (не smart)
     if (index === 1) return `${nameBase}.${ext}`;
     return `${nameBase}_${index}.${ext}`;
   }
@@ -1552,6 +1666,9 @@ class AppState {
       selectedVideoFormat: this.currentSettings.selectedVideoFormat
     };
 
+    // === важная правка: строим smart-план ДО обработки ===
+    this.prepareSmartNamingPlan(settings);
+
     try {
       await this.mediaProcessor.processFiles(
         this.files,
@@ -1594,7 +1711,7 @@ class AppState {
       html += `
         <div class="result-file">
           <div>
-            <strong>${file.name}</strong>
+            <strong>${FileUtils.escapeHtmlAttr(file.name)}</strong>
             <div class="file-size-compression">
               ${FileUtils.formatFileSize(file.originalSize)} →
               ${FileUtils.formatFileSize(file.compressedSize)}${compressionText}
@@ -1678,7 +1795,7 @@ class AppState {
   showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'temp-message error-message';
-    errorDiv.innerHTML = `<strong>❌ Ошибка:</strong> ${message}`;
+    errorDiv.innerHTML = `<strong>❌ Ошибка:</strong> ${FileUtils.escapeHtmlAttr(message)}`;
 
     const container = document.querySelector('.container');
     container.insertBefore(errorDiv, container.children[1]);
@@ -1715,7 +1832,7 @@ class AppState {
 
     const png = document.getElementById('formatPNG').checked;
     const jpg = document.getElementById('formatJPG').checked;
-    if (images.length && !png && !jpg) tips.push('Для изображений не выбраны форматы вывода (PNG/JPG). Иначе изображения выйдут “как есть”.');
+    if (images.length && !png && !jpg) tips.push('Для изображений не выбраны форматы вывода (PNG/JPG). Сейчас будет использован формат исходника автоматически.');
 
     const mp3 = document.getElementById('audioMP3').checked;
     const ogg = document.getElementById('audioOGG').checked;
@@ -1782,7 +1899,7 @@ class AppState {
 
     aiTipsList.innerHTML = results.map(r => {
       const warn = r.tooSmall ? ' ⚠️ мало пикселей' : '';
-      return `<div class="ai-tip-item"><strong>${r.name}</strong><br>${r.w}×${r.h} (${r.megapixels.toFixed(2)} MP) • ${FileUtils.formatFileSize(r.size)}${warn}</div>`;
+      return `<div class="ai-tip-item"><strong>${FileUtils.escapeHtmlAttr(r.name)}</strong><br>${r.w}×${r.h} (${r.megapixels.toFixed(2)} MP) • ${FileUtils.formatFileSize(r.size)}${warn}</div>`;
     }).join('');
 
     aiResults.classList.remove('hidden');
