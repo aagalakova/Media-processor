@@ -458,7 +458,7 @@
   </div>
 
     <!-- AI-советник -->
-    <div class="ai-advisor-section">
+    <div class="card ai-advisor-section">
       <h3>🧠 AI-Советник</h3>
       <div class="coming-soon">Функции будут обновлены и расширены.</div>
       <div class="ai-advisor-card">
@@ -471,8 +471,8 @@
         </div>
 
         <div class="ai-actions">
-          <button class="ai-btn" onclick="appState.getAIAdvice()" id="aiAdviceBtn">🤖 Получить советы</button>
-          <button class="ai-btn secondary" onclick="appState.analyzeAllImages()" id="analyzeImagesBtn">🎨 Анализ изображений</button>
+          <button class="ai-btn" id="aiAdviceBtn">🤖 Получить советы</button>
+          <button class="ai-btn secondary" id="analyzeImagesBtn">🎨 Анализ изображений</button>
         </div>
 
         <div class="ai-results hidden" id="aiResults">
@@ -497,7 +497,7 @@
         <label for="aiAnalysis">Автоматически анализировать цвета и рекомендовать настройки</label>
       </div>
 
-      <button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background:#9b59b6;">
+      <button class="upload-btn" style="background:#9b59b6;">
         🔍 Проанализировать бренд
       </button>
 
@@ -1315,13 +1315,24 @@ class AppState {
 
     fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
 
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }, true);
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'), true);
+    document.addEventListener('dragover', (e) => e.preventDefault());
+    document.addEventListener('drop', (e) => e.preventDefault());
+
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       dropZone.classList.remove('dragover');
       this.handleFiles(e.dataTransfer.files);
-    });
+    }, true);
+
+    // AI buttons (no inline handlers)
+    const aiAdviceBtn = document.getElementById('aiAdviceBtn');
+    if (aiAdviceBtn) aiAdviceBtn.addEventListener('click', () => this.getAIAdvice());
+    const analyzeImagesBtn = document.getElementById('analyzeImagesBtn');
+    if (analyzeImagesBtn) analyzeImagesBtn.addEventListener('click', () => this.analyzeAllImages());
+    const analyzeBrandBtn = document.getElementById('analyzeBrandBtn');
+    if (analyzeBrandBtn) analyzeBrandBtn.addEventListener('click', () => this.analyzeBrandAssets());
 
     this.initVideoSettingsListeners();
     this.initBackgroundColorListeners();
