@@ -1311,31 +1311,42 @@ class AppState {
   initEventListeners() {
     const fileInput = document.getElementById('fileInput');
     const dropZone = document.getElementById('dropZone');
-
-    // --- Drag&Drop: prevent browser from opening files on drop ---
-    const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
-    window.addEventListener('dragenter', prevent, true);
-    window.addEventListener('dragover', prevent, true);
-    window.addEventListener('drop', prevent, true);
-    document.addEventListener('dragenter', prevent, true);
-    document.addEventListener('dragover', prevent, true);
-    document.addEventListener('drop', prevent, true);
-
     const processBtn = document.getElementById('processBtn');
 
-    fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
+    fileInput.addEventListener('change', (e) => {
+      this.handleFiles(e.target.files);
+      fileInput.value = ''; // чтобы можно было загрузить те же файлы повторно
+    });
 
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('dragover'); }, true);
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'), true);
-    document.addEventListener('dragover', (e) => e.preventDefault());
-    document.addEventListener('drop', (e) => e.preventDefault());
+    // ==== Drag & Drop (исправлено, стабильное) ====
+    ['dragenter', 'dragover'].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.add('dragover');
+      }, true);
+    });
+
+    ['dragleave', 'drop'].forEach((eventName) => {
+      dropZone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropZone.classList.remove('dragover');
+      }, true);
+    });
 
     dropZone.addEventListener('drop', (e) => {
-      e.stopPropagation();
       e.preventDefault();
+      e.stopPropagation();
       dropZone.classList.remove('dragover');
-      this.handleFiles(e.dataTransfer.files);
+
+      const files = e.dataTransfer && e.dataTransfer.files;
+      if (files && files.length) this.handleFiles(files);
     }, true);
+
+    // Блокируем drop вне зоны, чтобы браузер не пытался открыть файл
+    window.addEventListener('dragover', (e) => e.preventDefault(), true);
+    window.addEventListener('drop', (e) => e.preventDefault(), true);
 
     // AI buttons (no inline handlers)
     const aiAdviceBtn = document.getElementById('aiAdviceBtn');
