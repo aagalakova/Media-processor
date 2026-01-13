@@ -230,16 +230,22 @@ export class AppState {
     const emptyState = document.getElementById('emptyState');
     const statsInfo = document.getElementById('statsInfo');
 
+    // Defensive guards: avoid crashing if markup differs or element missing
+    if (!fileList) {
+      console.warn('updateUI: #fileList not found');
+      return;
+    }
+
     if (this.files.length === 0) {
-      emptyState.classList.remove('hidden');
-      statsInfo.textContent = '';
+      if (emptyState) emptyState.classList.remove('hidden');
+      if (statsInfo) statsInfo.textContent = '';
       fileList.innerHTML = '';
-      fileList.appendChild(emptyState);
+      if (emptyState) fileList.appendChild(emptyState);
       this.updateNamingExample();
       return;
     }
 
-    emptyState.classList.add('hidden');
+    if (emptyState) emptyState.classList.add('hidden');
 
     let html = '';
     let totalSize = 0;
@@ -279,7 +285,7 @@ export class AppState {
     if (audioCount > 0) stats += ` • ${audioCount} аудио`;
     if (videoCount > 0) stats += ` • ${videoCount} видео`;
 
-    statsInfo.textContent = stats;
+    if (statsInfo) statsInfo.textContent = stats;
     this.updateNamingExample();
   }
 
