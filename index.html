@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MediaProcessor</title>
+  <title>MediaProcessor | Relation-AI</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
@@ -253,7 +253,7 @@
 <div class="container">
   <div class="header">
     <h1>🚀 MediaProcessor</h1>
-    <p>Автоматизация обработки медиафайлов</p>
+    <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
     <div id="ffmpegStatus" class="ffmpeg-status">FFmpeg: проверка…</div>
   </div>
 
@@ -301,12 +301,6 @@
           <input type="checkbox" id="smartRenaming">
           <label for="smartRenaming">Умное переименование (единая база, например: logo, banner, audio_hook)</label>
         </div>
-
-        <div class="naming-option" id="smartNumberModeRow" style="margin-left:26px;">
-          <input type="checkbox" id="smartUseNumberFromName">
-          <label for="smartUseNumberFromName">В умном переименовании брать номер из имени файла (если есть)</label>
-        </div>
-
 
         <div class="naming-option" style="flex-direction:column;align-items:flex-start;">
           <label for="globalBaseName">Общее имя для всех файлов (при умном переименовании):</label>
@@ -1331,20 +1325,10 @@ class AppState {
     const smartRenamingCheckbox = document.getElementById('smartRenaming');
     const useOriginalNamesCheckbox = document.getElementById('useOriginalNames');
     const globalBaseInput = document.getElementById('globalBaseName');
-    const smartUseNumberCheckbox = document.getElementById('smartUseNumberFromName');
 
     smartRenamingCheckbox && smartRenamingCheckbox.addEventListener('change', () => this.updateNamingExample());
-    smartUseNumberCheckbox && smartUseNumberCheckbox.addEventListener('change', () => this.updateNamingExample());
     useOriginalNamesCheckbox && useOriginalNamesCheckbox.addEventListener('change', () => this.updateNamingExample());
     globalBaseInput && globalBaseInput.addEventListener('input', () => this.updateNamingExample());
-
-    const toggleSmartNumberModeRow = () => {
-      const row = document.getElementById('smartNumberModeRow');
-      const smartOn = smartRenamingCheckbox?.checked;
-      if (row) row.style.display = smartOn ? 'block' : 'none';
-    };
-    smartRenamingCheckbox && smartRenamingCheckbox.addEventListener('change', toggleSmartNumberModeRow);
-    toggleSmartNumberModeRow();
   }
 
   initVideoSettingsListeners() {
@@ -1534,7 +1518,6 @@ class AppState {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
     const globalBase = this.getGlobalBaseName();
-    const useNumFromName = document.getElementById('smartUseNumberFromName')?.checked || false;
 
     const firstFile = this.files[0];
     const type = FileUtils.getFileType(firstFile.name);
@@ -1546,23 +1529,12 @@ class AppState {
       return;
     }
 
-    if (useSmart && globalBase && useNumFromName) {
-      const extGuess = (firstFile.name.split('.').pop() || '').toLowerCase() || 'png';
-      const nums = this.files.slice(0, 3).map(f => this.extractNumberFromName(f.name)).filter(Boolean);
-      if (nums.length) {
-        exampleEl.textContent = nums.map(n => `${globalBase}_${n}.${extGuess}`).join(', ');
-        return;
-      }
-    }
-
-    // аудио: старое поведение base+number без подчёркивания (как было)
-    if (useSmart && globalBase && type === 'Аудио' && !useNumFromName) {
+    if (useSmart && globalBase && type === 'Аудио') {
       const nums = this.files.slice(0, 3).map(f => this.extractNumberFromName(f.name)).filter(Boolean);
       if (nums.length) {
         exampleEl.textContent = nums.map(n => `${globalBase}${n}.mp3`).join(', ');
         return;
       }
-    }
     }
 
     const baseName = useSmart ? (globalBase || this.getSmartPrefix(type)) : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
@@ -1649,7 +1621,6 @@ class AppState {
   ======================= */
   generateFileName(baseName, format, type, originalName, index, fileIndex, totalVariants) {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
-    const useNumFromName = document.getElementById('smartUseNumberFromName')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
     const globalBase = this.getGlobalBaseName();
 
@@ -1666,21 +1637,8 @@ class AppState {
       return `${originalBase}.${ext}`;
     }
 
-    // В умном переименовании можно брать номер из имени файла (например: "7 Кант" -> logo_7)
-    if (useSmart && globalBase && useNumFromName) {
-      const num = this.extractNumberFromName(originalName);
-      if (num) {
-        if (totalVariants && totalVariants > 1) {
-          if (index === 1) return `${globalBase}_${num}.${ext}`;
-          return `${globalBase}_${num}_${index}.${ext}`;
-        }
-        return `${globalBase}_${num}.${ext}`;
-      }
-      // если числа нет — падаем на общий smart-счётчик ниже
-    }
-
-    // аудио: старое поведение base+number без подчёркивания (как было)
-    if (useSmart && globalBase && type === 'Аудио' && !useNumFromName) {
+    // аудио: base + number из оригинала
+    if (useSmart && globalBase && type === 'Аудио') {
       const num = this.extractNumberFromName(originalName);
       if (num) return `${globalBase}${num}.${ext}`;
       // если числа нет — падаем на общий smart-счётчик ниже
@@ -1852,7 +1810,7 @@ class AppState {
 - Качество видео: ${this.currentSettings.selectedVideoQuality}
 - Формат видео: ${this.currentSettings.selectedVideoFormat}
 
-Создано с помощью MediaProcessor
+Создано с помощью MediaProcessor | Relation-AI
       `.trim();
 
       folder.file("README.txt", readme);
