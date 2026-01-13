@@ -1598,7 +1598,9 @@ class AppState {
     }
     }
 
-    const baseName = useSmart ? (globalBase || this.getSmartPrefix(type)) : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
+    const baseName = useSmart
+      ? (globalBase || this.getSmartPrefix(type))
+      : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
 
     // при useSmart показываем нумерацию, чтобы было понятно что будет уникально
     if (useSmart) {
