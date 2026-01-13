@@ -1378,14 +1378,31 @@ class AppState {
 
   updateUI() {
     const fileList = document.getElementById('fileList');
-    const emptyState = document.getElementById('emptyState');
+    let emptyState = document.getElementById('emptyState');
     const statsInfo = document.getElementById('statsInfo');
+
+    if (!fileList) return;
+
+    // Если emptyState был удалён при перерисовке списка — пересоздаём его
+    if (!emptyState) {
+      emptyState = document.createElement('div');
+      emptyState.className = 'empty-state hidden';
+      emptyState.id = 'emptyState';
+      emptyState.innerHTML = `
+        <div class="upload-icon">📄</div>
+        <h3>Нет загруженных файлов</h3>
+        <p>Загрузите файлы, чтобы начать обработку</p>
+      `;
+      fileList.prepend(emptyState);
+    }
+
+    // Всегда держим emptyState в DOM (иначе getElementById вернёт null после fileList.innerHTML = ...)
+    const emptyStateHTML = emptyState.outerHTML;
 
     if (this.files.length === 0) {
       emptyState.classList.remove('hidden');
-      statsInfo.textContent = '';
-      fileList.innerHTML = '';
-      fileList.appendChild(emptyState);
+      if (statsInfo) statsInfo.textContent = '';
+      fileList.innerHTML = emptyStateHTML;
       this.updateNamingExample();
       return;
     }
@@ -1423,14 +1440,14 @@ class AppState {
       `;
     });
 
-    fileList.innerHTML = html;
+    fileList.innerHTML = emptyStateHTML + html;
 
     let stats = `${this.files.length} файлов • ${FileUtils.formatFileSize(totalSize)}`;
     if (imageCount > 0) stats += ` • ${imageCount} изображений`;
     if (audioCount > 0) stats += ` • ${audioCount} аудио`;
     if (videoCount > 0) stats += ` • ${videoCount} видео`;
 
-    statsInfo.textContent = stats;
+    if (statsInfo) statsInfo.textContent = stats;
     this.updateNamingExample();
   }
 
