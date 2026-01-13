@@ -50,33 +50,31 @@ export class AppState {
 
     processBtn.addEventListener('click', () => this.startProcessing());
 
-    // Delegated events for dynamic file list items (no inline handlers)
-    const fileListEl = document.getElementById('fileList');
-    if (fileListEl) {
-      fileListEl.addEventListener('click', (e) => {
-        const btn = e.target.closest('button[data-action="remove"][data-index]');
-        if (!btn) return;
-        const index = Number(btn.dataset.index);
-        if (Number.isFinite(index)) this.removeFile(index);
-      });
-
-      fileListEl.addEventListener('change', (e) => {
-        const input = e.target.closest('input[data-action="rename"][data-index]');
-        if (!input) return;
-        const index = Number(input.dataset.index);
-        if (Number.isFinite(index)) this.updateFileName(index, input.value);
-      });
-    }
+    // Делегируем rename на document, чтобы не зависеть от того, когда/как перерисован #fileList.
+    document.addEventListener('change', (e) => {
+      if (!(e.target instanceof Element)) return;
+      const input = e.target.closest('input[data-action="rename"][data-index]');
+      if (!input) return;
+      const index = Number(input.dataset.index);
+      if (Number.isFinite(index)) this.updateFileName(index, input.value);
+    });
 
 
     // Delegated clicks for static and dynamic UI controls (replaces inline onclick handlers)
     document.addEventListener('click', (e) => {
+      if (!(e.target instanceof Element)) return;
       const el = e.target.closest('[data-action]');
       if (!el) return;
 
       const action = el.dataset.action;
       try {
         switch (action) {
+          case 'remove': {
+            e.preventDefault();
+            const index = Number(el.dataset.index);
+            if (Number.isFinite(index)) this.removeFile(index);
+            break;
+          }
           case 'open-file-picker':
             e.preventDefault();
             fileInput && fileInput.click();
