@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>MediaProcessor | Relation-AI</title>
+<title>MediaProcessor</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <!--
     FFmpeg WASM (v0.11.x):
@@ -110,6 +110,10 @@
     .color-swatch:hover { transform: scale(1.1); }
     .color-swatch::after { content: attr(data-hex); position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; white-space: nowrap; opacity: 0; transition: opacity 0.3s ease; }
     .color-swatch:hover::after { opacity: 1; }
+    .color-swatch { user-select: none; }
+    .color-swatch.copied::after { content: 'Скопировано'; opacity: 1; }
+    .palette-hint { font-size: 0.9em; opacity: 0.9; margin-top: 8px; }
+
 
     .brand-analysis-results { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255, 255, 255, 0.2); animation: fadeIn 0.5s ease; }
     .brand-analysis-results .color-swatch { width: 25px; height: 25px; border-radius: 4px; border: 2px solid rgba(255, 255, 255, 0.5); }
@@ -218,7 +222,7 @@
 <div class="container">
 <div class="header">
 <h1>🚀 MediaProcessor</h1>
-<p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
+<p>Автоматизация обработки медиафайлов</p>
 <div class="ffmpeg-status" id="ffmpegStatus">FFmpeg: проверка…</div>
 </div>
 <div class="upload-zone" id="dropZone">
@@ -388,7 +392,7 @@
 <div class="video-quality-option" data-quality="low"><span>Экономное (CRF 28)</span><span class="quality-info">~25% от оригинала</span></div>
 </div>
 </div><div class="ai-advisor-section">
-<h3>🧠 AI-Советник</h3><div class="coming-soon">⚠️ Черновая версия: функции будут обновлены и расширены. Сейчас доступна базовая логика.</div>
+<h3>🧠 AI-Советник</h3><div class="coming-soon">Функции будут обновлены и расширены.</div>
 <div class="ai-advisor-card">
 <div class="ai-tip" id="aiTip">
 <div class="ai-tip-header">
@@ -407,7 +411,7 @@
 </div>
 </div>
 </div><div class="ai-section">
-<h3>🧠 AI-Анализ бренда</h3><div class="coming-soon">⚠️ Черновая версия: функции будут обновлены и расширены. Сейчас доступна базовая логика.</div>
+<h3>🧠 AI-Анализ бренда</h3><div class="coming-soon">Функции будут обновлены и расширены.</div>
 <div class="checkbox-controls">
 <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('ai')">✅ Выбрать все AI</button>
 <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('ai')">❌ Убрать все AI</button>
@@ -1745,7 +1749,7 @@ class AppState {
 - Качество видео: ${this.currentSettings.selectedVideoQuality}
 - Формат видео: ${this.currentSettings.selectedVideoFormat}
 
-Создано с помощью MediaProcessor | Relation-AI
+Создано с помощью MediaProcessor 
       `.trim();
 
       folder.file("README.txt", readme);
@@ -2129,6 +2133,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.appState = appState;
 });
+
+// --- Palette swatches: click to copy HEX ---
+document.addEventListener('click', async (e) => {
+  const swatch = (e.target instanceof Element) ? e.target.closest('.color-swatch') : null;
+  if (!swatch) return;
+
+  const hex = swatch.getAttribute('data-hex') || '';
+  if (!hex) return;
+
+  try {
+    await navigator.clipboard.writeText(hex);
+    swatch.classList.add('copied');
+    setTimeout(() => swatch.classList.remove('copied'), 900);
+  } catch (err) {
+    // Fallback: prompt for manual copy
+    window.prompt('Скопируйте код цвета:', hex);
+  }
+});
+
 </script>
 </body>
 </html>
