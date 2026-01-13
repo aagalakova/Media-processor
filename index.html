@@ -1313,40 +1313,31 @@ class AppState {
     const dropZone = document.getElementById('dropZone');
     const processBtn = document.getElementById('processBtn');
 
-    fileInput.addEventListener('change', (e) => {
-      this.handleFiles(e.target.files);
-      fileInput.value = ''; // чтобы можно было загрузить те же файлы повторно
-    });
+    fileInput.addEventListener('change', (e) => this.handleFiles(e.target.files));
 
-    // ==== Drag & Drop (исправлено, стабильное) ====
-    ['dragenter', 'dragover'].forEach((eventName) => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.add('dragover');
-      }, true);
-    });
 
-    ['dragleave', 'drop'].forEach((eventName) => {
-      dropZone.addEventListener(eventName, (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dropZone.classList.remove('dragover');
-      }, true);
-    });
+// Prevent browser from opening files on drop outside the drop zone
+const _preventNavOnDrop = (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.type === 'dragover' && e.dataTransfer) {
+    try { e.dataTransfer.dropEffect = 'copy'; } catch (_) {}
+  }
+};
+['dragenter','dragover','dragleave','drop'].forEach((evt) => {
+  window.addEventListener(evt, _preventNavOnDrop, true);
+  document.addEventListener(evt, _preventNavOnDrop, true);
+});
 
+
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('dragover'); }, true);
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'), true);
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
       dropZone.classList.remove('dragover');
-
-      const files = e.dataTransfer && e.dataTransfer.files;
-      if (files && files.length) this.handleFiles(files);
+      this.handleFiles(e.dataTransfer.files);
     }, true);
-
-    // Блокируем drop вне зоны, чтобы браузер не пытался открыть файл
-    window.addEventListener('dragover', (e) => e.preventDefault(), true);
-    window.addEventListener('drop', (e) => e.preventDefault(), true);
 
     // AI buttons (no inline handlers)
     const aiAdviceBtn = document.getElementById('aiAdviceBtn');
@@ -1598,9 +1589,7 @@ class AppState {
     }
     }
 
-    const baseName = useSmart
-      ? (globalBase || this.getSmartPrefix(type))
-      : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
+    const baseName = useSmart ? (globalBase || this.getSmartPrefix(type)) : (firstFile.customName || firstFile.name.replace(/\.[^/.]+$/, '') || 'file');
 
     // при useSmart показываем нумерацию, чтобы было понятно что будет уникально
     if (useSmart) {
