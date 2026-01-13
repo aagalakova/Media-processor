@@ -1,13 +1,12 @@
 <!DOCTYPE html>
+
 <html lang="ru">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MediaProcessor | Relation-AI</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-
-  <!--
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MediaProcessor | Relation-AI</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<!--
     FFmpeg WASM (v0.11.x):
     1) сначала пробуем локально (самохостинг): /ffmpeg/ffmpeg.min.js и /ffmpeg/ffmpeg-core.js (+ wasm/worker рядом)
     2) если локально нет — пробуем CDN:
@@ -15,8 +14,7 @@
        - @ffmpeg/core@0.11.0 (worker будет: https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.worker.js)
     Если SharedArrayBuffer недоступен (COOP/COEP не включены) — fallback на core-st.
   -->
-
-  <style>
+<style>
     * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 40px 20px; }
     .container { max-width: 1000px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); overflow: hidden; }
@@ -112,6 +110,10 @@
     .color-swatch:hover { transform: scale(1.1); }
     .color-swatch::after { content: attr(data-hex); position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); background: rgba(0, 0, 0, 0.8); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7em; white-space: nowrap; opacity: 0; transition: opacity 0.3s ease; }
     .color-swatch:hover::after { opacity: 1; }
+    .color-swatch { user-select: none; }
+    .color-swatch.copied::after { content: 'Скопировано'; opacity: 1; }
+    .palette-hint { font-size: 0.9em; opacity: 0.9; margin-top: 8px; }
+
 
     .brand-analysis-results { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border-radius: 10px; padding: 15px; margin-top: 15px; border: 1px solid rgba(255, 255, 255, 0.2); animation: fadeIn 0.5s ease; }
     .brand-analysis-results .color-swatch { width: 25px; height: 25px; border-radius: 4px; border: 2px solid rgba(255, 255, 255, 0.5); }
@@ -212,312 +214,232 @@
       .video-format-options { flex-wrap: wrap; }
     }
   
-  .coming-soon{
-    margin:10px 0 12px 0;
-    padding:10px 12px;
-    border:1px dashed #c8c8c8;
-    border-radius:10px;
-    background:#fafafa;
-    color:#555;
-    font-size:14px;
-  }
-  .palette-hint{
-    margin-top:6px;
-    font-size:12px;
-    color:#666;
-  }
-  .brand-advice{
-    margin-top:10px;
-    padding:10px 12px;
-    background:#f7f7f9;
-    border-left:4px solid #6c7cff;
-    border-radius:10px;
-    font-size:14px;
-    color:#333;
-  }
-  .color-swatch{
-    width:34px;height:34px;border-radius:10px;border:1px solid rgba(0,0,0,.12);
-    cursor:pointer; position:relative;
-  }
-  .color-swatch.copied::after{
-    content:"Скопировано";
-    position:absolute; left:50%; top:-28px; transform:translateX(-50%);
-    background:#111; color:#fff; padding:4px 8px; border-radius:8px;
-    font-size:11px; white-space:nowrap;
-  }
-
+/* Note for preview / WIP blocks */
+.coming-soon{margin:8px 0 12px;padding:8px 10px;border-radius:10px;background:rgba(241,196,15,.16);font-size:13px;line-height:1.35}
 </style>
 </head>
-
 <body>
 <div class="container">
-  <div class="header">
-    <h1>🚀 MediaProcessor</h1>
-    <p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
-    <div id="ffmpegStatus" class="ffmpeg-status">FFmpeg: проверка…</div>
-  </div>
-
-  <div class="upload-zone" id="dropZone">
-    <div class="upload-icon">📁</div>
-    <h3>Перетащите файлы сюда</h3>
-    <p>или</p>
-    <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+<div class="header">
+<h1>🚀 MediaProcessor</h1>
+<p>Автоматизация обработки медиафайлов | Relation-AI Module</p>
+<div class="ffmpeg-status" id="ffmpegStatus">FFmpeg: проверка…</div>
+</div>
+<div class="upload-zone" id="dropZone">
+<div class="upload-icon">📁</div>
+<h3>Перетащите файлы сюда</h3>
+<p>или</p>
+<button class="upload-btn" onclick="document.getElementById('fileInput').click()">
       Выбрать файлы
     </button>
-    <input type="file" id="fileInput" class="file-input" multiple
-      accept="image/*,.mp3,.mp4,.mov,.avi,.ogg,.wav,.flac,.aac,.mkv,.webm,.wmv,.flv">
-  </div>
-
-  <div class="file-list" id="fileList">
-    <div class="empty-state" id="emptyState">
-      <div class="upload-icon">📄</div>
-      <h3>Нет загруженных файлов</h3>
-      <p>Загрузите файлы, чтобы начать обработку</p>
-    </div>
-  </div>
-
-  <div class="settings">
-    <div class="settings-header">
-      <h2>⚙️ Настройки обработки</h2>
-      <div class="settings-controls">
-        <button class="settings-btn reset" onclick="appState.resetAllSettings()">🔄 Сбросить всё</button>
-        <button class="settings-btn clear" onclick="appState.clearAllCheckboxes()">❌ Убрать галочки</button>
-      </div>
-    </div>
-
-    <div class="naming-section">
-      <h3>🏷️ Переименование файлов</h3>
-      <p style="color:#666;margin-bottom:10px;">
+<input accept="image/*,.mp3,.mp4,.mov,.avi,.ogg,.wav,.flac,.aac,.mkv,.webm,.wmv,.flv" class="file-input" id="fileInput" multiple="" type="file"/>
+</div>
+<div class="file-list" id="fileList">
+<div class="empty-state" id="emptyState">
+<div class="upload-icon">📄</div>
+<h3>Нет загруженных файлов</h3>
+<p>Загрузите файлы, чтобы начать обработку</p>
+</div>
+</div>
+<div class="settings">
+<div class="settings-header">
+<h2>⚙️ Настройки обработки</h2>
+<div class="settings-controls">
+<button class="settings-btn reset" onclick="appState.resetAllSettings()">🔄 Сбросить всё</button>
+<button class="settings-btn clear" onclick="appState.clearAllCheckboxes()">❌ Убрать галочки</button>
+</div>
+</div>
+<div class="naming-section">
+<h3>🏷️ Переименование файлов</h3>
+<p style="color:#666;margin-bottom:10px;">
         Введите новое имя для каждого файла в списке выше или укажите общее имя для умного переименования
       </p>
-
-      <div class="naming-options">
-        <div class="naming-option">
-          <input type="checkbox" id="useOriginalNames">
-          <label for="useOriginalNames">Использовать оригинальные имена файлов</label>
-        </div>
-
-        <div class="naming-option">
-          <input type="checkbox" id="smartRenaming">
-          <label for="smartRenaming">Умное переименование (единая база, например: logo, banner, audio_hook)</label>
-        </div>
-
-        <div class="naming-option" style="flex-direction:column;align-items:flex-start;">
-          <label for="globalBaseName">Общее имя для всех файлов (при умном переименовании):</label>
-          <input type="text" id="globalBaseName" class="rename-input" placeholder="Например: logo, banner, audio_hook">
-        </div>
-      </div>
-
-      <div class="naming-example">
+<div class="naming-options">
+<div class="naming-option">
+<input id="useOriginalNames" type="checkbox"/>
+<label for="useOriginalNames">Использовать оригинальные имена файлов</label>
+</div>
+<div class="naming-option">
+<input id="smartRenaming" type="checkbox"/>
+<label for="smartRenaming">Умное переименование (единая база, например: logo, banner, audio_hook)</label>
+</div>
+<div class="naming-option" style="flex-direction:column;align-items:flex-start;">
+<label for="globalBaseName">Общее имя для всех файлов (при умном переименовании):</label>
+<input class="rename-input" id="globalBaseName" placeholder="Например: logo, banner, audio_hook" type="text"/>
+</div>
+</div>
+<div class="naming-example">
         Пример имен после обработки:
         <strong id="namingExample">banner.png, banner_2.png, banner_3.png</strong>
-      </div>
-    </div>
+</div>
+</div>
+<!-- AI-советник -->
 
-    <!-- Цвет подложки -->
-    <div class="background-color-section">
-      <h3>🎨 Цвет подложки для изображений</h3>
-      <p style="color:#666;margin-bottom:15px;">Выберите цвет фона для изображений (актуально для JPG и при изменении размеров)</p>
+<!-- AI-анализ бренда -->
 
-      <div class="background-color-options">
-        <div class="background-color-option selected" data-background="white">
-          <div class="background-color-preview" style="background:white;border:2px solid #ddd;"><span style="color:#666;">⬜</span></div>
-          <div class="background-color-info">
-            <div class="background-color-name">Белый</div>
-            <div class="background-color-description">Стандартный белый фон</div>
-          </div>
-        </div>
-
-        <div class="background-color-option" data-background="lightgray">
-          <div class="background-color-preview" style="background:#f0f0f0;"><span style="color:#666;">⬜</span></div>
-          <div class="background-color-info">
-            <div class="background-color-name">Светло-серый</div>
-            <div class="background-color-description">Нейтральный серый фон</div>
-          </div>
-        </div>
-
-        <div class="background-color-option" data-background="transparent">
-          <div class="background-color-preview transparent-grid" style="background:rgba(0,0,0,0);"><span>◻️</span></div>
-          <div class="background-color-info">
-            <div class="background-color-name">Прозрачный</div>
-            <div class="background-color-description">Для PNG с прозрачностью</div>
-          </div>
-        </div>
-
-        <div class="background-color-option" data-background="black">
-          <div class="background-color-preview" style="background:#000;"><span style="color:white;">⬛</span></div>
-          <div class="background-color-info">
-            <div class="background-color-name">Черный</div>
-            <div class="background-color-description">Темный фон для контраста</div>
-          </div>
-        </div>
-
-        <div class="background-color-option" data-background="custom" id="customBgOption">
-          <div class="background-color-preview" id="customBgPreview" style="background:#ffffff;">
-            <span style="color:#666;">🎨</span>
-          </div>
-          <div class="background-color-info">
-            <div class="background-color-name">Свой цвет</div>
-            <div class="background-color-description">Из hex / picker</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="custom-color-picker">
-        <label style="font-weight:600;color:#2c3e50;">Свой цвет:</label>
-        <input type="color" class="color-input" id="customColorPicker" value="#ffffff">
-        <input type="text" class="color-hex-input" id="customColorHex" value="#ffffff" placeholder="#RRGGBB">
-        <button class="upload-btn" onclick="appState.applyCustomColor()" style="padding:8px 15px;font-size:0.9em;background:#9b59b6;">
+<!-- Цвет подложки -->
+<div class="background-color-section">
+<h3>🎨 Цвет подложки для изображений</h3>
+<p style="color:#666;margin-bottom:15px;">Выберите цвет фона для изображений (актуально для JPG и при изменении размеров)</p>
+<div class="background-color-options">
+<div class="background-color-option selected" data-background="white">
+<div class="background-color-preview" style="background:white;border:2px solid #ddd;"><span style="color:#666;">⬜</span></div>
+<div class="background-color-info">
+<div class="background-color-name">Белый</div>
+<div class="background-color-description">Стандартный белый фон</div>
+</div>
+</div>
+<div class="background-color-option" data-background="lightgray">
+<div class="background-color-preview" style="background:#f0f0f0;"><span style="color:#666;">⬜</span></div>
+<div class="background-color-info">
+<div class="background-color-name">Светло-серый</div>
+<div class="background-color-description">Нейтральный серый фон</div>
+</div>
+</div>
+<div class="background-color-option" data-background="transparent">
+<div class="background-color-preview transparent-grid" style="background:rgba(0,0,0,0);"><span>◻️</span></div>
+<div class="background-color-info">
+<div class="background-color-name">Прозрачный</div>
+<div class="background-color-description">Для PNG с прозрачностью</div>
+</div>
+</div>
+<div class="background-color-option" data-background="black">
+<div class="background-color-preview" style="background:#000;"><span style="color:white;">⬛</span></div>
+<div class="background-color-info">
+<div class="background-color-name">Черный</div>
+<div class="background-color-description">Темный фон для контраста</div>
+</div>
+</div>
+<div class="background-color-option" data-background="custom" id="customBgOption">
+<div class="background-color-preview" id="customBgPreview" style="background:#ffffff;">
+<span style="color:#666;">🎨</span>
+</div>
+<div class="background-color-info">
+<div class="background-color-name">Свой цвет</div>
+<div class="background-color-description">Из hex / picker</div>
+</div>
+</div>
+</div>
+<div class="custom-color-picker">
+<label style="font-weight:600;color:#2c3e50;">Свой цвет:</label>
+<input class="color-input" id="customColorPicker" type="color" value="#ffffff"/>
+<input class="color-hex-input" id="customColorHex" placeholder="#RRGGBB" type="text" value="#ffffff"/>
+<button class="upload-btn" onclick="appState.applyCustomColor()" style="padding:8px 15px;font-size:0.9em;background:#9b59b6;">
           Применить
         </button>
-      </div>
-
-      <p style="margin-top:10px;font-size:0.9em;color:#7f8c8d;">
-        <strong>Примечание:</strong> Для PNG-файлов с прозрачностью рекомендуется выбирать "Прозрачный" фон.
+</div>
+<p style="margin-top:10px;font-size:0.9em;color:#7f8c8d;">
+<strong>Примечание:</strong> Для PNG-файлов с прозрачностью рекомендуется выбирать "Прозрачный" фон.
       </p>
-    </div>
-
-    <div class="settings-section">
-      <h3>📷 Настройки изображений</h3>
-      <input type="text" class="size-input" id="imageSizes" value="1200x600, 800x400, 400x200" placeholder="Введите размеры через запятую">
-
-      <div class="preset-buttons">
-        <button class="preset-btn" onclick="appState.loadPreset('creatives')">Креативы</button>
-        <button class="preset-btn" onclick="appState.loadPreset('vertical')">Вертикальные</button>
-        <button class="preset-btn" onclick="appState.loadPreset('logos')">Логотипы</button>
-        <button class="preset-btn" onclick="appState.loadPreset('icons')">Иконки</button>
-      </div>
-
-      <div class="checkbox-controls">
-        <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('image')">✅ Выбрать все форматы</button>
-        <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('image')">❌ Убрать все форматы</button>
-      </div>
-
-      <div class="format-options">
-        <label class="format-option"><input type="checkbox" id="formatPNG"> PNG</label>
-        <label class="format-option"><input type="checkbox" id="formatJPG"> JPG</label>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>🎵 Настройки аудио</h3>
-
-      <div class="checkbox-controls">
-        <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('audio')">✅ Выбрать все форматы</button>
-        <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('audio')">❌ Убрать все форматы</button>
-      </div>
-
-      <div class="format-options">
-        <label class="format-option"><input type="checkbox" id="audioMP3"> MP3</label>
-        <label class="format-option"><input type="checkbox" id="audioOGG"> OGG</label>
-      </div>
-
-      <select class="size-input" id="audioBitrate" style="margin-top:10px;">
-        <option value="128">128 kbps (стандарт)</option>
-        <option value="192">192 kbps (качественно)</option>
-        <option value="256">256 kbps (премиум)</option>
-        <option value="320">320 kbps (максимальное)</option>
-      </select>
-    </div>
-
-    <div class="settings-section">
-      <h3>🎬 Настройки видео</h3>
-
-      <div class="video-processing-info">
-        <h4>ℹ️ Информация о обработке видео</h4>
-        <p>Видео обрабатываются с помощью FFmpeg в браузере. Для лучшей производительности ограничьте количество одновременно обрабатываемых видео.</p>
-        <p><strong>Рекомендация:</strong> Обрабатывайте не более 1-2 видео одновременно.</p>
-      </div>
-
-      <h4 style="margin:10px 0 5px 0;">📐 Разрешение:</h4>
-      <div class="resolution-options">
-        <div class="resolution-option selected" data-resolution="640x360"><span>640×360px</span></div>
-        <div class="resolution-option" data-resolution="854x480"><span>854×480px</span></div>
-        <div class="resolution-option" data-resolution="1280x720"><span>1280×720px (HD)</span></div>
-        <div class="resolution-option" data-resolution="1920x1080"><span>1920×1080px (Full HD)</span></div>
-      </div>
-
-      <h4 style="margin:10px 0 5px 0;">📦 Формат вывода:</h4>
-      <div class="video-format-options">
-        <div class="video-format-option selected" data-format="mp4"><span>MP4</span><span style="font-size:0.8em;color:#666;">(лучшая совместимость)</span></div>
-      </div>
-
-      <h4 style="margin:15px 0 5px 0;">🎯 Качество сжатия:</h4>
-      <div class="video-quality-options">
-        <div class="video-quality-option" data-quality="high"><span>Высокое (CRF 18)</span><span class="quality-info">~60% от оригинала</span></div>
-        <div class="video-quality-option selected" data-quality="medium"><span>Стандартное (CRF 23)</span><span class="quality-info">~40% от оригинала</span></div>
-        <div class="video-quality-option" data-quality="low"><span>Экономное (CRF 28)</span><span class="quality-info">~25% от оригинала</span></div>
-      </div>
-    </div>
-  </div>
-
-    <!-- AI-советник -->
-    <div class="ai-advisor-section">
-      <h3>🧠 AI-Советник</h3>
-      <div class="coming-soon">Функции будут обновлены и расширены.</div>
-      <div class="ai-advisor-card">
-        <div class="ai-tip" id="aiTip">
-          <div class="ai-tip-header">
-            <span class="ai-icon">💡</span>
-            <strong>Советник готов к работе</strong>
-          </div>
-          <div class="ai-tip-content">Загрузите файлы для получения рекомендаций по оптимизации</div>
-        </div>
-
-        <div class="ai-actions">
-          <button class="ai-btn" onclick="appState.getAIAdvice()" id="aiAdviceBtn">🤖 Получить советы</button>
-          <button class="ai-btn secondary" onclick="appState.analyzeAllImages()" id="analyzeImagesBtn">🎨 Анализ изображений</button>
-        </div>
-
-        <div class="ai-results hidden" id="aiResults">
-          <div class="ai-stats" id="aiStats"></div>
-          <div class="ai-tips-list" id="aiTipsList"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- AI-анализ бренда -->
-    <div class="ai-section">
-      <h3>🧠 AI-Анализ бренда</h3>
-      <div class="coming-soon">Функции будут обновлены и расширены.</div>
-
-      <div class="checkbox-controls">
-        <button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('ai')">✅ Выбрать все AI</button>
-        <button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('ai')">❌ Убрать все AI</button>
-      </div>
-
-      <div class="ai-feature">
-        <input type="checkbox" id="aiAnalysis">
-        <label for="aiAnalysis">Автоматически анализировать цвета и рекомендовать настройки</label>
-      </div>
-
-      <button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background:#9b59b6;">
+</div>
+<div class="settings-section">
+<h3>📷 Настройки изображений</h3>
+<input class="size-input" id="imageSizes" placeholder="Введите размеры через запятую" type="text" value="1200x600, 800x400, 400x200"/>
+<div class="preset-buttons">
+<button class="preset-btn" onclick="appState.loadPreset('creatives')">Креативы</button>
+<button class="preset-btn" onclick="appState.loadPreset('vertical')">Вертикальные</button>
+<button class="preset-btn" onclick="appState.loadPreset('logos')">Логотипы</button>
+<button class="preset-btn" onclick="appState.loadPreset('icons')">Иконки</button>
+</div>
+<div class="checkbox-controls">
+<button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('image')">✅ Выбрать все форматы</button>
+<button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('image')">❌ Убрать все форматы</button>
+</div>
+<div class="format-options">
+<label class="format-option"><input id="formatPNG" type="checkbox"/> PNG</label>
+<label class="format-option"><input id="formatJPG" type="checkbox"/> JPG</label>
+</div>
+</div>
+<div class="settings-section">
+<h3>🎵 Настройки аудио</h3>
+<div class="checkbox-controls">
+<button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('audio')">✅ Выбрать все форматы</button>
+<button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('audio')">❌ Убрать все форматы</button>
+</div>
+<div class="format-options">
+<label class="format-option"><input id="audioMP3" type="checkbox"/> MP3</label>
+<label class="format-option"><input id="audioOGG" type="checkbox"/> OGG</label>
+</div>
+<select class="size-input" id="audioBitrate" style="margin-top:10px;">
+<option value="128">128 kbps (стандарт)</option>
+<option value="192">192 kbps (качественно)</option>
+<option value="256">256 kbps (премиум)</option>
+<option value="320">320 kbps (максимальное)</option>
+</select>
+</div>
+<div class="settings-section">
+<h3>🎬 Настройки видео</h3>
+<div class="video-processing-info">
+<h4>ℹ️ Информация о обработке видео</h4>
+<p>Видео обрабатываются с помощью FFmpeg в браузере. Для лучшей производительности ограничьте количество одновременно обрабатываемых видео.</p>
+<p><strong>Рекомендация:</strong> Обрабатывайте не более 1-2 видео одновременно.</p>
+</div>
+<h4 style="margin:10px 0 5px 0;">📐 Разрешение:</h4>
+<div class="resolution-options">
+<div class="resolution-option selected" data-resolution="640x360"><span>640×360px</span></div>
+<div class="resolution-option" data-resolution="854x480"><span>854×480px</span></div>
+<div class="resolution-option" data-resolution="1280x720"><span>1280×720px (HD)</span></div>
+<div class="resolution-option" data-resolution="1920x1080"><span>1920×1080px (Full HD)</span></div>
+</div>
+<h4 style="margin:10px 0 5px 0;">📦 Формат вывода:</h4>
+<div class="video-format-options">
+<div class="video-format-option selected" data-format="mp4"><span>MP4</span><span style="font-size:0.8em;color:#666;">(лучшая совместимость)</span></div>
+</div>
+<h4 style="margin:15px 0 5px 0;">🎯 Качество сжатия:</h4>
+<div class="video-quality-options">
+<div class="video-quality-option" data-quality="high"><span>Высокое (CRF 18)</span><span class="quality-info">~60% от оригинала</span></div>
+<div class="video-quality-option selected" data-quality="medium"><span>Стандартное (CRF 23)</span><span class="quality-info">~40% от оригинала</span></div>
+<div class="video-quality-option" data-quality="low"><span>Экономное (CRF 28)</span><span class="quality-info">~25% от оригинала</span></div>
+</div>
+</div><div class="ai-advisor-section">
+<h3>🧠 AI-Советник</h3><div class="coming-soon">Функции будут обновлены и расширены.</div>
+<div class="ai-advisor-card">
+<div class="ai-tip" id="aiTip">
+<div class="ai-tip-header">
+<span class="ai-icon">💡</span>
+<strong>Советник готов к работе</strong>
+</div>
+<div class="ai-tip-content">Загрузите файлы для получения рекомендаций по оптимизации</div>
+</div>
+<div class="ai-actions">
+<button class="ai-btn" id="aiAdviceBtn" onclick="appState.getAIAdvice()">🤖 Получить советы</button>
+<button class="ai-btn secondary" id="analyzeImagesBtn" onclick="appState.analyzeAllImages()">🎨 Анализ изображений</button>
+</div>
+<div class="ai-results hidden" id="aiResults">
+<div class="ai-stats" id="aiStats"></div>
+<div class="ai-tips-list" id="aiTipsList"></div>
+</div>
+</div>
+</div><div class="ai-section">
+<h3>🧠 AI-Анализ бренда</h3><div class="coming-soon">Функции будут обновлены и расширены.</div>
+<div class="checkbox-controls">
+<button class="checkbox-btn select-all" onclick="appState.selectAllCheckboxes('ai')">✅ Выбрать все AI</button>
+<button class="checkbox-btn clear-all" onclick="appState.clearCheckboxes('ai')">❌ Убрать все AI</button>
+</div>
+<div class="ai-feature">
+<input id="aiAnalysis" type="checkbox"/>
+<label for="aiAnalysis">Автоматически анализировать цвета и рекомендовать настройки</label>
+</div>
+<button class="upload-btn" onclick="appState.analyzeBrandAssets()" style="background:#9b59b6;">
         🔍 Проанализировать бренд
       </button>
-
-      <div class="brand-analysis-results hidden" id="brandAnalysisResults"></div>
-    </div>
-
-
-  <div class="stats" id="statsInfo"></div>
-
-  <button class="process-btn" id="processBtn">🚀 Начать обработку</button>
-
-  <div class="progress-bar hidden" id="progressBar">
-    <div class="progress" id="progress"></div>
-  </div>
-
-  <div class="result hidden" id="result">
-    <h3>✅ Обработка завершена!</h3>
-    <div class="result-files" id="resultFiles"></div>
-  </div>
-
-  <div class="download-section hidden" id="downloadSection">
-    <button class="download-all-btn" id="downloadAllBtn">💾 Скачать все файлы (ZIP)</button>
-    <p style="text-align:center;margin-top:10px;color:#666;">Будет скачан ZIP-архив со всеми обработанными файлами</p>
-  </div>
+<div class="brand-analysis-results hidden" id="brandAnalysisResults"></div>
 </div>
-
+</div>
+<div class="stats" id="statsInfo"></div>
+<button class="process-btn" id="processBtn">🚀 Начать обработку</button>
+<div class="progress-bar hidden" id="progressBar">
+<div class="progress" id="progress"></div>
+</div>
+<div class="result hidden" id="result">
+<h3>✅ Обработка завершена!</h3>
+<div class="result-files" id="resultFiles"></div>
+</div>
+<div class="download-section hidden" id="downloadSection">
+<button class="download-all-btn" id="downloadAllBtn">💾 Скачать все файлы (ZIP)</button>
+<p style="text-align:center;margin-top:10px;color:#666;">Будет скачан ZIP-архив со всеми обработанными файлами</p>
+</div>
+</div>
 <script>
 /* =======================
    Status helper
@@ -1416,14 +1338,31 @@ class AppState {
 
   updateUI() {
     const fileList = document.getElementById('fileList');
-    const emptyState = document.getElementById('emptyState');
+    let emptyState = document.getElementById('emptyState');
     const statsInfo = document.getElementById('statsInfo');
+
+    if (!fileList) return;
+
+    // Если emptyState был удалён при перерисовке списка — пересоздаём его
+    if (!emptyState) {
+      emptyState = document.createElement('div');
+      emptyState.className = 'empty-state hidden';
+      emptyState.id = 'emptyState';
+      emptyState.innerHTML = `
+        <div class="upload-icon">📄</div>
+        <h3>Нет загруженных файлов</h3>
+        <p>Загрузите файлы, чтобы начать обработку</p>
+      `;
+      fileList.prepend(emptyState);
+    }
+
+    // Всегда держим emptyState в DOM (иначе getElementById вернёт null после fileList.innerHTML = ...)
+    const emptyStateHTML = emptyState.outerHTML;
 
     if (this.files.length === 0) {
       emptyState.classList.remove('hidden');
-      statsInfo.textContent = '';
-      fileList.innerHTML = '';
-      fileList.appendChild(emptyState);
+      if (statsInfo) statsInfo.textContent = '';
+      fileList.innerHTML = emptyStateHTML;
       this.updateNamingExample();
       return;
     }
@@ -1461,14 +1400,14 @@ class AppState {
       `;
     });
 
-    fileList.innerHTML = html;
+    fileList.innerHTML = emptyStateHTML + html;
 
     let stats = `${this.files.length} файлов • ${FileUtils.formatFileSize(totalSize)}`;
     if (imageCount > 0) stats += ` • ${imageCount} изображений`;
     if (audioCount > 0) stats += ` • ${audioCount} аудио`;
     if (videoCount > 0) stats += ` • ${videoCount} видео`;
 
-    statsInfo.textContent = stats;
+    if (statsInfo) statsInfo.textContent = stats;
     this.updateNamingExample();
   }
 
@@ -2030,33 +1969,12 @@ class AppState {
         Рекомендованный фон: <strong>${recommendedBg}</strong> • Рекомендованный пресет: <strong>${recommendedPreset}</strong>
       </div>
       <div style="margin-top:10px;"><strong>Палитра (топ цветов):</strong>${paletteHtml}</div>
-      <div class="palette-hint">Наведи на цвет и кликни — код цвета (HEX) скопируется.</div>
-      <div class="brand-advice">Совет: закрепи палитру (2 нейтрала + 1 акцент) и делай одинаковые подложки → карточки будут выглядеть “брендово”</div>
+      <div style="margin-top:10px;font-size:.92em;opacity:.9;">
+        .
+      </div>
     `;
 
     out.classList.remove('hidden');
-
-    // Копирование HEX по клику на цвет
-    out.querySelectorAll('[data-hex]').forEach(el => {
-      el.addEventListener('click', async () => {
-        const hex = el.getAttribute('data-hex');
-        if (!hex) return;
-        try {
-          if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(hex);
-          } else {
-            // fallback
-            prompt('Скопируйте цвет (HEX):', hex);
-            return;
-          }
-          el.classList.add('copied');
-          setTimeout(() => el.classList.remove('copied'), 900);
-        } catch (e) {
-          prompt('Скопируйте цвет (HEX):', hex);
-        }
-      });
-    });
-
 
     if (document.getElementById('aiAnalysis').checked) {
       this.applyBrandRecommendations();
@@ -2215,6 +2133,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.appState = appState;
 });
+
+// --- Palette swatches: click to copy HEX ---
+document.addEventListener('click', async (e) => {
+  const swatch = (e.target instanceof Element) ? e.target.closest('.color-swatch') : null;
+  if (!swatch) return;
+
+  const hex = swatch.getAttribute('data-hex') || '';
+  if (!hex) return;
+
+  try {
+    await navigator.clipboard.writeText(hex);
+    swatch.classList.add('copied');
+    setTimeout(() => swatch.classList.remove('copied'), 900);
+  } catch (err) {
+    // Fallback: prompt for manual copy
+    window.prompt('Скопируйте код цвета:', hex);
+  }
+});
+
 </script>
 </body>
 </html>
