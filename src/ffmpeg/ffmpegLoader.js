@@ -1,5 +1,3 @@
-// Auto-extracted from index.html
-
 /* =======================
    Helpers: load scripts
 ======================= */
@@ -14,11 +12,27 @@ export function loadScript(src) {
   });
 }
 
+/**
+ * База для self-hosted FFmpeg ассетов.
+ * Структура должна быть:
+ *   /assets/ffmpeg/ffmpeg.min.js
+ *   /assets/ffmpeg/ffmpeg-core.js
+ *   /assets/ffmpeg/ffmpeg-core.wasm
+ *   /assets/ffmpeg/ffmpeg-core.worker.js
+ */
+export const FFMPEG_BASE = '/assets/ffmpeg';
+
 export async function ensureFFmpegLibLoaded() {
   if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') return true;
 
   const candidates = [];
-  if (location.protocol !== 'file:') candidates.push('/ffmpeg/ffmpeg.min.js');
+
+  // локальная загрузка работает только через http/https (не file://)
+  if (location.protocol !== 'file:') {
+    candidates.push(`${FFMPEG_BASE}/ffmpeg.min.js`);
+  }
+
+  // CDN fallback
   candidates.push('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
 
   for (const url of candidates) {
@@ -29,5 +43,6 @@ export async function ensureFFmpegLibLoaded() {
       console.warn('FFmpeg lib load failed:', url, e);
     }
   }
+
   return false;
 }
