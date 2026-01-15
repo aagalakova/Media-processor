@@ -25,8 +25,6 @@ export class MediaProcessor {
       }
     }, 1200);
   }
-    }, 1200);
-  }
 
   cancel() {
     this.isCancelled = true;
