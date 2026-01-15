@@ -12,10 +12,19 @@ export class MediaProcessor {
   }
 
   async initVideoProcessor() {
+    // Стартуем загрузку FFmpeg сразу (не блокируем UI)
+    try {
+      this.videoProcessor?.initFFmpeg?.();
+    } catch (e) {
+      console.warn('FFmpeg init start failed:', e);
+    }
+
     setTimeout(() => {
       if (!this.videoProcessor.isFFmpegReady) {
         console.log('⏳ FFmpeg все еще загружается или недоступен...');
       }
+    }, 1200);
+  }
     }, 1200);
   }
 
