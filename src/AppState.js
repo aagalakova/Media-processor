@@ -319,8 +319,17 @@ export class AppState {
   }
 
   extractNumberFromName(name) {
-    const match = name.match(/(\d+)/);
+    // Берем первое вхождение числа в имени файла.
+    // Примеры:
+    //  - "13 Яндекс Маркет.jpg" -> "13"
+    //  - "256. ЫВып.png" -> "256"
+    //  - "IMG_0007 test" -> "0007" (при желании можно привести к 7 через parseInt)
+    const match = String(name || '').match(/(\d+)/);
     return match ? match[1] : '';
+  }
+
+  isSmartUseNumberFromNameEnabled() {
+    return document.getElementById('smartUseNumberFromName')?.checked || false;
   }
 
   updateNamingExample() {
@@ -335,6 +344,7 @@ export class AppState {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
     const globalBase = this.getGlobalBaseName();
+    const useNumFromName = this.isSmartUseNumberFromNameEnabled();
 
     const firstFile = this.files[0];
     const type = FileUtils.getFileType(firstFile.name);
@@ -346,10 +356,24 @@ export class AppState {
       return;
     }
 
-    if (useSmart && globalBase && type === 'Аудио') {
-      const nums = this.files.slice(0, 3).map(f => this.extractNumberFromName(f.name)).filter(Boolean);
+    // Smart numbering: берем номер из имени файла (если есть)
+    // Аудио: base+number (без подчёркивания)
+    // Картинки/видео: base_number (с подчёркиванием)
+    if (useSmart && globalBase && useNumFromName) {
+      const nums = this.files
+        .slice(0, 3)
+        .map(f => this.extractNumberFromName(f.name))
+        .filter(Boolean);
+
       if (nums.length) {
-        exampleEl.textContent = nums.map(n => `${globalBase}${n}.mp3`).join(', ');
+        if (type === 'Аудио') {
+          exampleEl.textContent = nums.map(n => `${globalBase}${n}.mp3`).join(', ');
+        } else if (type === 'Видео') {
+          exampleEl.textContent = nums.map(n => `${globalBase}_${n}.mp4`).join(', ');
+        } else {
+          // изображения
+          exampleEl.textContent = nums.map(n => `${globalBase}_${n}.png`).join(', ');
+        }
         return;
       }
     }
@@ -440,6 +464,7 @@ export class AppState {
     const useSmart = document.getElementById('smartRenaming')?.checked || false;
     const useOriginal = document.getElementById('useOriginalNames')?.checked || false;
     const globalBase = this.getGlobalBaseName();
+    const useNumFromName = this.isSmartUseNumberFromNameEnabled();
 
     const originalExt = (originalName.split('.').pop() || '').toLowerCase();
     const ext = (format || originalExt || '').toLowerCase() || 'dat';
@@ -454,10 +479,29 @@ export class AppState {
       return `${originalBase}.${ext}`;
     }
 
-    // аудио: base + number из оригинала
-    if (useSmart && globalBase && type === 'Аудио') {
-      const num = this.extractNumberFromName(originalName);
-      if (num) return `${globalBase}${num}.${ext}`;
+    // Smart numbering: берем номер из имени файла (если есть)
+    // Аудио: base+num (без подчёркивания)
+    // Изображения/видео: base_num (с подчёркиванием)
+    if (useSmart && globalBase && useNumFromName) {
+      const numRaw = this.extractNumberFromName(originalName);
+      if (numRaw) {
+        // Нормализуем "0007" -> "7" (чтобы не получались img_0007 если это не нужно)
+        const num = String(parseInt(numRaw, 10));
+
+        if (type === 'Аудио') {
+          return `${globalBase}${num}.${ext}`;
+        }
+
+        const baseWithNum = `${globalBase}_${num}`;
+
+        // Если есть несколько вариантов (например, разные размеры/форматы) — делаем уникальные суффиксы
+        if (totalVariants && totalVariants > 1) {
+          if (index === 1) return `${baseWithNum}.${ext}`;
+          return `${baseWithNum}_${index}.${ext}`;
+        }
+
+        return `${baseWithNum}.${ext}`;
+      }
       // если числа нет — падаем на общий smart-счётчик ниже
     }
 
