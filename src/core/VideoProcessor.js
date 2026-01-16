@@ -1,4 +1,4 @@
-import { ensureFFmpegLibLoaded, FFMPEG_BASE } from '../ffmpeg/ffmpegLoader.js';
+import { ensureFFmpegLibLoaded } from '../ffmpeg/ffmpegLoader.js';
 import { setFFmpegStatus } from '../ui/status.js';
 
 function withTimeout(promise, ms, label = 'timeout') {
@@ -33,48 +33,34 @@ export class VideoProcessor {
 
     const { createFFmpeg } = window.FFmpeg;
 
-    const hasSAB = (typeof SharedArrayBuffer !== 'undefined');
-    const isolated = (self.crossOriginIsolated === true);
-    const canUseMT = hasSAB && isolated;
+    // Для стабильности используем официальную single-thread core, которая совместима с ffmpeg.wasm v0.11.x.
+    // Важно: задаём corePath/workerPath/wasmPath явно, чтобы не зависеть от эвристик подстановки путей.
+    const CORE_BASE = 'https://unpkg.com/@ffmpeg/core@0.11.0/dist';
+    const corePath = `${CORE_BASE}/ffmpeg-core.js`;
+    const workerPath = `${CORE_BASE}/ffmpeg-core.worker.js`;
+    const wasmPath = `${CORE_BASE}/ffmpeg-core.wasm`;
 
-    const stCoreCandidates = [
-      'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js',
-      'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js'
-    ];
+    // Отображаем режим. Multi-thread (SAB) отключаем сознательно — для MT нужен @ffmpeg/core-mt и COOP/COEP.
+    setFFmpegStatus('FFmpeg: single-thread core (@ffmpeg/core@0.11.0)', 'warn');
 
-    // Важно: multi-thread (pthread) сборки часто падают "function signature mismatch" при несовместимых
-    // комбинациях core/wasm/worker или опций кодирования. Чтобы обработка видео не зависала —
-    // принудительно используем single-thread core-st.
-    const coreCandidates = stCoreCandidates;
+    try {
+      this.ffmpeg = createFFmpeg({ log: true, corePath, workerPath, wasmPath });
+      await withTimeout(this.ffmpeg.load(), 60000, 'FFmpeg load timeout');
 
-    if (canUseMT) {
-      setFFmpegStatus('FFmpeg: multi-thread отключен (forced single-thread)', 'warn');
-    } else {
-      setFFmpegStatus('FFmpeg: single-thread (no SharedArrayBuffer)', 'warn');
+      this.isFFmpegReady = true;
+      this.loadedCorePath = corePath;
+      this.coreMode = 'single-thread';
+
+      setFFmpegStatus('FFmpeg: готов ✅ (CDN, single-thread)', 'ok');
+    } catch (e) {
+      console.warn('FFmpeg core load failed:', corePath, e);
+      this.ffmpeg = null;
+      this.isFFmpegReady = false;
+      this.loadedCorePath = null;
+      this.coreMode = '—';
+      setFFmpegStatus('FFmpeg: core не удалось загрузить (CDN)', 'err');
     }
-
-    for (const corePath of coreCandidates) {
-      try {
-        this.ffmpeg = createFFmpeg({ log: true, corePath });
-        await withTimeout(this.ffmpeg.load(), 30000, 'FFmpeg load timeout');
-
-        this.isFFmpegReady = true;
-        this.loadedCorePath = corePath;
-        this.coreMode = 'single-thread';
-
-        const where = corePath.startsWith('http') ? 'CDN' : 'local';
-        setFFmpegStatus(`FFmpeg: готов ✅ (${where}, ${this.coreMode})`, 'ok');
-        return;
-      } catch (e) {
-        console.warn('FFmpeg core load failed:', corePath, e);
-        this.ffmpeg = null;
-        this.isFFmpegReady = false;
-      }
-    }
-
-    setFFmpegStatus('FFmpeg: core не удалось загрузить (local/CDN)', 'err');
   }
-
 
   async ensureReady() {
     if (this.isFFmpegReady && this.ffmpeg) return true;
@@ -83,7 +69,6 @@ export class VideoProcessor {
   }
 
   cancel() {
-    // Прерывание для ffmpeg.wasm не всегда мгновенное, но exit() обычно останавливает воркер.
     try {
       if (this.ffmpeg && typeof this.ffmpeg.exit === 'function') {
         this.ffmpeg.exit();
@@ -114,38 +99,46 @@ export class VideoProcessor {
     try {
       this.ffmpeg.FS('writeFile', inputName, await fetchFile(file));
 
-      // Базовые команды для аудио
-      // OGG: сначала Vorbis, если не получится — Opus
       if (fmt === 'ogg') {
         try {
-          await this.ffmpeg.run('-i', inputName, '-vn', '-c:a', 'libvorbis', '-b:a', br, outputName);
+          await withTimeout(
+            this.ffmpeg.run('-i', inputName, '-vn', '-c:a', 'libvorbis', '-b:a', br, outputName),
+            5 * 60 * 1000,
+            'FFmpeg audio run timeout'
+          );
         } catch (eVorbis) {
           console.warn('OGG/Vorbis encode failed, fallback to Opus:', eVorbis);
-          await this.ffmpeg.run('-i', inputName, '-vn', '-c:a', 'libopus', '-b:a', br, outputName);
+          await withTimeout(
+            this.ffmpeg.run('-i', inputName, '-vn', '-c:a', 'libopus', '-b:a', br, outputName),
+            5 * 60 * 1000,
+            'FFmpeg audio run timeout'
+          );
         }
       } else {
-        // MP3
-        await this.ffmpeg.run('-i', inputName, '-vn', '-c:a', 'libmp3lame', '-b:a', br, outputName);
+        await withTimeout(
+          this.ffmpeg.run('-i', inputName, '-vn', '-c:a', 'libmp3lame', '-b:a', br, outputName),
+          5 * 60 * 1000,
+          'FFmpeg audio run timeout'
+        );
       }
 
       const data = this.ffmpeg.FS('readFile', outputName);
       const mime = (fmt === 'ogg') ? 'audio/ogg' : 'audio/mpeg';
-
       return new Blob([data.buffer], { type: mime });
     } catch (e) {
       console.error('processAudio failed:', e);
-      return file; // fallback на оригинал
+      return file;
     } finally {
-      // cleanup FS (best-effort)
       try { this.ffmpeg.FS('unlink', inputName); } catch {}
       try { this.ffmpeg.FS('unlink', outputName); } catch {}
     }
   }
 
-  async processVideo(file, { resolution = '640x360', quality = 'medium', format = 'mp4' } = {}) {
+  async processVideo(file, { format = 'mp4', resolution = '640x360', quality = 'medium' } = {}) {
     const ok = await this.ensureReady();
     if (!ok) return file;
 
+    // На данный момент контейнер оставляем mp4 (см. mime ниже)
     const fmt = String(format || 'mp4').toLowerCase();
     const [wStr, hStr] = String(resolution || '640x360').split('x');
     const w = Math.max(2, parseInt(wStr, 10) || 640);
@@ -160,41 +153,39 @@ export class VideoProcessor {
     const inputName = `input.${inExt}`;
     const outputName = `output.${fmt}`;
 
-    // сохраняем пропорции, уменьшаем до целевого, дополняем черным до точного размера
+    // Сохраняем пропорции, уменьшаем до целевого, дополняем черным до точного размера.
+    // Если исходник меньше целевого — не апскейлим (decrease).
     const vf = `scale=${w}:${h}:force_original_aspect_ratio=decrease,pad=${w}:${h}:(ow-iw)/2:(oh-ih)/2`;
 
     try {
       this.ffmpeg.FS('writeFile', inputName, await fetchFile(file));
 
-      // Видео: h264 + aac в mp4 (самый совместимый вариант)
-      await withTimeout(this.ffmpeg.run(
-        '-i', inputName,
-        '-vf', vf,
-        '-c:v', 'libx264',
-        // veryfast в некоторых сборках/режимах может приводить к "function signature mismatch".
-        // fast обычно стабильнее.
-        '-preset', 'fast',
-        '-crf', String(crf),
-        '-pix_fmt', 'yuv420p',
-        '-c:a', 'aac',
-        '-b:a', '128k',
-        '-movflags', '+faststart',
-        outputName
-      ), 5 * 60 * 1000, 'FFmpeg run timeout');
+      await withTimeout(
+        this.ffmpeg.run(
+          '-i', inputName,
+          '-vf', vf,
+          '-c:v', 'libx264',
+          '-preset', 'fast',
+          '-crf', String(crf),
+          '-pix_fmt', 'yuv420p',
+          '-c:a', 'aac',
+          '-b:a', '128k',
+          '-movflags', '+faststart',
+          outputName
+        ),
+        10 * 60 * 1000,
+        'FFmpeg video run timeout'
+      );
 
       const data = this.ffmpeg.FS('readFile', outputName);
-      const mime = 'video/mp4'; // даже если fmt=mp4; другие контейнеры пока не используем в UI
+      const mime = 'video/mp4';
       return new Blob([data.buffer], { type: mime });
     } catch (e) {
       console.error('processVideo failed:', e);
-      return file; // fallback
+      return file;
     } finally {
       try { this.ffmpeg.FS('unlink', inputName); } catch {}
       try { this.ffmpeg.FS('unlink', outputName); } catch {}
     }
   }
-
-
-  // дальше — твои методы processVideo/processAudio и т.д.
-  // Важно: initFFmpeg() надо вызвать один раз перед обработкой.
 }
