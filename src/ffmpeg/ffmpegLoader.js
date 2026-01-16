@@ -9,27 +9,24 @@ export function loadScript(src) {
   });
 }
 
-// CDN base for FFmpeg core assets (ffmpeg-core.js, ffmpeg-core.wasm, ffmpeg-core.worker.js)
-// VideoProcessor uses this to build corePath: `${FFMPEG_BASE}/ffmpeg-core.js`
-// Use a pinned, known-good single-thread core bundle from unpkg.
-// VideoProcessor will use: `${FFMPEG_BASE}/ffmpeg-core.js`
-export const FFMPEG_BASE = 'https://unpkg.com/@ffmpeg/core@0.11.0/dist';
-
-// Where to load the FFmpeg JS library (ffmpeg.min.js) from
-const FFMPEG_LIB_LOCAL = '/assets/ffmpeg/ffmpeg.min.js';
-// Pin the library bundle via unpkg to avoid mismatches with locally vendored files.
-const FFMPEG_LIB_CDN = 'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js';
+// Локальный путь оставляем как запасной вариант (если захочешь self-host).
+export const FFMPEG_BASE = '/assets/ffmpeg';
 
 export async function ensureFFmpegLibLoaded() {
   if (window.FFmpeg && typeof window.FFmpeg.createFFmpeg === 'function') return true;
 
-  const candidates = [];
+  const candidates = [
+    // 1) предпочтительно — стабильный CDN (пинованная версия)
+    'https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js',
+  ];
 
-  // Try CDN first to avoid accidental version/variant mismatches in a locally copied ffmpeg.min.js.
-  candidates.push(FFMPEG_LIB_CDN);
+  // 2) локальная копия (если ты её держишь в public/assets/ffmpeg)
+  if (location.protocol !== 'file:') {
+    candidates.push(`${FFMPEG_BASE}/ffmpeg.min.js`);
+  }
 
-  // Optional local fallback (if served via http/https)
-  if (location.protocol !== 'file:') candidates.push(FFMPEG_LIB_LOCAL);
+  // 3) запасной CDN
+  candidates.push('https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js');
 
   for (const url of candidates) {
     try {
