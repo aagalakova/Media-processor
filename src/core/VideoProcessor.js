@@ -1,6 +1,14 @@
 import { ensureFFmpegLibLoaded, FFMPEG_BASE } from '../ffmpeg/ffmpegLoader.js';
 import { setFFmpegStatus } from '../ui/status.js';
 
+function withTimeout(promise, ms, label = 'timeout') {
+  let t;
+  const timeout = new Promise((_, reject) => {
+    t = setTimeout(() => reject(new Error(label)), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+}
+
 export class VideoProcessor {
   constructor() {
     this.ffmpeg = null;
@@ -29,32 +37,30 @@ export class VideoProcessor {
     const isolated = (self.crossOriginIsolated === true);
     const canUseMT = hasSAB && isolated;
 
-    const localCore = `${FFMPEG_BASE}/ffmpeg-core.js`;
-
-    const mtCoreCandidates = [
-      localCore,
-      'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.11.0/dist/ffmpeg-core.js'
-    ];
-
     const stCoreCandidates = [
       'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js',
       'https://cdn.jsdelivr.net/npm/@ffmpeg/core-st@0.11.0/dist/ffmpeg-core.js'
     ];
 
-    const coreCandidates = canUseMT ? mtCoreCandidates : stCoreCandidates;
+    // Важно: multi-thread (pthread) сборки часто падают "function signature mismatch" при несовместимых
+    // комбинациях core/wasm/worker или опций кодирования. Чтобы обработка видео не зависала —
+    // принудительно используем single-thread core-st.
+    const coreCandidates = stCoreCandidates;
 
-    if (!canUseMT) {
-      setFFmpegStatus('FFmpeg: нет SharedArrayBuffer → fallback (slow)', 'warn');
+    if (canUseMT) {
+      setFFmpegStatus('FFmpeg: multi-thread отключен (forced single-thread)', 'warn');
+    } else {
+      setFFmpegStatus('FFmpeg: single-thread (no SharedArrayBuffer)', 'warn');
     }
 
     for (const corePath of coreCandidates) {
       try {
         this.ffmpeg = createFFmpeg({ log: true, corePath });
-        await this.ffmpeg.load();
+        await withTimeout(this.ffmpeg.load(), 30000, 'FFmpeg load timeout');
 
         this.isFFmpegReady = true;
         this.loadedCorePath = corePath;
-        this.coreMode = canUseMT ? 'multi-thread' : 'single-thread';
+        this.coreMode = 'single-thread';
 
         const where = corePath.startsWith('http') ? 'CDN' : 'local';
         setFFmpegStatus(`FFmpeg: готов ✅ (${where}, ${this.coreMode})`, 'ok');
@@ -161,18 +167,20 @@ export class VideoProcessor {
       this.ffmpeg.FS('writeFile', inputName, await fetchFile(file));
 
       // Видео: h264 + aac в mp4 (самый совместимый вариант)
-      await this.ffmpeg.run(
+      await withTimeout(this.ffmpeg.run(
         '-i', inputName,
         '-vf', vf,
         '-c:v', 'libx264',
-        '-preset', 'veryfast',
+        // veryfast в некоторых сборках/режимах может приводить к "function signature mismatch".
+        // fast обычно стабильнее.
+        '-preset', 'fast',
         '-crf', String(crf),
         '-pix_fmt', 'yuv420p',
         '-c:a', 'aac',
         '-b:a', '128k',
         '-movflags', '+faststart',
         outputName
-      );
+      ), 5 * 60 * 1000, 'FFmpeg run timeout');
 
       const data = this.ffmpeg.FS('readFile', outputName);
       const mime = 'video/mp4'; // даже если fmt=mp4; другие контейнеры пока не используем в UI
